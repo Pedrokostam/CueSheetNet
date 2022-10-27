@@ -1,0 +1,36 @@
+﻿namespace CueSheetNet;
+
+public record struct CueIndex
+{
+    public const int MaxNumber = 99;
+    private int _Number;
+    public int Number
+    {
+        get => _Number;
+        init
+        {
+            if (value < 0) throw new ArgumentOutOfRangeException("Index must not be negative");
+            if (value > MaxNumber) throw new ArgumentOutOfRangeException("Index must be less than 100");
+            _Number = value;
+        }
+    }
+    public int AbsoluteIndex { get; init; }
+    public CueTime Time { get; init; }
+    public CueFile File { get; init; }
+    public CueTrack Track { get; init; }
+    //internal CueFile ParentFile { get; init; }
+    //internal CueFile ParentTrack { get; init; }
+    internal CueIndex(CueIndexImpl iimpl) : this(iimpl.Number,iimpl.Index,iimpl.File,iimpl.Track,iimpl.Time){ }
+    public CueIndex(int number,int absoluteIndex,CueFile file, CueTrack track, int minutes, int seconds, int frames) : this(number,absoluteIndex,file,track, minutes * 75 * 60 + seconds * 60 + frames){ }
+    public CueIndex(int number,int absoluteIndex,CueFile file, CueTrack track, CueTime cueTime) : this(number, absoluteIndex, file, track, cueTime.TotalFrames) { }
+    public CueIndex(int number,int absoluteIndex,CueFile file, CueTrack track, TimeSpan timeSpan) : this(number, absoluteIndex, file, track, new CueTime(timeSpan)) { }
+    public CueIndex(int number,int absoluteIndex,CueFile file, CueTrack track, int totalFrames)
+    {
+        AbsoluteIndex=absoluteIndex;
+        File=file;
+        Track=track;
+        _Number = number;
+        Time = new(totalFrames);
+    }
+    public override string ToString() => $"INDEX {Number:d2} {Time} ({AbsoluteIndex:d2}, {Track.Title}, {File.File.Name})";
+}
