@@ -62,6 +62,8 @@ public class CueTrack : CueItemBase
     public string? Comment { get; set; }
     public bool HasZerothIndex { get; internal set; }
     public CueIndex[] Indices => ParentSheet.GetIndicesOfTrack(Index);
+
+
     public CueTrack(CueFile parentFile) : base(parentFile.ParentSheet)
     {
         _ParentFile = parentFile;

@@ -1,4 +1,5 @@
 ﻿using CueSheetNet.FileIO;
+using CueSheetNet.TextParser;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -29,9 +30,9 @@ internal class CueReader
         fs.Seek(0, SeekOrigin.Begin);
 
         using StreamReader strr = new(fs, enc);
-        while (strr.ReadLine() is string line)
+        while (strr.ReadLine()?.Trim() is string line)
         {
-            var keyMatch = TextParser.Keyword.Match(line);
+            var keyMatch = LineParser.Keyword.Match(line);
             if (!keyMatch.Success) continue;
             if (!Enum.TryParse(keyMatch.Groups["KEY"].Value.ToUpperInvariant(), out CueKeyWords key)) continue;
             switch (key)
@@ -96,7 +97,7 @@ internal class CueReader
 
     private void ParseTitle(string line)
     {
-        if(!TextParser.TryGetTitle(line, out string? title))
+        if(!LineParser.TryGetOneValue(line,"TITLE", out string? title))
             return;
         if (Sheet.LastTrack is CueTrack lastTrack)
         {
@@ -109,19 +110,19 @@ internal class CueReader
     }
     private void ParseFile(string line)
     {
-        if (!TextParser.TryGetFilepath(line, out string? path, out string? type))
+        if (!LineParser.TryGetFilepath(line, out string? path, out string? type))
             return;
         Sheet.AddFile(path, type);
     }
     private void ParseTrack(string line)
     {
-        if (!TextParser.TryGetTrack(line, out int trackNumber))
+        if (!LineParser.TryGetTrack(line, out int trackNumber))
             return;
        Sheet.AddTrack(trackNumber);
     }
     private void ParsePerformer(string line)
     {
-        if (!TextParser.TryGetPerformer(line, out string? performer))
+        if (!LineParser.TryGetOneValue(line,"PERFORMER", out string? performer))
             return;
         if (Sheet.LastTrack is CueTrack track)
         {
@@ -134,32 +135,29 @@ internal class CueReader
     }
     private void ParseCdTextFile(string line)
     {
-        if (TextParser.TryGetCdTextFile(line, out string? cdt))
+        if (LineParser.TryGetOneValue(line,"CDTEXTFILE", out string? cdt))
             Sheet.SetCdTextFile(cdt);
     }
     private void ParseFlags(string line)
     {
         if (Sheet.LastTrack is not CueTrack track) return;
-        TextParser.TryGetFlags(line, out CueTrackFlags flags);
+        LineParser.TryGetFlags(line, out CueTrackFlags flags);
         track.Flags = flags;
     }
     private void ParseISRC(string line)
     {
-        Match isrcMatch = TextParser.ISRC.Match(line);
-        if (!isrcMatch.Success) return;
         if (Sheet.LastTrack is not CueTrack track) return;
-        CueExtensions.Parse(isrcMatch.Groups["FLAGS"].Value);
-        track.ISRC = isrcMatch.Groups["ISRC"].Value;
+        if(!LineParser.TryGetOneValue(line,"ISRC", out string? isrc))
+        track.ISRC = isrc;
     }
     private void ParseCatalog(string line)
     {
-        Match catMatch = TextParser.Catalog.Match(line);
-        if (!catMatch.Success) return;
-        Sheet.Catalog = catMatch.Groups["CATALOG"].Value;
+        if (!LineParser.TryGetOneValue(line, "CATALOG", out string? cat))
+            Sheet.Catalog = cat;
     }
     private void ParseIndex(string line)
     {
-        Match indMatch = TextParser.Index.Match(line);
+        Match indMatch = LineParser.Index.Match(line);
         if (!indMatch.Success) return;
         if (Sheet.LastTrack is not CueTrack track) return;
         if (int.TryParse(indMatch.Groups["NUMBER"].Value, out int num)
@@ -183,7 +181,7 @@ internal class CueReader
     }
     private void ParseGap(string line)
     {
-        Match gapMatch = TextParser.Gap.Match(line);
+        Match gapMatch = LineParser.Gap.Match(line);
         if (!gapMatch.Success) return;
         if (Sheet.LastFile is not CueFile track) return;
         if (int.TryParse(gapMatch.Groups["MINUTES"].Value, out int min)
@@ -199,7 +197,7 @@ internal class CueReader
     private void ParseREM(string line)
     {
         //(@"\s*REM\s+(?<FIELD>\S+)\s+[""|']?(?<VALUE>.+)[""|']?", opt);//REM COMMENT 'przerwa xD'
-        Match remMatch = TextParser.QuoteEnd.IsMatch(line) ? TextParser.Rem.Match(line) : TextParser.RemNQ.Match(line);
+        Match remMatch = QuoteFinder.CheckClosedQuotesPresence(line) ? LineParser.Rem.Match(line) : LineParser.RemNQ.Match(line);
         if (!remMatch.Success) return;
         string value = remMatch.Groups["VALUE"].Value;
         string field = remMatch.Groups["FIELD"].Value.ToUpperInvariant();
