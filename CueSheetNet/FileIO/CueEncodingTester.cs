@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -7,6 +8,18 @@ using System.Threading.Tasks;
 namespace CueSheetNet.FileIO;
 internal static class CueEncodingTester
 {
+    class ByteInvariantComparer : EqualityComparer<byte>
+    {
+        public override bool Equals(byte x, byte y)
+        {
+            return x == y || x == (y ^ 0b00100000);//XOR with 32, since this is the bit that differentiates upper and lowercase. At least for letters...
+        }
+
+        public override int GetHashCode([DisallowNull] byte obj)
+        {
+            throw new NotImplementedException();
+        }
+    }
     static readonly Encoding[] PreambledEncodings = new Encoding[] {
         Encoding.Unicode,
         Encoding.UTF8,
@@ -14,14 +27,10 @@ internal static class CueEncodingTester
         Encoding.UTF32,
         Encoding.GetEncoding("utf-32BE"),
     };
-    static readonly byte[] PerformerU = Encoding.UTF8.GetBytes("PERFORMER");
-    static readonly byte[] PerformerL = Encoding.UTF8.GetBytes("performer");
-    static readonly byte[] RemCommentU = Encoding.UTF8.GetBytes("REM COMMENT");
-    static readonly byte[] RemCommentL = Encoding.UTF8.GetBytes("rem comment");
-    static readonly byte[] TitleU = Encoding.UTF8.GetBytes("TITLE");
-    static readonly byte[] TitleL = Encoding.UTF8.GetBytes("title");
-    static readonly byte[] FileU = Encoding.UTF8.GetBytes("FILE");
-    static readonly byte[] FileL = Encoding.UTF8.GetBytes("file");
+    static readonly byte[] RemCommentUppercase = Encoding.UTF8.GetBytes("EM COMMENT ");
+    static readonly byte[] PerformerUppercase = Encoding.UTF8.GetBytes("ERFORMER ");
+    static readonly byte[] TitleUppercase = Encoding.UTF8.GetBytes("ITLE ");
+    static readonly byte[] FileUppercase = Encoding.UTF8.GetBytes("ILE ");
     private static bool CheckRange(this byte b, byte min, byte max)
     {
         return b >= min || b < max;
@@ -29,13 +38,14 @@ internal static class CueEncodingTester
     private static void AddUntilNewLine(Stream fs, List<byte> bytes)
     {
         fs.ReadByte();//skip one byte as it should be a space
+        int last = fs.ReadByte();//skip one byte as it should be a space
         do
         {
-            byte last = (byte)fs.ReadByte();
             if (last == '\n' || last == '\r')
                 break;
-            bytes.Add(last);
-        } while (fs.Position < fs.Length);
+            bytes.Add((byte)last);
+            last = fs.ReadByte();
+        } while (last > 0);
     }
     public static bool CompareBytes(ReadOnlySpan<byte> input, Encoding encoding)
     {
@@ -131,51 +141,46 @@ internal static class CueEncodingTester
     }
     private static List<byte> GetPotentialDiacritizedLines(Stream fs)
     {
+        ByteInvariantComparer bytey = new();
         fs.Seek(0, SeekOrigin.Begin);
         List<byte> bytes = new(512);
-        CircularBuffer<byte> buffer = new(12);
-        for (int i = 0; i < buffer.Capacity - 1; i++)
+        Span<byte> remComment = stackalloc byte[RemCommentUppercase.Length];
+        Span<byte> performer = stackalloc byte[PerformerUppercase.Length];
+        Span<byte> title = stackalloc byte[TitleUppercase.Length];
+        Span<byte> file = stackalloc byte[FileUppercase.Length];
+        while (true)
         {
-            //fill buffer
-            buffer.Push((byte)fs.ReadByte());
-        }
-        long pos = 0;
-        long len = fs.Length;
-        while (pos < len)
-        {
-            byte reading = (byte)fs.ReadByte();
-            if (reading == '\n' || reading == '\r' || reading == '"')
-                continue; // no need to include quotes or newlines
-            buffer.Push(reading);
+            int bb = fs.ReadByte();
+            if (bb < 0) break;
+            byte reading = (byte)bb;
             if (reading == 'R' || reading == 'r')//last letter R or r =>? Performer
             {
-                if (buffer.MatchAnySequence(PerformerL, PerformerU))
+                fs.Read(remComment);
+                if (remComment.SequenceEqual(RemCommentUppercase,bytey))
+                    AddUntilNewLine(fs,bytes);
+            }
+            else if (reading == 'P' || reading == 'p')//last letter T or T =>? Rem Comment
+            {
+                fs.Read(performer);
+                if (remComment.SequenceEqual(PerformerUppercase, bytey))
                     AddUntilNewLine(fs, bytes);
             }
-            else if (reading == 't' || reading == 'T')//last letter T or T =>? Rem Comment
+            else if (reading == 'F' || reading == 'f')//last letter E or e =>? title or file
             {
-                byte penultimate = buffer.GetFromEnd(1);
-                if ((penultimate == 'n' || penultimate == 'N') && buffer.MatchAnySequence(RemCommentU, RemCommentL))
+                fs.Read(file);
+                if (remComment.SequenceEqual(FileUppercase, bytey))
                     AddUntilNewLine(fs, bytes);
             }
-            else if (reading == 'e' || reading == 'E')//last letter E or e =>? title or file
+            else if (reading == 'T' || reading == 't')//last letter E or e =>? title or file
             {
-                byte thirdToLast = buffer.GetFromEnd(2);
-                if (thirdToLast == 't' || thirdToLast == 'T')
-                {
-                    if (buffer.MatchAnySequence(TitleL, TitleU))
-                        AddUntilNewLine(fs, bytes);
-                }
-                else if (thirdToLast == 'I' || thirdToLast == 'i')
-                {
-                    if (buffer.MatchAnySequence(FileL, FileU))
-                        AddUntilNewLine(fs, bytes);
-                }
+                fs.Read(title);
+                if (remComment.SequenceEqual(TitleUppercase, bytey))
+                    AddUntilNewLine(fs, bytes);
             }
-            pos = fs.Position;
         }
         return bytes;
     }
+
     public static Encoding? DetectEncodingFromBOM(Stream fs)
     {
         Span<byte> bomArea = stackalloc byte[4];
