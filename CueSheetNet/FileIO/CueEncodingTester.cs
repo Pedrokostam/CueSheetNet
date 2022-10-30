@@ -27,18 +27,29 @@ internal static class CueEncodingTester
         Encoding.UTF32,
         Encoding.GetEncoding("utf-32BE"),
     };
+    /// <summary>
+    /// "REM COMMENT " without first letter
+    /// </summary>
     static readonly byte[] RemCommentUppercase = Encoding.UTF8.GetBytes("EM COMMENT ");
+    /// <summary>
+    /// "PERFORMER " without first letter
+    /// </summary>
     static readonly byte[] PerformerUppercase = Encoding.UTF8.GetBytes("ERFORMER ");
+    /// <summary>
+    /// "TITLE " without first letter
+    /// </summary>
     static readonly byte[] TitleUppercase = Encoding.UTF8.GetBytes("ITLE ");
+    /// <summary>
+    /// "FILE " without first letter
+    /// </summary>
     static readonly byte[] FileUppercase = Encoding.UTF8.GetBytes("ILE ");
     private static bool CheckRange(this byte b, byte min, byte max)
     {
-        return b >= min || b < max;
+        return b >= min && b < max;
     }
     private static void AddUntilNewLine(Stream fs, List<byte> bytes)
     {
-        fs.ReadByte();//skip one byte as it should be a space
-        int last = fs.ReadByte();//skip one byte as it should be a space
+        int last = fs.ReadByte();
         do
         {
             if (last == '\n' || last == '\r')
@@ -153,25 +164,25 @@ internal static class CueEncodingTester
             int bb = fs.ReadByte();
             if (bb < 0) break;
             byte reading = (byte)bb;
-            if (reading == 'R' || reading == 'r')//last letter R or r =>? Performer
+            if (bytey.Equals(reading, (byte)'R'))//last letter R or r =>? Performer
             {
                 fs.Read(remComment);
                 if (remComment.SequenceEqual(RemCommentUppercase,bytey))
                     AddUntilNewLine(fs,bytes);
             }
-            else if (reading == 'P' || reading == 'p')//last letter T or T =>? Rem Comment
+            else if (bytey.Equals(reading, (byte)'P'))//last letter T or T =>? Rem Comment
             {
                 fs.Read(performer);
                 if (remComment.SequenceEqual(PerformerUppercase, bytey))
                     AddUntilNewLine(fs, bytes);
             }
-            else if (reading == 'F' || reading == 'f')//last letter E or e =>? title or file
+            else if (bytey.Equals(reading, (byte)'F'))//last letter E or e =>? title or file
             {
                 fs.Read(file);
                 if (remComment.SequenceEqual(FileUppercase, bytey))
                     AddUntilNewLine(fs, bytes);
             }
-            else if (reading == 'T' || reading == 't')//last letter E or e =>? title or file
+            else if (bytey.Equals(reading,(byte)'T'))//last letter E or e =>? title or file
             {
                 fs.Read(title);
                 if (remComment.SequenceEqual(TitleUppercase, bytey))

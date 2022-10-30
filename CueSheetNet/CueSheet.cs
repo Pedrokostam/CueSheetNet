@@ -122,8 +122,25 @@ public class CueSheet
     }
 
     public CueFile AddFile(string path, string type) => Container.AddFile(path, type);
+    public CueTrack AddTrack(int index,CueFile file)
+    {
+        if (file.ParentSheet != this)
+            throw new InvalidOperationException("Specified file does not belong to this cuesheet");
+        return AddTrack(index, file.Index);
+    }
     public CueTrack AddTrack(int index, int fileIndex = -1) => Container.AddTrack(index, fileIndex);
-    internal CueIndexImpl AddIndex(CueTime time, int fileIndex = -1, int trackIndex = -1) => Container.AddIndex(time, fileIndex, trackIndex);
+    internal CueIndex AddIndex(CueTime time, CueFile file, CueTrack track)
+    {
+        if (track.ParentFile != file)
+            throw new InvalidOperationException("Specified track does not belong to specified file");
+        if (file.ParentSheet != this)
+            throw new InvalidOperationException("Specified file does not belong to this cuesheet");
+        if (track.ParentSheet != this)
+            throw new InvalidOperationException("Specified track does not belong to this cuesheet");
+        return AddIndex(time, file.Index, track.Index);
+    }
+    public CueIndex AddIndex(CueTime time, int fileIndex = -1, int trackIndex = -1) => new CueIndex(AddIndexInternal(time, fileIndex, trackIndex));
+    internal CueIndexImpl AddIndexInternal(CueTime time, int fileIndex = -1, int trackIndex = -1) => Container.AddIndex(time, fileIndex, trackIndex);
     public void AddComment(string comment) => Comments.Add(comment);
     public void RemoveCommet(string comment)
     {
@@ -179,6 +196,11 @@ public class CueSheet
         Container.RefreshFileIndices();
         Container.RefreshTracksIndices();
         Container.RefreshIndexIndices();
+    }
+
+    public void AddIndex()
+    {
+        throw new NotImplementedException();
     }
 
 
