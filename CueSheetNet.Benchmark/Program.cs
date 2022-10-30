@@ -5,4 +5,4 @@ using CueSheetNet.Benchmark;
 
 var r = new Benchmark();
 r.Setup();
-BenchmarkRunner.Run<Benchmark>();
+BenchmarkRunner.Run<Benchmark2>();

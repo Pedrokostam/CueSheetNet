@@ -73,7 +73,7 @@ public class CueSheet
         if (CdTextFile != null)
             CdTextFile.Refresh();
     }
-
+    
     public string? Catalog { get; set; }
     public string? DiscID { get; set; }
     public IReadOnlyList<CueFile> Files => Container.Files.AsReadOnly();
@@ -138,11 +138,7 @@ public class CueSheet
     }
     public void ClearComments() => Comments.Clear();
 
-    public static CueSheet ParseCueSheet(string cuePath)
-    {
-        CueReader parser = new(cuePath);
-        return parser.ParseCueSheet();
-    }
+    
     public bool SetTrackHasZerothIndex(int trackIndex, bool hasZerothIndex)
     {
         CueTrack? track = Container.Tracks.ElementAtOrDefault(trackIndex);

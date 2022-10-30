@@ -95,7 +95,7 @@ namespace CueSheetNet.TextParser
                     if (str[^1] != sought)
                         return (startFrom, length);
                     else
-                        return (rangeStart + 1, length - rangeStart - 1);
+                        return (rangeStart + 1, length - rangeStart -1);
                 }
             }
             return (startFrom, length - startFrom);

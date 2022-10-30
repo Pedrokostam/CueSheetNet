@@ -7,6 +7,8 @@ public class CueTrack : CueItemBase
     /// </summary>
     public int Index { get; internal set; }
     public int Offset { get; internal set; }
+    public CueTime PostGap { get; set; }
+    public CueTime PreGap { get; set; }
     private CueFile _ParentFile;
     public CueFile ParentFile
     {

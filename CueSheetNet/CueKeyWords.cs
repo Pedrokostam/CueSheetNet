@@ -17,7 +17,8 @@ namespace CueSheetNet
         TRACK,
         FLAGS,
         INDEX,
-        GAP,
+        POSTGAP,
+        PREGAP,
         ISRC,
         CATALOG
     }

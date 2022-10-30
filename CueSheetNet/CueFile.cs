@@ -19,8 +19,6 @@ public class CueFile : CueItemBase
         set => _Type = value.ToUpperInvariant();
     }
     public CueTime? Duration { get; private set; }
-    public CueTime PostGap { get; set; }
-    public CueTime PreGap { get; set; }
     public bool ValidFile { get; private set; }
     private FileInfo _file;
 

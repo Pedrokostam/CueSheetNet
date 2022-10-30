@@ -2,29 +2,19 @@
 using CueSheetNet;
 using System.Diagnostics;
 
-var eo=new EnumerationOptions() { IgnoreInaccessible = true, RecurseSubdirectories=true,ReturnSpecialDirectories=false };
+var eo = new EnumerationOptions() { IgnoreInaccessible = true, RecurseSubdirectories = true, ReturnSpecialDirectories = false };
 var fies = Directory.GetFiles(@"E:\FLACBAZA\RawRips\", "*.cue", eo);
-List<CueSheet> l = new();
+var files = fies.Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies).Concat(fies);
+files = files.Concat(files);
+string[] dafak = files.ToArray();
+List<CueSheet> l = new(dafak.Length);
 var s = Stopwatch.StartNew();
-foreach (var f in fies)
+CueReader cr = new();
+foreach (var f in dafak)
 {
-l.Add( CueSheetNet.CueSheet.ParseCueSheet(f));
+    l.Add(cr.ParseCueSheet(f));
 }
-l.Clear();
-foreach (var f in fies)
-{
-    l.Add(CueSheetNet.CueSheet.ParseCueSheet(f));
-}
-l.Clear();
-foreach (var f in fies)
-{
-    l.Add(CueSheetNet.CueSheet.ParseCueSheet(f));
-}
-l.Clear();
-foreach (var f in fies)
-{
-    l.Add(CueSheetNet.CueSheet.ParseCueSheet(f));
-}
+
 s.Stop();
 Console.WriteLine(s.ElapsedMilliseconds);
-Console.WriteLine(fies.Length) ;
+Console.WriteLine(1d * s.ElapsedMilliseconds / files.Count() * 1000);

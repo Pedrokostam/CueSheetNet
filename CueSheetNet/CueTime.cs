@@ -1,4 +1,6 @@
-﻿namespace CueSheetNet;
+﻿using System;
+
+namespace CueSheetNet;
 
 public record struct CueTime : IComparable<CueTime>
 {
@@ -64,5 +66,43 @@ public record struct CueTime : IComparable<CueTime>
     public static CueTime operator /(CueTime left, double right) => new((int)(left.TotalFrames / right));
     public static CueTime operator *(CueTime left, double right) => new((int)(left.TotalFrames * right));
     public static CueTime operator *(double left, CueTime right) => new((int)(right.TotalFrames * left));
+    public static bool TryParse(ReadOnlySpan<char> s, out CueTime cueTime)
+    {
+        Span<int> nums = stackalloc int[3];
+        ReadOnlySpan<char> span = s.Trim();
+        int elemCount = 0;
+        int last = 0;
+        for (int i = 0; i < span.Length; i++)
+        {
+            if (span[i] == ':')
+            {
+                if (!int.TryParse(span[last..i], out nums[elemCount]))
+                {
+                    cueTime = default;
+                    return false;
+                }
+                else
+                {
+                    last = i + 1;
+                }
+                if (++elemCount >= 3)
+                    break;
+            }
+        }
+        if (elemCount < 3 && !int.TryParse(span[last..], out nums[elemCount]))
+        {
+            cueTime = default;
+            return false;
+        }
+        else elemCount++;
+        if (elemCount != 3)
+        {
+            cueTime = default;
+            return false;
+        }
+        cueTime = new CueTime(nums[0], nums[1], nums[2]);
+        return true;
+    }
+    public static bool TryParse(string s, out CueTime cueTime) => TryParse(s.AsSpan(), out cueTime);
 
 }

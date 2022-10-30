@@ -52,6 +52,7 @@ internal class CueContainer
     }
     public CueFile AddFile(string filePath, string type)
     {
+        if (string.IsNullOrEmpty(type)) type = "WAVE";
         CueFile cf = new(ParentSheet, filePath, type)
         {
             Index = Files.Count
