@@ -46,7 +46,7 @@ public class CueFile : CueItemBase
             ValidFile = false;
         }
     }
-    public CueIndex[] Indices => ParentSheet.GetIndicesOfFile(Index);
+    public CueIndex[] Indexes => ParentSheet.GetIndexesOfFile(Index);
     public override string ToString()
     {
         return "File " + Index.ToString("D2") + " \"" + File.FullName + "\" " + Type;

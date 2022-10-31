@@ -88,7 +88,7 @@ internal static class CueEncodingTester
         List<byte> b = GetPotentialDiacritizedLines(fs);
         return DetectUtf8Heuristically(b);
     }
-    private static Encoding DetectUtf8Heuristically(IList<byte> b)
+    private static Encoding DetectUtf8Heuristically(List<byte> b)
     {
         bool utf8 = false;
         for (int i = 0; i < b.Count - 4; i++)

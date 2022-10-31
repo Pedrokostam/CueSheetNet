@@ -41,6 +41,6 @@ public static class CueExtensions
         {
             strs.Add("SCMS");
         }
-        return "FLAGS " + string.Join(' ', strs);
+        return string.Join(' ', strs);
     }
 }

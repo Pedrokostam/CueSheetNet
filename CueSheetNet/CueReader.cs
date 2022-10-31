@@ -1,5 +1,6 @@
 ﻿using CueSheetNet.FileIO;
 using CueSheetNet.TextParser;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -13,6 +14,7 @@ public class CueReader
 
     CueSheet? Sheet { get; set; }
     public char Quotation { get; set; } = '"';
+    public Encoding? Encoding { get; set; }
 
     readonly List<bool> TrackHasZerothIndex = new();
     static public Encoding GetEncoding(string filePath)
@@ -49,10 +51,13 @@ public class CueReader
         Reset();
         if (!File.Exists(cuePath)) throw new FileNotFoundException($"{cuePath} does not exist");
         Sheet = new(cuePath);
-        Encoding enc = CueEncodingTester.DetectCueEncoding(fs);
+        Stopwatch st = Stopwatch.StartNew();
+        Encoding enc = Encoding ?? CueEncodingTester.DetectCueEncoding(fs);
+        st.Stop();
+        Console.WriteLine("------" + st.ElapsedTicks);
         fs.Seek(0, SeekOrigin.Begin);
         CurrentLine = 0;
-        using StreamReader strr = new(fs, enc);
+        using StreamReader strr = new(fs, enc, false);
         while (strr.ReadLine()?.Trim() is string line)
         {
             string value = GetKeyword(line).ToUpperInvariant();
@@ -106,7 +111,8 @@ public class CueReader
 
     private void ParseTitle(string line)
     {
-        string title = GetValue(line, 5);
+        string? title = GetValue(line, 5);
+        if (title == null) return;
         if (Sheet!.LastTrack is CueTrack lastTrack)
         {
             lastTrack.Title = title;
@@ -118,7 +124,7 @@ public class CueReader
     }
     private void ParseFile(string line)
     {
-        (string path, string type) = GetFile(line);
+        (string path, string type) = GetFile(line,5);
         Sheet!.AddFile(path, type);
     }
     private void ParseTrack(string line)
@@ -133,7 +139,8 @@ public class CueReader
     }
     private void ParsePerformer(string line)
     {
-        string performer = GetValue(line, 10);
+        string? performer = GetValue(line, 10);
+        if (performer == null) return;
         if (Sheet!.LastTrack is CueTrack track)
         {
             track.Performer = performer;
@@ -145,12 +152,15 @@ public class CueReader
     }
     private void ParseCdTextFile(string line)
     {
-        string cdt = GetValue(line, 11);
+        string? cdt = GetValue(line, 11);
+        if (cdt == null) 
+            return;
         Sheet!.SetCdTextFile(cdt);
     }
     private void ParseFlags(string line)
     {
-        if (Sheet!.LastTrack is not CueTrack track) return;
+        if (Sheet!.LastTrack is not CueTrack track) 
+            return;
         CueTrackFlags flags = CueTrackFlags.None;
         var parts = line[6..].Replace("\"", "").Replace("'", "").Split(' ', StringSplitOptions.RemoveEmptyEntries);
         foreach (var part in parts)
@@ -170,12 +180,16 @@ public class CueReader
     private void ParseISRC(string line)
     {
         if (Sheet!.LastTrack is not CueTrack track) return;
-        string isrc = GetValue(line, 5);
+        string? isrc = GetValue(line, 5);
+        if (isrc == null) 
+            return;
         track.ISRC = isrc;
     }
     private void ParseCatalog(string line)
     {
-        string cata = GetValue(line, 8);
+        string? cata = GetValue(line, 8);
+        if (cata == null) 
+            return;
         Sheet!.Catalog = cata;
     }
     private void ParseIndex(string line)
@@ -190,7 +204,7 @@ public class CueReader
         {
             ctr.ParentFile = cfl;
         }
-        CueIndexImpl c = Sheet.AddIndex(cueTime);
+        CueIndexImpl c = Sheet.AddIndexInternal(cueTime);
         (int Start, int End) = Sheet.GetCueIndicesOfTrack(c.Track.Index);
         //If this is the first added index for the track (by default new track do not have 0th index so its starts at 1)
         if (End - Start == 1)
@@ -211,18 +225,22 @@ public class CueReader
     private void ParseREM(string line)
     {
         string field = GetKeyword(line, 4).ToUpperInvariant();
-        string value = GetKeyword(line, 4 + field.Length + 1);
+        int valueStart = 4 + field.Length + 1;
+        string? value = GetValue(line, valueStart);
+        if (value == null) return;
         if (Sheet!.LastTrack is CueTrack track)
         {
+
             switch (field)
             {
                 case "COMPOSER":
                     track.Composer = value;
                     break;
                 case "COMMENT":
-                    track.Comment = value;
+                    Sheet.AddComment(value);
                     break;
                 default:
+                    Sheet.AddRem(field, value);
                     break;
             }
         }
@@ -243,7 +261,7 @@ public class CueReader
                     Sheet.AddComment(value);
                     break;
                 default:
-                    Sheet.AddComment(field + " " + value);
+                    Sheet.AddRem(field, value);
                     break;
             }
         }
@@ -254,9 +272,9 @@ public class CueReader
     /// </summary>
     /// <param name="s">String to get values from</param>
     /// <returns><see cref="ValueTuple"/> of filename and type</returns>
-    public (string Path, string Type) GetFile(string s)
+    public (string Path, string Type) GetFile(string s, int start)
     {
-        ReadOnlySpan<char> spanny = s.AsSpan().Trim();
+        ReadOnlySpan<char> spanny = s.AsSpan(start).Trim();
         string path, type;
         if (spanny[0] == Quotation)
         {
@@ -292,11 +310,12 @@ public class CueReader
     /// <param name="s">String to get value from</param>
     /// <param name="start">Index from which the search will be started</param>
     /// <param name="end">How many characters are skipped at the end</param>
-    /// <returns></returns>
-    public string GetValue(string s, int start, int end = 0)
+    /// <returns>String if there was text, enclosed in quotations or not; <see cref="null"/> if there was no non-whitespace text, or there were quutations with nothing inside</returns>
+    public string? GetValue(string s, int start, int end = 0)
     {
         ReadOnlySpan<char> spanny = s.AsSpan(start, s.Length - start - end).Trim();
-
+        if (spanny.Length == 0 || spanny.SequenceEqual("\"\""))
+            return null;
         if (spanny[^1] == Quotation && spanny[0] == Quotation)
             return spanny[1..^1].ToString();
         else
@@ -309,16 +328,17 @@ public class CueReader
     /// <param name="startIndex">INdex from which the word will be sought</param>
     /// <param name="maxSearchLength">Maximum search length. If exceeded, empty string is returned</param>
     /// <returns>String of characters from <paramref name="startIndex"/> to first whitespace, or empty string if no whitespace has been detected in the first <paramref name="maxSearchLength"/> characters</returns>
-    public string GetKeyword(string s, int startIndex = 0, int maxSearchLength = 10)
+    public string GetKeyword(string s, int startIndex = 0, int maxSearchLength = -1)
     {
-        maxSearchLength = Math.Clamp(maxSearchLength, 0, s.Length-startIndex);
+        if (maxSearchLength <= 0) maxSearchLength = s.Length;
+        maxSearchLength = Math.Clamp(maxSearchLength, 0, s.Length - startIndex);
         ReadOnlySpan<char> spanish = s.AsSpan(startIndex, maxSearchLength).TrimStart();
         for (int i = 0; i < spanish.Length; i++)
         {
             if (char.IsWhiteSpace(spanish[i]))
                 return spanish[..i].ToString();
         }
-        return string.Empty;
+        return spanish.ToString();
     }
     /// <summary>
     /// GEts the last word of the string (string from the last whitespace till the end)

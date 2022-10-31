@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Collections.ObjectModel;
+using System.Text;
 
 namespace CueSheetNet;
 
@@ -25,13 +26,49 @@ public enum CueType
     MultipleFilesWithPrependedGaps = MultipleFiles | GapsPrepended,
     MultipleFileWithSimulatedGaps = MultipleFiles | SimulatedGaps,
 }
-public class CueSheet
+public class CueSheet : IRemCommentable
 {
+    #region Rem
+    internal readonly List<RemEntry> RawRems = new();
+    public ReadOnlyCollection<RemEntry> Remarks => RawRems.AsReadOnly();
+    public void ClearRems() => RawRems.Clear();
+
+    public void AddRem(string type, string value) => AddRem(new RemEntry(type, value));
+    public void AddRem(RemEntry entry) => RawRems.Add(entry);
+
+    public void RemoveRem(int index)
+    {
+        if (index >= 0 || index < RawRems.Count)
+            RawRems.RemoveAt(index);
+    }
+
+    public void RemoveRem(string field, string value, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase)=>RemoveRem(new RemEntry(field,value),comparisonType);
+    public void RemoveRem(RemEntry entry, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase)
+    {
+        int ind = RawRems.FindIndex(x => x.Equals(entry, comparisonType));
+        if (ind >= 0)
+            RawRems.RemoveAt(ind);
+    }
+    #endregion
+    #region Comments
+    internal readonly List<string> RawComments = new();
+    public  ReadOnlyCollection<string> Comments=>RawComments.AsReadOnly();
+    public void AddComment(string comment) => RawComments.Add(comment);
+    public void RemoveComment(string comment, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase)
+    {
+        int ind = RawComments.FindIndex(x => x.Equals(comment, comparisonType));
+        if (ind >= 0)
+            RawComments.RemoveAt(ind);
+    }
+    public void RemoveComment(int index)
+    {
+        if (index >= 0 && index < RawComments.Count)
+            RawComments.RemoveAt(index);
+    }
+    public void ClearComments() => RawComments.Clear();
+    #endregion
     public CueType SheetType { get; internal set; }
     public string? Composer { get; set; }
-    public List<string> Comments = new();
-
-    public string CommentString => string.Join("\r\n", Comments);
     public string? Performer { get; set; }
     public string? Title { get; set; }
     private FileInfo? _CdTextFile;
@@ -73,20 +110,21 @@ public class CueSheet
         if (CdTextFile != null)
             CdTextFile.Refresh();
     }
-    
+
     public string? Catalog { get; set; }
     public string? DiscID { get; set; }
-    public IReadOnlyList<CueFile> Files => Container.Files.AsReadOnly();
-    public IReadOnlyList<CueTrack> Tracks => Container.Tracks.AsReadOnly();
+    public ReadOnlyCollection<CueFile> Files => Container.Files.AsReadOnly();
+    public ReadOnlyCollection<CueTrack> Tracks => Container.Tracks.AsReadOnly();
+    internal ReadOnlyCollection<CueIndexImpl> IndexesImpl => Container.Indexes.AsReadOnly();
     public CueIndex[] Indexes => Container.Indexes.Select(x => new CueIndex(x)).ToArray();
-    public CueIndex[] GetIndicesOfTrack(int trackIndex)
+    public CueIndex[] GetIndexesOfTrack(int trackIndex)
     {
         (int start, int end) = Container.GetCueIndicesOfTrack(trackIndex);
         if (start == end) return Array.Empty<CueIndex>();
         return Container.Indexes.Skip(start).Take(end - start).Select(x => new CueIndex(x)).ToArray();
     }
     internal (int Start, int End) GetCueIndicesOfTrack(int trackIndex) => Container.GetCueIndicesOfTrack(trackIndex, true);
-    public CueIndex[] GetIndicesOfFile(int fileIndex)
+    public CueIndex[] GetIndexesOfFile(int fileIndex)
     {
         (int start, int end) = Container.GetCueIndicesOfFile(fileIndex);
         if (start == end) return Array.Empty<CueIndex>();
@@ -122,14 +160,14 @@ public class CueSheet
     }
 
     public CueFile AddFile(string path, string type) => Container.AddFile(path, type);
-    public CueTrack AddTrack(int index,CueFile file)
+    public CueTrack AddTrack(int index, CueFile file)
     {
         if (file.ParentSheet != this)
             throw new InvalidOperationException("Specified file does not belong to this cuesheet");
         return AddTrack(index, file.Index);
     }
     public CueTrack AddTrack(int index, int fileIndex = -1) => Container.AddTrack(index, fileIndex);
-    internal CueIndex AddIndex(CueTime time, CueFile file, CueTrack track)
+    public CueIndex AddIndex(CueTime time, CueFile file, CueTrack track)
     {
         if (track.ParentFile != file)
             throw new InvalidOperationException("Specified track does not belong to specified file");
@@ -141,21 +179,6 @@ public class CueSheet
     }
     public CueIndex AddIndex(CueTime time, int fileIndex = -1, int trackIndex = -1) => new CueIndex(AddIndexInternal(time, fileIndex, trackIndex));
     internal CueIndexImpl AddIndexInternal(CueTime time, int fileIndex = -1, int trackIndex = -1) => Container.AddIndex(time, fileIndex, trackIndex);
-    public void AddComment(string comment) => Comments.Add(comment);
-    public void RemoveCommet(string comment)
-    {
-        int ind = Comments.FindIndex(x => x.Equals(comment, StringComparison.OrdinalIgnoreCase));
-        if (ind >= 0)
-            Comments.RemoveAt(ind);
-    }
-    public void RemoveComment(int index)
-    {
-        if (index >= 0 && index < Comments.Count)
-            Comments.RemoveAt(index);
-    }
-    public void ClearComments() => Comments.Clear();
-
-    
     public bool SetTrackHasZerothIndex(int trackIndex, bool hasZerothIndex)
     {
         CueTrack? track = Container.Tracks.ElementAtOrDefault(trackIndex);
@@ -202,6 +225,7 @@ public class CueSheet
     {
         throw new NotImplementedException();
     }
+
 
 
 
