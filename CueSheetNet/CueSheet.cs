@@ -1,4 +1,5 @@
-﻿using System.Collections.ObjectModel;
+﻿using System;
+using System.Collections.ObjectModel;
 using System.Text;
 
 namespace CueSheetNet;
@@ -26,7 +27,7 @@ public enum CueType
     MultipleFilesWithPrependedGaps = MultipleFiles | GapsPrepended,
     MultipleFileWithSimulatedGaps = MultipleFiles | SimulatedGaps,
 }
-public class CueSheet : IRemCommentable
+public class CueSheet :IEquatable<CueSheet>, IRemCommentable
 {
     #region Rem
     internal readonly List<RemEntry> RawRems = new();
@@ -225,6 +226,51 @@ public class CueSheet : IRemCommentable
     {
         throw new NotImplementedException();
     }
+    public override string ToString()
+    {
+        return String.Format("CueSheet: {0} - {1} - {2}",Performer ?? "No performer",Title ?? "No title", FileInfo?.Name ?? "No file"); 
+    }
+    public bool Equals(CueSheet? other)=>Equals( other,StringComparison.CurrentCulture);
+    public bool Equals(CueSheet? other, StringComparison stringComparison)
+    {
+        if (other == null) return false;
+        if(ReferenceEquals(this, other)) return true;
+        if(Container.Indexes.Count != other.Container.Indexes.Count) return false;
+        if(Container.Tracks.Count != other.Container.Tracks.Count) return false;
+        if(Container.Files.Count != other.Container.Files.Count) return false;
+        for (int i = 0; i < Container.Indexes.Count; i++)
+        {
+            CueIndexImpl one = Container.Indexes[i];
+            CueIndexImpl two = other.Container.Indexes[i];
+            if (one.Number!=two.Number || one.Time!=two.Time)
+                return false;
+        }
+        for (int i = 0; i < Container.Tracks.Count; i++)
+        {
+            CueTrack one = Container.Tracks[i];
+            CueTrack two = other.Container.Tracks[i];
+            if (!one.Equals(two))
+                return false;
+        }
+        for (int i = 0; i < Container.Files.Count; i++)
+        {
+            CueFile one = Container.Files[i];
+            CueFile two = other.Container.Files[i];
+            if (!one.Equals(two))
+                return false;
+        }
+        if (
+               !string.Equals(CdTextFile?.Name, other.CdTextFile?.Name, StringComparison.OrdinalIgnoreCase)
+            || !string.Equals(FileInfo?.Name, other.FileInfo?.Name, StringComparison.OrdinalIgnoreCase)
+            || !string.Equals(Performer, other.Performer, stringComparison)
+            || !string.Equals(Catalog, other.Catalog)
+            || !string.Equals(Composer, other.Composer, stringComparison)
+            || !string.Equals(Title, other.Title, stringComparison)
+           )
+            return false;
+        return true;
+    }
+
 
 
 

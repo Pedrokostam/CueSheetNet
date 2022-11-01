@@ -18,8 +18,6 @@ public record struct CueIndex
     public CueTime Time { get; init; }
     public CueFile File { get; init; }
     public CueTrack Track { get; init; }
-    //internal CueFile ParentFile { get; init; }
-    //internal CueFile ParentTrack { get; init; }
     internal CueIndex(CueIndexImpl iimpl) : this(iimpl.Number,iimpl.Index,iimpl.File,iimpl.Track,iimpl.Time){ }
     public CueIndex(int number,int absoluteIndex,CueFile file, CueTrack track, int minutes, int seconds, int frames) : this(number,absoluteIndex,file,track, minutes * 75 * 60 + seconds * 60 + frames){ }
     public CueIndex(int number,int absoluteIndex,CueFile file, CueTrack track, CueTime cueTime) : this(number, absoluteIndex, file, track, cueTime.TotalFrames) { }

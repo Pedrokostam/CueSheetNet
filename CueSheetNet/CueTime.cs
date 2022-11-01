@@ -52,6 +52,25 @@ public record struct CueTime : IComparable<CueTime>
         frames = Frames;
     }
     public int CompareTo(CueTime other) => TotalFrames.CompareTo(other.TotalFrames);
+    /// <summary>
+    /// Parses string to CueTime (±mm:ss:ff)
+    /// </summary>
+    /// <param name="s"></param>
+    /// <returns>CueTime instance corresponding to <see cref="s"/></returns>
+    /// <exception cref="FormatException"></exception>
+    public static CueTime Parse(ReadOnlySpan<char> s)
+    {
+        if (TryParse(s, out CueTime cue))
+            return cue;
+        else
+            throw new FormatException("Incorrect CueTime format string");
+    }
+    /// <summary>
+    /// Tries to parse string (±mm:ss:ff)
+    /// </summary>
+    /// <param name="s"></param>
+    /// <param name="cueTime"></param>
+    /// <returns>True if parsed correctly, false if there were problems</returns>
     public static bool TryParse(ReadOnlySpan<char> s, out CueTime cueTime)
     {
         Span<int> nums = stackalloc int[3];
@@ -75,21 +94,29 @@ public record struct CueTime : IComparable<CueTime>
                     break;
             }
         }
-        if (elemCount < 3 && !int.TryParse(span[last..], out nums[elemCount]))
+        //if less than 2 elements - not possible to parse
+        if (elemCount <= 2)
         {
+            //return false
             cueTime = default;
             return false;
         }
-        else elemCount++;
-        if (elemCount != 3)
+        if (!int.TryParse(span[last..], out nums[elemCount]))
         {
+            //return false
             cueTime = default;
             return false;
         }
-        cueTime = new CueTime(nums[0], nums[1], nums[2]);
+        int multiplier = nums[0] >= 0 ? 1 : -1;
+        //ensure every part is non-negative or non-positive
+        cueTime = new CueTime(
+            Math.Abs(nums[0])*multiplier, 
+            Math.Abs(nums[1])*multiplier, 
+            Math.Abs(nums[2])*multiplier);
         return true;
     }
     public static bool TryParse(string s, out CueTime cueTime) => TryParse(s.AsSpan(), out cueTime);
+    public override int GetHashCode() => TotalFrames.GetHashCode();
     #region Operators
     public static bool operator <(CueTime left, CueTime right) => left.CompareTo(right) < 0;
     public static bool operator >(CueTime left, CueTime right) => left.CompareTo(right) > 0;
@@ -99,21 +126,26 @@ public record struct CueTime : IComparable<CueTime>
     public static bool operator >(CueTime left, int right) => left.TotalFrames > right;
     public static bool operator >=(CueTime left, int right) => left.TotalFrames >= right;
     public static bool operator <=(CueTime left, int right) => left.TotalFrames <= right;
-    public static bool operator <(int left, CueTime right) =>  left < right.TotalFrames;
-    public static bool operator >(int left, CueTime right) =>  left > right.TotalFrames;
+    public static bool operator <(int left, CueTime right) => left < right.TotalFrames;
+    public static bool operator >(int left, CueTime right) => left > right.TotalFrames;
     public static bool operator >=(int left, CueTime right) => left >= right.TotalFrames;
     public static bool operator <=(int left, CueTime right) => left <= right.TotalFrames;
     public static CueTime operator +(CueTime left, CueTime right) => new(left.TotalFrames + right.TotalFrames);
     public static CueTime operator +(CueTime left, int right) => new(left.TotalFrames + right);
     public static CueTime operator +(int left, CueTime right) => new(left + right.TotalFrames);
     public static CueTime operator -(CueTime time) => new(-time.TotalFrames);
+    public static CueTime operator --(CueTime time) => new(time.TotalFrames - 1);
+    public static CueTime operator +(CueTime time) => time;
+    public static CueTime operator ++(CueTime time) => new(time.TotalFrames + 1);
     public static CueTime operator -(CueTime left, CueTime right) => new(left.TotalFrames - right.TotalFrames);
     public static CueTime operator -(CueTime left, int right) => new(left.TotalFrames - right);
     public static CueTime operator /(CueTime left, double right) => new((int)(left.TotalFrames / right));
+    public static CueTime operator /(CueTime left, int right) => new((left.TotalFrames / right));
     public static CueTime operator *(CueTime left, double right) => new((int)(left.TotalFrames * right));
+    public static CueTime operator *(CueTime left, int right) => new((left.TotalFrames * right));
+    public static CueTime operator *(int left, CueTime right) => new((right.TotalFrames * left));
     public static CueTime operator *(double left, CueTime right) => new((int)(right.TotalFrames * left));
-    public static CueTime operator <<(CueTime left, int right) => new (left.TotalFrames >> right);
-    public static CueTime operator >>(CueTime left, int right) => new (left.TotalFrames >> right);
+    public static CueTime operator <<(CueTime left, int right) => new(left.TotalFrames >> right);
+    public static CueTime operator >>(CueTime left, int right) => new(left.TotalFrames >> right);
     #endregion
-
 }

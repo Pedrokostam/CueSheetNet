@@ -1,4 +1,6 @@
-﻿namespace CueSheetNet;
+﻿using System.Xml.Schema;
+
+namespace CueSheetNet;
 
 internal class CueIndexImpl : CueItemBase
 {
@@ -15,5 +17,9 @@ internal class CueIndexImpl : CueItemBase
     public override string ToString()
     {
         return "CueIndexImpl "+Index.ToString("D2")+", " + Number.ToString("D2") + ", " + File.Index.ToString("D2") + ", " + Track.Index.ToString("D2");
+    }
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(File.GetHashCode(), Track.GetHashCode(), Time.GetHashCode(),Number.GetHashCode());
     }
 }

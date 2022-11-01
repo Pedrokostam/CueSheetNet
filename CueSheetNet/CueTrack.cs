@@ -1,6 +1,6 @@
 ﻿namespace CueSheetNet;
 
-public class CueTrack : CueItemBase,IEquatable<CueTrack>, IRemCommentable
+public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemCommentable
 {
     /// <summary>
     /// Absolute index for the whole CueSheet
@@ -61,7 +61,6 @@ public class CueTrack : CueItemBase,IEquatable<CueTrack>, IRemCommentable
     }
     public CueTrackFlags Flags { get; set; } = CueTrackFlags.None;
     public string? ISRC { get; set; }
-    public string? Comment { get; set; }
     public bool HasZerothIndex { get; internal set; }
     public CueIndex[] Indexes => ParentSheet.GetIndexesOfTrack(Index);
 
@@ -112,13 +111,34 @@ public class CueTrack : CueItemBase,IEquatable<CueTrack>, IRemCommentable
     public void ClearComments() => RawComments.Clear();
 
     #endregion
-    public bool Equals(CueTrack? other)
+    public bool Equals(CueTrack? other) => Equals(other, StringComparison.CurrentCulture);
+    public bool Equals(CueTrack? other, StringComparison stringComparison)
     {
-        throw new NotImplementedException();
         if (ReferenceEquals(this, other)) return true;
-        if(other == null) return false;
-
-
+        if (other == null) return false;
+        if (RawComments.Count != other.RawComments.Count) return false;
+        if (RawRems.Count != other.RawRems.Count) return false;
+        if (
+               PostGap != other.PostGap
+            || PreGap != other.PreGap
+            || !string.Equals(Performer, other.Performer, stringComparison)
+            || !string.Equals(ISRC, other.ISRC, stringComparison)
+            || !string.Equals(Composer, other.Composer, stringComparison)
+            || !string.Equals(Title, other.Title, stringComparison) ||
+            Flags != other.Flags
+           )
+            return false;
+        for (int i = 0; i < RawComments.Count; i++)
+        {
+            if (!string.Equals(RawComments[i], other.RawComments[i], stringComparison))
+                return false;
+        }
+        for (int i = 0; i < RawRems.Count; i++)
+        {
+            if (!RawRems[i].Equals(other.RawRems[i], stringComparison))
+                return false;
+        }
+        return true;
     }
 }
 

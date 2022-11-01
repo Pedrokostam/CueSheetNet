@@ -1,9 +1,10 @@
 ﻿using CueSheetNET.FileIO;
+using System;
 using System.Diagnostics.CodeAnalysis;
 
 namespace CueSheetNet;
 
-public class CueFile : CueItemBase
+public class CueFile : CueItemBase, IEquatable<CueFile>
 {
     public int Index { get; internal set; }
     public CueFile(CueSheet parent, string filePath, string type) : base(parent)
@@ -58,5 +59,20 @@ public class CueFile : CueItemBase
         string absPath = Path.Combine(ParentSheet.FileInfo?.DirectoryName ?? ".", name);
         SetFile(absPath);
     }
+
+    public bool Equals(CueFile? other) => Equals(other, StringComparison.CurrentCulture);
+    public bool Equals(CueFile? other, StringComparison stringComparison)
+    {
+        if (ReferenceEquals(this, other)) return true;
+        if (other == null) return false;
+        if (
+               !string.Equals(File.Name, File.Name, StringComparison.OrdinalIgnoreCase)
+            || !string.Equals(Type, other.Type)
+            || Index != other.Index
+           )
+            return false;
+        return true;
+    }
+    
 }
 
