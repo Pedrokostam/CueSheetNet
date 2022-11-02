@@ -1,7 +1,7 @@
-﻿namespace CueSheetNet;
+﻿namespace CueSheetNet.Syntax;
 
 [Flags]
-public enum CueTrackFlags
+public enum TrackFlags
 {
     None = 0b0,
     //DCP

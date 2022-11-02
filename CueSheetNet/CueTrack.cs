@@ -1,4 +1,6 @@
-﻿namespace CueSheetNet;
+﻿using CueSheetNet.Syntax;
+
+namespace CueSheetNet;
 
 public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemCommentable
 {
@@ -59,7 +61,7 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemCommentable
         get => _Composer ?? ParentSheet.Composer;
         set => _Composer = value;
     }
-    public CueTrackFlags Flags { get; set; } = CueTrackFlags.None;
+    public TrackFlags Flags { get; set; } = TrackFlags.None;
     public string? ISRC { get; set; }
     public bool HasZerothIndex { get; internal set; }
     public CueIndex[] Indexes => ParentSheet.GetIndexesOfTrack(Index);

@@ -2,6 +2,7 @@
 
 namespace CueSheetNet;
 
+[DebuggerDisplay("Files: {Files.Count}, Track: {Tracks.Count}, Indexes: {Indexes.Count}")]
 internal class CueContainer
 {
     private CueSheet ParentSheet { get; }

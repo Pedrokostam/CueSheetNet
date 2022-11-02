@@ -1,7 +1,9 @@
-﻿using System.Xml.Schema;
+﻿using System.Diagnostics;
+using System.Xml.Schema;
 
 namespace CueSheetNet;
 
+[DebuggerDisplay("CIImpl- Num: {Number}, Abs: {Index} - File {File.Index}, Track {Track.Index}")]
 internal class CueIndexImpl : CueItemBase
 {
     public CueFile File { get; }

@@ -1,4 +1,5 @@
 ﻿using CueSheetNet.FileIO;
+using CueSheetNet.Syntax;
 using CueSheetNet.TextParser;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -61,41 +62,41 @@ public class CueReader
         while (strr.ReadLine()?.Trim() is string line)
         {
             string value = GetKeyword(line).ToUpperInvariant();
-            if (!Enum.TryParse(value, out CueKeyWords key)) continue;
+            if (!Enum.TryParse(value, out Keywords key)) continue;
             switch (key)
             {
-                case CueKeyWords.REM:
+                case Keywords.REM:
                     ParseREM(line);
                     break;
-                case CueKeyWords.PERFORMER:
+                case Keywords.PERFORMER:
                     ParsePerformer(line);
                     break;
-                case CueKeyWords.TITLE:
+                case Keywords.TITLE:
                     ParseTitle(line);
                     break;
-                case CueKeyWords.FILE:
+                case Keywords.FILE:
                     ParseFile(line);
                     break;
-                case CueKeyWords.CDTEXTFILE:
+                case Keywords.CDTEXTFILE:
                     ParseCdTextFile(line);
                     break;
-                case CueKeyWords.TRACK:
+                case Keywords.TRACK:
                     ParseTrack(line);
                     break;
-                case CueKeyWords.FLAGS:
+                case Keywords.FLAGS:
                     ParseFlags(line);
                     break;
-                case CueKeyWords.INDEX:
+                case Keywords.INDEX:
                     ParseIndex(line);
                     break;
-                case CueKeyWords.POSTGAP:
-                case CueKeyWords.PREGAP:
+                case Keywords.POSTGAP:
+                case Keywords.PREGAP:
                     ParseGap(line, value);
                     break;
-                case CueKeyWords.ISRC:
+                case Keywords.ISRC:
                     ParseISRC(line);
                     break;
-                case CueKeyWords.CATALOG:
+                case Keywords.CATALOG:
                     ParseCatalog(line);
                     break;
             }
@@ -161,18 +162,18 @@ public class CueReader
     {
         if (Sheet!.LastTrack is not CueTrack track) 
             return;
-        CueTrackFlags flags = CueTrackFlags.None;
+        TrackFlags flags = TrackFlags.None;
         var parts = line[6..].Replace("\"", "").Replace("'", "").Split(' ', StringSplitOptions.RemoveEmptyEntries);
         foreach (var part in parts)
         {
             char trim = part[0];
             flags |= trim switch
             {
-                '4' or 'f' or 'F' => CueTrackFlags.FourChannel,
-                'p' or 'P' or 'e' or 'E' => CueTrackFlags.PreEmphasis,
-                'd' or 'D' or 'C' or 'c' => CueTrackFlags.DigitalCopyPermitted,
-                's' or 'S' => CueTrackFlags.SerialCopyManagementSystem,
-                _ => CueTrackFlags.None,
+                '4' or 'f' or 'F' => TrackFlags.FourChannel,
+                'p' or 'P' or 'e' or 'E' => TrackFlags.PreEmphasis,
+                'd' or 'D' or 'C' or 'c' => TrackFlags.DigitalCopyPermitted,
+                's' or 'S' => TrackFlags.SerialCopyManagementSystem,
+                _ => TrackFlags.None,
             };
         }
         track.Flags = flags;

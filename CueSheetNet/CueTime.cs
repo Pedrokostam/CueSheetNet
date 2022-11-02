@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Net.Http.Headers;
 
 namespace CueSheetNet;
 
@@ -23,8 +26,7 @@ public record struct CueTime : IComparable<CueTime>
     public double TotalMilliseconds => TotalFrames * MillisecondsPerFrame;
     public double TotalMinutes => TotalFrames / (double)FramesPerMinute;
 
-    public CueTime(TimeSpan timeSpan) : this((int)(timeSpan.TotalMinutes * FramesPerMinute))
-    { }
+    public CueTime(TimeSpan timeSpan) : this((int)(timeSpan.TotalMinutes * FramesPerMinute)) { }
     public CueTime(int totalFrames)
     {
         if (totalFrames > MaxValue)
@@ -41,6 +43,7 @@ public record struct CueTime : IComparable<CueTime>
             throw new ArgumentException($"Parameters must all be either be all non-negative or all non-positive");
     }
     public TimeSpan ToTimeSpan() => TimeSpan.FromMinutes(TotalMinutes);
+    public static implicit operator TimeSpan(CueTime cueTime) => cueTime.ToTimeSpan();
     public static CueTime FromMilliseconds(double millis) => new((int)(millis / MillisecondsPerFrame));
     public static CueTime FromSeconds(double seconds) => new((int)(seconds * FramesPerSecond));
     public static CueTime FromMinutes(double minutes) => new((int)(minutes * FramesPerMinute));
@@ -55,12 +58,21 @@ public record struct CueTime : IComparable<CueTime>
     /// <summary>
     /// Parses string to CueTime (±mm:ss:ff)
     /// </summary>
-    /// <param name="s"></param>
+    /// <param name="span"></param>
     /// <returns>CueTime instance corresponding to <see cref="s"/></returns>
     /// <exception cref="FormatException"></exception>
-    public static CueTime Parse(ReadOnlySpan<char> s)
+    public static CueTime Parse(ReadOnlySpan<char> span)
     {
-        if (TryParse(s, out CueTime cue))
+        if (TryParse(span, out CueTime cue))
+            return cue;
+        else
+            throw new FormatException("Incorrect CueTime format string");
+    }
+    public static CueTime Parse([NotNull] string? str)
+    {
+        if (str == null)
+            throw new ArgumentNullException(nameof(str));
+        if (TryParse(str, out CueTime cue))
             return cue;
         else
             throw new FormatException("Incorrect CueTime format string");
@@ -68,54 +80,50 @@ public record struct CueTime : IComparable<CueTime>
     /// <summary>
     /// Tries to parse string (±mm:ss:ff)
     /// </summary>
-    /// <param name="s"></param>
+    /// <param name="span"></param>
     /// <param name="cueTime"></param>
     /// <returns>True if parsed correctly, false if there were problems</returns>
-    public static bool TryParse(ReadOnlySpan<char> s, out CueTime cueTime)
+    public static bool TryParse(ReadOnlySpan<char> span, out CueTime cueTime)
     {
-        Span<int> nums = stackalloc int[3];
-        ReadOnlySpan<char> span = s.Trim();
-        int elemCount = 0;
-        int last = 0;
-        for (int i = 0; i < span.Length; i++)
+        cueTime = default;
+        ReadOnlySpan<char> spanTrimmed = span.Trim();
+        List<int> inds = new(4) { -1};
+        for (int i = 0; i < spanTrimmed.Length; i++)
         {
-            if (span[i] == ':')
+            if (spanTrimmed[i] == ':')
             {
-                if (!int.TryParse(span[last..i], out nums[elemCount]))
-                {
-                    cueTime = default;
-                    return false;
-                }
-                else
-                {
-                    last = i + 1;
-                }
-                if (++elemCount >= 3)
-                    break;
+                inds.Add(i);
             }
         }
-        //if less than 2 elements - not possible to parse
-        if (elemCount <= 2)
+        inds.Add(spanTrimmed.Length);
+        if (inds.Count < 4) return false;
+        Span<int> nums = stackalloc int[3];
+        int numCount = 0;
+        for (int i = 1; i < inds.Count; i++)
         {
-            //return false
-            cueTime = default;
-            return false;
-        }
-        if (!int.TryParse(span[last..], out nums[elemCount]))
-        {
-            //return false
-            cueTime = default;
-            return false;
+            int rangeStart = inds[i - 1] + 1;//plus one, because it was included in previous range
+            int rangeEnd = inds[i];
+            if (!int.TryParse(spanTrimmed[rangeStart..rangeEnd], NumberStyles.Integer, CultureInfo.InvariantCulture, out int x))
+                return false;
+            nums[numCount] = x;
+            if (++numCount > 2)
+                break;
         }
         int multiplier = nums[0] >= 0 ? 1 : -1;
         //ensure every part is non-negative or non-positive
         cueTime = new CueTime(
-            Math.Abs(nums[0])*multiplier, 
-            Math.Abs(nums[1])*multiplier, 
-            Math.Abs(nums[2])*multiplier);
+            Math.Abs(nums[0]) * multiplier,
+            Math.Abs(nums[1]) * multiplier,
+            Math.Abs(nums[2]) * multiplier);
         return true;
     }
-    public static bool TryParse(string s, out CueTime cueTime) => TryParse(s.AsSpan(), out cueTime);
+    public static bool TryParse([NotNullWhen(true)] string? s, out CueTime cueTime)
+    {
+        cueTime = default;
+        if (s == null) return false;
+        return TryParse(s, out cueTime);
+    }
+
     public override int GetHashCode() => TotalFrames.GetHashCode();
     #region Operators
     public static bool operator <(CueTime left, CueTime right) => left.CompareTo(right) < 0;

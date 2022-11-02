@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using CueSheetNet.Syntax;
 
 namespace CueSheetNet
 {
@@ -134,7 +135,7 @@ namespace CueSheetNet
                     AppendStringify("PERFORMER", Replace(track.Performer), 2);
                     AppendStringify("ISRC", track.ISRC, 2);
                     AppendStringify("REM COMPOSER", Replace(track.Composer), 2);
-                    if (track.Flags != CueTrackFlags.None)
+                    if (track.Flags != TrackFlags.None)
                         AppendStringify("FLAGS", track.Flags.ToCueCompatible(), 2);
                     AppendRems(track.RawRems, 2);
                     AppendComments(track.RawComments, 2);

@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CueSheetNet
+namespace CueSheetNet.Syntax
 {
-    internal enum CueKeyWords
+    internal enum Keywords
     {
         INVALID,
         REM,
