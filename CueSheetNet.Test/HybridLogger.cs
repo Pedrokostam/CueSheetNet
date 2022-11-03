@@ -17,7 +17,7 @@ internal class HybridLogger : ILogDevice
 	public List<LogEntry> LogEntries = new();
 	public HybridLogger()
 	{
-		Logger.SetLog(DaBook);
+		Logger.SetLogbook(DaBook);
 		DaBook.Register(this);
 	}
 }
