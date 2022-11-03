@@ -35,7 +35,7 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemCommentable
         {
             if (_Title != null)
                 return _Title;
-            return Path.ChangeExtension(ParentFile.File.Name, null);
+            return Path.ChangeExtension(ParentFile.FileInfo.Name, null);
         }
         set
         {

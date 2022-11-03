@@ -30,5 +30,5 @@ public record struct CueIndex
         _Number = number;
         Time = new(totalFrames);
     }
-    public override string ToString() => $"INDEX {Number:d2} {Time} ({AbsoluteIndex:d2}, {Track.Title}, {File.File.Name})";
+    public override string ToString() => $"INDEX {Number:d2} {Time} ({AbsoluteIndex:d2}, {Track.Title}, {File.FileInfo.Name})";
 }

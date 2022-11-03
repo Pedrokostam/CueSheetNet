@@ -1,11 +1,5 @@
-﻿using BenchmarkDotNet.Attributes;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
+﻿using System.Text.RegularExpressions;
+using BenchmarkDotNet.Attributes;
 
 namespace CueSheetNet.Benchmark;
 
@@ -20,6 +14,7 @@ public class Benchmark
         //yield return ArgsQuotesWord().ToArray();
         yield return ArgsQuotesEnd().ToArray();
     }
+
     public IEnumerable<string> ArgsNoWord()
     {
         yield return @"6NW CoMMENT      UUUUUUU      WAVE";
@@ -27,6 +22,7 @@ public class Benchmark
         yield return @"DNW A   UUUUUUU      WAVE";
         yield return @"FNW A UUUUUUU WAVE";
     }
+
     public IEnumerable<string> ArgsNoEnd()
     {
         yield return @"5NE   COMMENT    UUUUUUU";
@@ -34,6 +30,7 @@ public class Benchmark
         yield return @"CNE A      UUUUUUU";
         yield return @"ENE A  UUUUUUU";
     }
+
     public IEnumerable<string> ArgsQuotesWord()
     {
         yield return @"2QW COMMENT      ""UUUUUUU""      WAVE";
@@ -41,6 +38,7 @@ public class Benchmark
         yield return @"0QW A  ""UUUUUUU""      WAVE";
         yield return @"BQW A ""UUUUUUU"" WAVE";
     }
+
     public IEnumerable<string> ArgsQuotesEnd()
     {
         yield return @"1QE  COMMENT        ""UUUUUUU""";
@@ -48,7 +46,8 @@ public class Benchmark
         yield return @"9QE A  ""UUUUUUU""";
         yield return @"AQE A ""UUUUUUU""";
     }
-    static private readonly char[] Openings = new char[]
+
+    private static readonly char[] Openings = new char[]
       {
         '"',
         '\'',
@@ -58,7 +57,8 @@ public class Benchmark
         '«',
         '‹',
       };
-    static private readonly char[] Endings = new char[]
+
+    private static readonly char[] Endings = new char[]
       {
         '"',
         '\'',
@@ -68,6 +68,7 @@ public class Benchmark
         '»',
         '›',
       };
+
     private static bool CompareOpening(char o)
     {
         for (int i = 0; i < Openings.Length; i++)
@@ -76,10 +77,13 @@ public class Benchmark
         }
         return false;
     }
-    Regex QuotesFinderI = new(@"[""\“„«‘‹]", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-    Regex QuotesFinder = new(@"[""\“„«‘‹]", RegexOptions.Compiled);
-    Regex QuotesQAdvanced = new(@"...\s+(?<KEY>\w+)\s+(?<VAL>""(.*)""|'(.*)'|“(.*)”|‘(.*)’|„(.*)“|«(.*)»|‹(.*)›)\s+(?<END>\S+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-    Regex QuotesUAdvanced = new(@"...\s+(?<KEY>\w+)\s+(?<VAL>\S+)\s+(?<END>\S+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    static  Regex QuotesFinderI = new(@"[""\“„«‘‹]", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+    static Regex QuotesFinder = new(@"[""\“„«‘‹]", RegexOptions.Compiled);
+
+    static Regex QuotesQAdvanced = new(@"...\s+(?<KEY>\w+)\s+(?<VAL>""(.*)""|'(.*)'|“(.*)”|‘(.*)’|„(.*)“|«(.*)»|‹(.*)›)\s+(?<END>\S+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+    static Regex QuotesUAdvanced = new(@"...\s+(?<KEY>\w+)\s+(?<VAL>\S+)\s+(?<END>\S+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
     [GlobalSetup]
     public void Setup()
     {

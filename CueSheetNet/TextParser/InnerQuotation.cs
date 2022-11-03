@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 
-namespace CueSheetNet
+namespace CueSheetNet.TextParser
 {
     public record struct InnerQuotation
     {

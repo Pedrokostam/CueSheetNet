@@ -1,4 +1,5 @@
 ﻿using CueSheetNet.FileIO;
+using CueSheetNet.Logging;
 using CueSheetNet.Syntax;
 using CueSheetNet.TextParser;
 using System.Diagnostics;
@@ -34,6 +35,8 @@ public class CueReader
     [MemberNotNull(nameof(Sheet))]
     public CueSheet ParseCueSheet(string cuePath)
     {
+        Logger.Locate(cuePath);
+        Logger.Log(LogLevel.Debug, "Loading bytes from file");
         if (!File.Exists(cuePath)) throw new FileNotFoundException($"{cuePath} does not exist");
         var cueFileBytes = File.ReadAllBytes(cuePath);
         return ParseCueSheet(cuePath, cueFileBytes);
@@ -42,6 +45,8 @@ public class CueReader
     [MemberNotNull(nameof(Sheet))]
     public CueSheet ParseCueSheet(string cuePath, byte[] cueFileBytes)
     {
+        Logger.Locate(cuePath);
+        Logger.Log(LogLevel.Debug, "Creating memory stream");
         using MemoryStream fs = new(cueFileBytes, false);
         return ParseCueSheet(cuePath, fs);
     }
@@ -50,12 +55,13 @@ public class CueReader
     public CueSheet ParseCueSheet(string cuePath, Stream fs)
     {
         Reset();
+        Logger.Locate(cuePath);
+        Logger.Log(LogLevel.Debug, "Parsing started");
         if (!File.Exists(cuePath)) throw new FileNotFoundException($"{cuePath} does not exist");
         Sheet = new(cuePath);
         Stopwatch st = Stopwatch.StartNew();
         Encoding enc = Encoding ?? CueEncodingTester.DetectCueEncoding(fs);
         st.Stop();
-        Console.WriteLine("------" + st.ElapsedTicks);
         fs.Seek(0, SeekOrigin.Begin);
         CurrentLine = 0;
         using StreamReader strr = new(fs, enc, false);

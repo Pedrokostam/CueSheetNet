@@ -6,6 +6,9 @@ namespace CueSheetNet;
 
 public class CueFile : CueItemBase, IEquatable<CueFile>
 {
+    public const int CdSamplingRate = 44_100;
+    public const int CdNumberOfChannels = 2;
+    public const int CdBitrate = CdSamplingRate * CdNumberOfChannels * 16;
     public int Index { get; internal set; }
     public CueFile(CueSheet parent, string filePath, string type) : base(parent)
     {
@@ -21,9 +24,16 @@ public class CueFile : CueItemBase, IEquatable<CueFile>
     }
     public CueTime? Duration { get; private set; }
     public bool ValidFile { get; private set; }
+
     private FileInfo _file;
 
-    public FileInfo File => _file;
+    public FileInfo FileInfo => _file;
+    public long FileSize => FileInfo.Exists ? FileInfo.Length : -1;
+
+    public double? CdQualitySize => Duration.HasValue ? Duration.Value.TotalSeconds * 44100 * 2 * 2 : null;
+
+    public double CdCompressionRatio => FileSize / CdQualitySize ?? -1;
+
     [MemberNotNull(nameof(_file))]
     public void SetFile(string value)
     {
@@ -48,31 +58,33 @@ public class CueFile : CueItemBase, IEquatable<CueFile>
         }
     }
     public CueIndex[] Indexes => ParentSheet.GetIndexesOfFile(Index);
+
     public override string ToString()
     {
-        return "File " + Index.ToString("D2") + " \"" + File.FullName + "\" " + Type;
+        return "File " + Index.ToString("D2") + " \"" + FileInfo.FullName + "\" " + Type;
     }
 
     public void RefreshFileInfo()
     {
-        string name = File.Name;
+        string name = FileInfo.Name;
         string absPath = Path.Combine(ParentSheet.FileInfo?.DirectoryName ?? ".", name);
         SetFile(absPath);
     }
 
     public bool Equals(CueFile? other) => Equals(other, StringComparison.CurrentCulture);
+
     public bool Equals(CueFile? other, StringComparison stringComparison)
     {
         if (ReferenceEquals(this, other)) return true;
         if (other == null) return false;
         if (
-               !string.Equals(File.Name, File.Name, StringComparison.OrdinalIgnoreCase)
+               !string.Equals(FileInfo.Name, FileInfo.Name, StringComparison.OrdinalIgnoreCase)
             || !string.Equals(Type, other.Type)
             || Index != other.Index
            )
             return false;
         return true;
     }
-    
+
 }
 

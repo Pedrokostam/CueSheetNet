@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CueSheetNet.Logging;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -78,6 +79,7 @@ internal static class CueEncodingTester
     /// <returns>Detected encoding. If method could exactly tell the encoding the Default encoding for the system is returned</returns>
     public static Encoding DetectCueEncoding(Stream fs)
     {
+        Logger.Log(LogLevel.Debug, "Encoding detection started");
         if (DetectEncodingFromBOM(fs) is Encoding encodingBom)
             return encodingBom;
         if (DetectFixedWidthEncoding(fs) is Encoding encodingFixed)

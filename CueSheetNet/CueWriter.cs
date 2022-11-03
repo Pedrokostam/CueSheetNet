@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using CueSheetNet.Syntax;
+using CueSheetNet.TextParser;
 
 namespace CueSheetNet
 {
@@ -114,7 +115,7 @@ namespace CueSheetNet
                 if (file != ind.File)
                 {
                     file = ind.File;
-                    string filename = file.File.Name;
+                    string filename = file.FileInfo.Name;
                     string path = HasWhitespace(filename) ?  Enquote(filename) : filename;
                     Builder.Append("FILE ");
                     Builder.Append(path);
