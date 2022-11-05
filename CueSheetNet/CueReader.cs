@@ -26,7 +26,7 @@ public class CueReader
     private void Reset()
     {
         Sheet = null;
-        CurrentLine = 0;
+        CurrentLine = 1;
         TrackHasZerothIndex.Clear();
     }
     public CueReader()
@@ -35,7 +35,7 @@ public class CueReader
     [MemberNotNull(nameof(Sheet))]
     public CueSheet ParseCueSheet(string cuePath)
     {
-        Logger.Locate(cuePath);
+        Logger.SetObject(cuePath);
         Logger.Log(LogLevel.Debug, "Loading bytes from file");
         if (!File.Exists(cuePath)) throw new FileNotFoundException($"{cuePath} does not exist");
         var cueFileBytes = File.ReadAllBytes(cuePath);
@@ -45,7 +45,7 @@ public class CueReader
     [MemberNotNull(nameof(Sheet))]
     public CueSheet ParseCueSheet(string cuePath, byte[] cueFileBytes)
     {
-        Logger.Locate(cuePath);
+        Logger.SetObject(cuePath);
         Logger.Log(LogLevel.Debug, "Creating memory stream");
         using MemoryStream fs = new(cueFileBytes, false);
         return ParseCueSheet(cuePath, fs);
@@ -55,9 +55,14 @@ public class CueReader
     public CueSheet ParseCueSheet(string cuePath, Stream fs)
     {
         Reset();
-        Logger.Locate(cuePath);
+        Logger.SetObject(cuePath);
         Logger.Log(LogLevel.Debug, "Parsing started");
-        if (!File.Exists(cuePath)) throw new FileNotFoundException($"{cuePath} does not exist");
+        if (!File.Exists(cuePath))
+        {
+            Logger.Log(LogLevel.Error, "Specified file does not exist");
+            throw new FileNotFoundException($"{cuePath} does not exist");
+        }
+
         Sheet = new(cuePath);
         Stopwatch st = Stopwatch.StartNew();
         Encoding enc = Encoding ?? CueEncodingTester.DetectCueEncoding(fs);
@@ -67,6 +72,7 @@ public class CueReader
         using StreamReader strr = new(fs, enc, false);
         while (strr.ReadLine()?.Trim() is string line)
         {
+            Logger.SetContext($"Line {CurrentLine} - {line}");
             string value = GetKeyword(line).ToUpperInvariant();
             if (!Enum.TryParse(value, out Keywords key)) continue;
             switch (key)
@@ -113,11 +119,13 @@ public class CueReader
             Sheet.SetTrackHasZerothIndex(i, TrackHasZerothIndex[i]);
         }
         Sheet.RefreshIndices();
+        Logger.Log(LogLevel.Information,"Finished parsing");
         return Sheet;
     }
 
     private void ParseTitle(string line)
     {
+        
         string? title = GetValue(line, 5);
         if (title == null) return;
         if (Sheet!.LastTrack is CueTrack lastTrack)
@@ -131,34 +139,43 @@ public class CueReader
     }
     private void ParseFile(string line)
     {
+        
         (string path, string type) = GetFile(line,5);
-        Sheet!.AddFile(path, type);
+        CueFile f = Sheet!.AddFile(path, type);
+        Logger.Log(LogLevel.Verbose, $"Added file {f.Index} {f.FileInfo.Name}");
     }
     private void ParseTrack(string line)
     {
+        
         string num = GetKeyword(line, 6);
         if (!int.TryParse(num, out int number))
         {
             throw new Exception();
             return;
         }
-        Sheet!.AddTrack(number);
+       CueTrack tr =  Sheet!.AddTrack(number);
+        Logger.Log(LogLevel.Verbose, $"Added track {tr.Number}");
+
     }
     private void ParsePerformer(string line)
     {
+        
         string? performer = GetValue(line, 10);
         if (performer == null) return;
         if (Sheet!.LastTrack is CueTrack track)
         {
             track.Performer = performer;
+            Logger.Log(LogLevel.Verbose, $"Added performer \"{performer}\" to track {track.Number}");
         }
         else
         {
             Sheet.Performer = performer;
+            Logger.Log(LogLevel.Verbose, $"Added performer \"{performer}\" to cuesheet");
         }
     }
     private void ParseCdTextFile(string line)
     {
+        
         string? cdt = GetValue(line, 11);
         if (cdt == null) 
             return;
@@ -166,6 +183,7 @@ public class CueReader
     }
     private void ParseFlags(string line)
     {
+        
         if (Sheet!.LastTrack is not CueTrack track) 
             return;
         TrackFlags flags = TrackFlags.None;
@@ -201,6 +219,7 @@ public class CueReader
     }
     private void ParseIndex(string line)
     {
+        
         if (Sheet!.LastTrack is not CueTrack track) return;
         string number = GetKeyword(line, 6);
         if (!int.TryParse(number, out int num))
@@ -219,6 +238,7 @@ public class CueReader
     }
     private void ParseGap(string line, string gapType)
     {
+        
         if (Sheet!.LastFile is not CueFile file) return;
         if (Sheet!.LastTrack is not CueTrack track) return;
         string type = GetKeyword(line, 0);
@@ -231,6 +251,7 @@ public class CueReader
     }
     private void ParseREM(string line)
     {
+        
         string field = GetKeyword(line, 4).ToUpperInvariant();
         int valueStart = 4 + field.Length + 1;
         string? value = GetValue(line, valueStart);

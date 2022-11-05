@@ -30,7 +30,8 @@ var s = Stopwatch.StartNew();
 CueReader cr = new();
 //cr.Encoding = Encoding.UTF32;
 foreach (var f in dafak)
-{
+{ 
+
     l.Add(cr.ParseCueSheet(f));
 }
 s.Stop();

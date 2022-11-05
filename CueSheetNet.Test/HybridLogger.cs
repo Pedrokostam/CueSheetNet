@@ -10,7 +10,8 @@ internal class HybridLogger : ILogDevice
 {
     public void WriteEntry(LogEntry entry)
 	{
-		Console.WriteLine($"[{entry.Timestamp:HH:mm:ss:ffff}] {entry.Level} '{entry.Message}' in '{entry.Location}'");
+		Console.WriteLine($"[{entry.Timestamp:HH:mm:ss:ffff}] {entry.Level} - {entry.Message}");
+		Console.WriteLine($"                {entry.Object} / {entry.Context}");
 		LogEntries.Add(entry);
 	}
 	public readonly Logbook DaBook = new ();

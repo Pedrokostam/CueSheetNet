@@ -9,24 +9,26 @@ namespace CueSheetNet.Logging;
 public enum LogLevel
 {
     None = 0,
-    Fatal = 0b01,
-    Error = 0b10,
-    Warning = 0b100,
-    Information = 0b1000,
-    Debug = 0b10000,
-    All = Fatal | Error | Warning | Information | Debug,
-    Urgent = Fatal | Error,
-    Standard = Fatal | Error | Warning | Information
-}
-public enum LogMask
-{
-    None = 0,
-    Fatal = 0b01,
-    Error = 0b10,
-    Warning = 0b100,
-    Information = 0b1000,
-    Debug = 0b10000,
-    All = Fatal | Error | Warning | Information | Debug,
-    Urgent = Fatal | Error,
-    Standard = Fatal | Error | Warning | Information
+    /// <summary>
+    /// Requested could not be performed
+    /// </summary>
+    Error = 1,
+    /// <summary>
+    /// Requested operation was performed, but with problems
+    /// </summary>
+    Warning = 2,
+    /// <summary>
+    /// Information about finishing of an important step
+    /// </summary>
+    Information = 4,
+    /// <summary>
+    /// Information about finishing sub-step
+    /// </summary>
+    Verbose = 8,
+    /// <summary>
+    /// Information about current state of step/sub-step
+    /// </summary>
+    Debug = 16,
+    All = Error | Warning | Information | Debug,
+    Standard =  Error | Warning | Information
 }
