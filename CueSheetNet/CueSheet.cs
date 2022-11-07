@@ -137,7 +137,7 @@ public class CueSheet :IEquatable<CueSheet>, IRemCommentable
         get
         {
             CueTime sum = CueTime.Zero;
-            foreach (var fdur in Container.Files.Select(x => x.Duration))
+            foreach (var fdur in Container.Files.Select(x => x.Meta?.CueDuration))
             {
                 if (fdur == null) return null;
                 sum += fdur.Value;

@@ -147,12 +147,37 @@ public record struct CueTime : IComparable<CueTime>
     public static CueTime operator ++(CueTime time) => new(time.TotalFrames + 1);
     public static CueTime operator -(CueTime left, CueTime right) => new(left.TotalFrames - right.TotalFrames);
     public static CueTime operator -(CueTime left, int right) => new(left.TotalFrames - right);
-    public static CueTime operator /(CueTime left, double right) => new((int)(left.TotalFrames / right));
-    public static CueTime operator /(CueTime left, int right) => new((left.TotalFrames / right));
-    public static CueTime operator *(CueTime left, double right) => new((int)(left.TotalFrames * right));
-    public static CueTime operator *(CueTime left, int right) => new((left.TotalFrames * right));
-    public static CueTime operator *(int left, CueTime right) => new((right.TotalFrames * left));
-    public static CueTime operator *(double left, CueTime right) => new((int)(right.TotalFrames * left));
+    /// <summary>
+    /// Divides the time by the divisor
+    /// </summary>
+    /// <param name="time">The time</param>
+    /// <param name="divisor">The divisor</param>
+    /// <returns></returns>
+    /// <exception cref="DivideByZeroException">Thrown if parameter <paramref name="divisor"/> is zero</exception>
+    public static CueTime operator /(CueTime time, double divisor)
+    {
+        if (divisor == 0)
+            throw new DivideByZeroException();
+        return new((int)(time.TotalFrames / divisor));
+    }
+    /// <summary>
+    /// Divides the time by the divisor
+    /// </summary>
+    /// <param name="time">The time</param>
+    /// <param name="divisor">The divisor</param>
+    /// <returns></returns>
+    /// <exception cref="DivideByZeroException">Thrown if parameter <paramref name="divisor"/> is zero</exception>
+    public static CueTime operator /(CueTime left, int divisor)
+    {
+        if (divisor == 0)
+            throw new DivideByZeroException();
+        return new((left.TotalFrames / divisor));
+    }
+
+    public static CueTime operator *(CueTime left, double multiplier) => new((int)(left.TotalFrames * multiplier));
+    public static CueTime operator *(CueTime left, int multiplier) => new((left.TotalFrames * multiplier));
+    public static CueTime operator *(int multiplier, CueTime right) => new((right.TotalFrames * multiplier));
+    public static CueTime operator *(double multiplier, CueTime right) => new((int)(right.TotalFrames * multiplier));
     public static CueTime operator <<(CueTime left, int right) => new(left.TotalFrames >> right);
     public static CueTime operator >>(CueTime left, int right) => new(left.TotalFrames >> right);
     #endregion

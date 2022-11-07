@@ -2,61 +2,39 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace CueSheetNet.Logging;
 
+
 /// <summary>
 ///  Sinks for all log entries. After setting as the active sink (with <see cref="Logger.SetLogbook(CueSheetNet.Logging.Logbook)"/>, it will receive all logs made through <see cref="Logger"/>.
-///  The logs will be then redirected to every registered <see cref="ILogDevice"/>, as well as to the inner master log, accesible through <see cref="GetAll(CueSheetNet.Logging.LogLevel)"/>.
+///  The logs will be then redirected to every registered <see cref="ILogDevice"/>, as well as to the inner master log, accesible through <see cref="GetAll(LogLevel)"/>.
 /// </summary>
 public class Logbook
 {
     protected readonly List<LogEntry> masterLog = new();
     protected readonly List<ILogDevice> logDevices = new();
-    protected readonly Dictionary<int, LogLocation> locations = new();
-
+    public LogLevel MaxLogLevelEnabled { get; private set; }
     public Logbook()
     {
-        locations[Environment.CurrentManagedThreadId] = new LogLocation("", "");
     }
-    /// <summary>
-    /// Sets current location for the current thread which provides additional context on the log.
-    /// For example, when processing a file, the path may be set as the location - any error will be traceable to that file.
-    /// </summary>
-    /// <param name="location"></param>
-    public void SetLocation(string @object, string context)
-    {
-        lock (locations)
-            locations[Environment.CurrentManagedThreadId] = new LogLocation(@object, context);
-    }
-    public void SetLocation(LogLocation loc) => SetLocation(loc.Object, loc.Context);
-    public void SetContext(string context)
-    {
-        LogLocation curr = locations.GetValueOrDefault(Environment.CurrentManagedThreadId);
-        locations[Environment.CurrentManagedThreadId] = curr with { Context = context };
-    }
-
     /// <summary>
     /// Create a log and adds it to the master log. Sends it to all registered <see cref="ILogDevice"/>s for processing.
     /// </summary>
     /// <param name="level"></param>
     /// <param name="msg"></param>
-    public void Log(LogLevel level, string msg)
+    public void Log(LogEntry logEntry)
     {
-        if (!locations.TryGetValue(Environment.CurrentManagedThreadId, out LogLocation loc))
-            loc = LogLocation.NotSpecified;
-
-        LogEntry entry = new(level, msg, loc);
         lock (masterLog)
         {
-            masterLog.Add(entry);
+            masterLog.Add(logEntry);
         }
-
         foreach (ILogDevice device in logDevices)
         {
-            device.WriteEntry(entry);
+            device.WriteEntry(logEntry);
         }
     }
     /// <summary>
@@ -91,6 +69,8 @@ public class Logbook
     /// <param name="device"></param>
     public void Register(ILogDevice device)
     {
+        if (device.MaxLogLevelEnabled > MaxLogLevelEnabled)
+            MaxLogLevelEnabled = device.MaxLogLevelEnabled;
         logDevices.Add(device);
     }
     /// <summary>

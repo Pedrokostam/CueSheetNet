@@ -1,4 +1,5 @@
-﻿using CueSheetNET.FileIO;
+﻿using CueSheetNet.FileIO;
+using CueSheetNET.FileIO;
 using System;
 using System.Diagnostics.CodeAnalysis;
 
@@ -22,7 +23,7 @@ public class CueFile : CueItemBase, IEquatable<CueFile>
         [MemberNotNull(nameof(_Type))]
         set => _Type = value.ToUpperInvariant();
     }
-    public CueTime? Duration { get; private set; }
+    public FileMetadata? Meta { get; private set; }
     public bool ValidFile { get; private set; }
 
     private FileInfo _file;
@@ -30,9 +31,7 @@ public class CueFile : CueItemBase, IEquatable<CueFile>
     public FileInfo FileInfo => _file;
     public long FileSize => FileInfo.Exists ? FileInfo.Length : -1;
 
-    public double? CdQualitySize => Duration.HasValue ? Duration.Value.TotalSeconds * 44100 * 2 * 2 : null;
 
-    public double CdCompressionRatio => FileSize / CdQualitySize ?? -1;
 
     [MemberNotNull(nameof(_file))]
     public void SetFile(string value)
@@ -41,19 +40,12 @@ public class CueFile : CueItemBase, IEquatable<CueFile>
         _file = new FileInfo(absPath);
         if (_file?.Exists ?? false)
         {
-            try
-            {
-                Duration = AudioFileReader.ParseDuration(_file.FullName);
-                ValidFile = true;
-            }
-            catch (Exception)
-            {
-                throw;
-            }
+            Meta = AudioFileReader.ParseDuration(_file.FullName);
+            ValidFile = true;
         }
         else
         {
-            Duration = null;
+            Meta = null;
             ValidFile = false;
         }
     }

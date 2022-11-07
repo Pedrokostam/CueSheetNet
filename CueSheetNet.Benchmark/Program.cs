@@ -4,5 +4,4 @@ using BenchmarkDotNet.Running;
 using CueSheetNet.Benchmark;
 
 var r = new Benchmark();
-r.Setup();
-BenchmarkRunner.Run<Benchmark2>();
+BenchmarkRunner.Run<Benchmark>();

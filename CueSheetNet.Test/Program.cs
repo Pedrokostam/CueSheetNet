@@ -29,10 +29,10 @@ HybridLogger hb = new();
 var s = Stopwatch.StartNew();
 CueReader cr = new();
 //cr.Encoding = Encoding.UTF32;
-foreach (var f in dafak)
-{ 
-
-    l.Add(cr.ParseCueSheet(f));
+foreach (var f in dafak.Take(2))
+{
+	var ccc = cr.ParseCueSheet(f);
+    l.Add(ccc);
 }
 s.Stop();
 

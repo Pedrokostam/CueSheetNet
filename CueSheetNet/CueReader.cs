@@ -4,6 +4,7 @@ using CueSheetNet.Syntax;
 using CueSheetNet.TextParser;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Contracts;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -12,8 +13,16 @@ namespace CueSheetNet;
 public class CueReader
 {
     static private readonly Lazy<Regex> EmergencyFile = new(() => new(@"(?<PATH>.*\..+) (?<TYPE>\w*)", RegexOptions.Compiled));
-    int CurrentLine;
 
+    public int CurrentLineIndex { get;private set; }
+    public string CurrentPath { get;private set; }
+    public string CurrentLine { get; private set; }
+
+    private void LogError(string msg) => Logger.Log(LogLevel.Error, msg, CurrentPath, $"Line {CurrentLineIndex}: \"{CurrentLine}\"");
+    private void LogWarning(string msg) => Logger.Log(LogLevel.Warning, msg, CurrentPath, $"Line {CurrentLineIndex}: \"{CurrentLine}\"");
+    private void LogInformation(string msg) => Logger.Log(LogLevel.Information, msg, CurrentPath, $"Line {CurrentLineIndex}: \"{CurrentLine}\"");
+    private void LogVerbose(string msg) => Logger.Log(LogLevel.Verbose, msg, CurrentPath, $"Line {CurrentLineIndex}: \"{CurrentLine}\"");
+    private void LogDebug(string msg) => Logger.Log(LogLevel.Debug, msg, CurrentPath, $"Line {CurrentLineIndex}: \"{CurrentLine}\"");
     CueSheet? Sheet { get; set; }
     public char Quotation { get; set; } = '"';
     public Encoding? Encoding { get; set; }
@@ -23,20 +32,25 @@ public class CueReader
     {
         throw new NotImplementedException();
     }
+    [MemberNotNull(nameof(CurrentLine), nameof(CurrentPath))]
     private void Reset()
     {
         Sheet = null;
-        CurrentLine = 1;
+        CurrentLineIndex = 1;
+        CurrentPath = "No File";
+        CurrentLine = "No line read";
         TrackHasZerothIndex.Clear();
     }
     public CueReader()
     {
+        Reset();
     }
     [MemberNotNull(nameof(Sheet))]
     public CueSheet ParseCueSheet(string cuePath)
     {
-        Logger.SetObject(cuePath);
-        Logger.Log(LogLevel.Debug, "Loading bytes from file");
+        Reset();
+        CurrentPath = cuePath;
+        LogDebug("Loading bytes from file");
         if (!File.Exists(cuePath)) throw new FileNotFoundException($"{cuePath} does not exist");
         var cueFileBytes = File.ReadAllBytes(cuePath);
         return ParseCueSheet(cuePath, cueFileBytes);
@@ -45,8 +59,9 @@ public class CueReader
     [MemberNotNull(nameof(Sheet))]
     public CueSheet ParseCueSheet(string cuePath, byte[] cueFileBytes)
     {
-        Logger.SetObject(cuePath);
-        Logger.Log(LogLevel.Debug, "Creating memory stream");
+        Reset();
+        CurrentPath = cuePath;
+        LogDebug("Creating memory stream");
         using MemoryStream fs = new(cueFileBytes, false);
         return ParseCueSheet(cuePath, fs);
     }
@@ -55,24 +70,32 @@ public class CueReader
     public CueSheet ParseCueSheet(string cuePath, Stream fs)
     {
         Reset();
-        Logger.SetObject(cuePath);
-        Logger.Log(LogLevel.Debug, "Parsing started");
+        CurrentPath = cuePath;
+        LogDebug("Parsing started");
         if (!File.Exists(cuePath))
         {
-            Logger.Log(LogLevel.Error, "Specified file does not exist");
+            LogError("Specified file does not exist");
             throw new FileNotFoundException($"{cuePath} does not exist");
         }
 
         Sheet = new(cuePath);
         Stopwatch st = Stopwatch.StartNew();
-        Encoding enc = Encoding ?? CueEncodingTester.DetectCueEncoding(fs);
+        Encoding encoding;
+        if (Encoding is null)
+        {
+            var tester = new CueEncodingTester(fs,cuePath);
+            encoding = tester.DetectCueEncoding();
+        }
+        else
+        {
+            encoding = Encoding;
+        }
         st.Stop();
         fs.Seek(0, SeekOrigin.Begin);
-        CurrentLine = 0;
-        using StreamReader strr = new(fs, enc, false);
+        using StreamReader strr = new(fs, encoding, false);
         while (strr.ReadLine()?.Trim() is string line)
         {
-            Logger.SetContext($"Line {CurrentLine} - {line}");
+            CurrentLine = line;
             string value = GetKeyword(line).ToUpperInvariant();
             if (!Enum.TryParse(value, out Keywords key)) continue;
             switch (key)
@@ -112,22 +135,27 @@ public class CueReader
                     ParseCatalog(line);
                     break;
             }
-            CurrentLine++;
+            CurrentLineIndex++;
         }
         for (int i = 0; i < TrackHasZerothIndex.Count; i++)
         {
             Sheet.SetTrackHasZerothIndex(i, TrackHasZerothIndex[i]);
         }
         Sheet.RefreshIndices();
-        Logger.Log(LogLevel.Information,"Finished parsing");
+        LogInformation("Finished parsing");
         return Sheet;
     }
 
     private void ParseTitle(string line)
     {
-        
+
         string? title = GetValue(line, 5);
-        if (title == null) return;
+        if (title == null)
+        {
+            LogWarning("Invalid TITLE line");
+            return;
+        }
+
         if (Sheet!.LastTrack is CueTrack lastTrack)
         {
             lastTrack.Title = title;
@@ -139,53 +167,59 @@ public class CueReader
     }
     private void ParseFile(string line)
     {
-        
-        (string path, string type) = GetFile(line,5);
-        CueFile f = Sheet!.AddFile(path, type);
-        Logger.Log(LogLevel.Verbose, $"Added file {f.Index} {f.FileInfo.Name}");
+        (string path, string type) = GetFile(line, 5);
+        _ = Sheet!.AddFile(path, type);
     }
     private void ParseTrack(string line)
     {
-        
+
         string num = GetKeyword(line, 6);
         if (!int.TryParse(num, out int number))
         {
-            throw new Exception();
-            return;
+            number = Sheet!.LastTrack?.Number + 1 ?? 1;
+            LogWarning("Invalid TRACK number. Substituting " + number);
         }
-       CueTrack tr =  Sheet!.AddTrack(number);
-        Logger.Log(LogLevel.Verbose, $"Added track {tr.Number}");
+        CueTrack tr = Sheet!.AddTrack(number);
 
     }
     private void ParsePerformer(string line)
     {
-        
+
         string? performer = GetValue(line, 10);
-        if (performer == null) return;
+        if (performer == null)
+        {
+            LogWarning("Invalid PERFORMER line");
+            return;
+        }
+
         if (Sheet!.LastTrack is CueTrack track)
         {
             track.Performer = performer;
-            Logger.Log(LogLevel.Verbose, $"Added performer \"{performer}\" to track {track.Number}");
         }
         else
         {
             Sheet.Performer = performer;
-            Logger.Log(LogLevel.Verbose, $"Added performer \"{performer}\" to cuesheet");
         }
     }
     private void ParseCdTextFile(string line)
     {
-        
+
         string? cdt = GetValue(line, 11);
-        if (cdt == null) 
+        if (cdt == null)
+        {
+            LogWarning("Invalid CDTEXT line");
             return;
+        }
         Sheet!.SetCdTextFile(cdt);
     }
     private void ParseFlags(string line)
     {
-        
-        if (Sheet!.LastTrack is not CueTrack track) 
+
+        if (Sheet!.LastTrack is not CueTrack track)
+        {
+            LogWarning("FLAGS present before any track");
             return;
+        }
         TrackFlags flags = TrackFlags.None;
         var parts = line[6..].Replace("\"", "").Replace("'", "").Split(' ', StringSplitOptions.RemoveEmptyEntries);
         foreach (var part in parts)
@@ -206,26 +240,45 @@ public class CueReader
     {
         if (Sheet!.LastTrack is not CueTrack track) return;
         string? isrc = GetValue(line, 5);
-        if (isrc == null) 
+        if (isrc == null)
+        {
+            LogWarning("Invalid ISRC line");
+
             return;
+        }
         track.ISRC = isrc;
     }
     private void ParseCatalog(string line)
     {
         string? cata = GetValue(line, 8);
-        if (cata == null) 
+        if (cata == null)
+        {
+            LogWarning("Invalid CATALOG line");
             return;
+        }
         Sheet!.Catalog = cata;
+
     }
     private void ParseIndex(string line)
     {
-        
-        if (Sheet!.LastTrack is not CueTrack track) return;
+
+        if (Sheet!.LastTrack is not CueTrack track)
+        {
+            LogWarning("INDEX line present before any track");
+            return;
+        }
+
         string number = GetKeyword(line, 6);
         if (!int.TryParse(number, out int num))
-            throw new FormatException($"Incorrect Index number format at line {CurrentLine}: {line}");
+        {
+            LogError("Incorrect Index number format ");
+            throw new FormatException($"Incorrect Index number format at line {CurrentLineIndex}: {line}");
+        }
         if (!CueTime.TryParse(line.AsSpan(6 + number.Length + 1), out CueTime cueTime))
-            throw new FormatException($"Incorrect Index format at line {CurrentLine}: {line}");
+        {
+            LogError("Incorrect Index format");
+            throw new FormatException($"Incorrect Index format at line {CurrentLineIndex}: {line}");
+        }
         if (Sheet.LastTrack is CueTrack ctr && Sheet.LastFile is CueFile cfl)
         {
             ctr.ParentFile = cfl;
@@ -238,12 +291,24 @@ public class CueReader
     }
     private void ParseGap(string line, string gapType)
     {
-        
-        if (Sheet!.LastFile is not CueFile file) return;
-        if (Sheet!.LastTrack is not CueTrack track) return;
+
+        if (Sheet!.LastFile is null)
+        {
+            LogWarning("GAP line present before any file");
+            return;
+        }
+        if (Sheet!.LastTrack is not CueTrack track)
+        {
+            LogWarning("GAP line present before any track");
+            return;
+        }
+
         string type = GetKeyword(line, 0);
         if (!CueTime.TryParse(line.AsSpan(6 + type.Length + 1), out CueTime cueTime))
-            throw new FormatException($"Incorrect Gap format at line {CurrentLine}: {line}");
+        {
+            LogError("Incorrect Gap format");
+            throw new FormatException($"Incorrect Gap format at line {CurrentLineIndex}: {line}");
+        }
         if (gapType.StartsWith("PRE"))
             track.PreGap = cueTime;
         else
@@ -251,7 +316,7 @@ public class CueReader
     }
     private void ParseREM(string line)
     {
-        
+
         string field = GetKeyword(line, 4).ToUpperInvariant();
         int valueStart = 4 + field.Length + 1;
         string? value = GetValue(line, valueStart);
@@ -300,6 +365,7 @@ public class CueReader
     /// </summary>
     /// <param name="s">String to get values from</param>
     /// <returns><see cref="ValueTuple"/> of filename and type</returns>
+    [Pure]
     public (string Path, string Type) GetFile(string s, int start)
     {
         ReadOnlySpan<char> spanny = s.AsSpan(start).Trim();
@@ -339,6 +405,7 @@ public class CueReader
     /// <param name="start">Index from which the search will be started</param>
     /// <param name="end">How many characters are skipped at the end</param>
     /// <returns>String if there was text, enclosed in quotations or not; <see cref="null"/> if there was no non-whitespace text, or there were quutations with nothing inside</returns>
+    [Pure]
     public string? GetValue(string s, int start, int end = 0)
     {
         ReadOnlySpan<char> spanny = s.AsSpan(start, s.Length - start - end).Trim();
@@ -356,7 +423,8 @@ public class CueReader
     /// <param name="startIndex">INdex from which the word will be sought</param>
     /// <param name="maxSearchLength">Maximum search length. If exceeded, empty string is returned</param>
     /// <returns>String of characters from <paramref name="startIndex"/> to first whitespace, or empty string if no whitespace has been detected in the first <paramref name="maxSearchLength"/> characters</returns>
-    public string GetKeyword(string s, int startIndex = 0, int maxSearchLength = -1)
+    [Pure]
+    public static string GetKeyword(string s, int startIndex = 0, int maxSearchLength = -1)
     {
         if (maxSearchLength <= 0) maxSearchLength = s.Length;
         maxSearchLength = Math.Clamp(maxSearchLength, 0, s.Length - startIndex);
@@ -373,7 +441,8 @@ public class CueReader
     /// </summary>
     /// <param name="s"></param>
     /// <returns></returns>
-    public string GetSuffix(ReadOnlySpan<char> s)
+    [Pure]
+    public static string GetSuffix(ReadOnlySpan<char> s)
     {
         s = s.TrimEnd();
         for (int i = s.Length - 1; i >= s.Length / 2; i--)

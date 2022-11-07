@@ -11,4 +11,5 @@ public interface ILogDevice
     /// </summary>
     /// <param name="entry"></param>
     void WriteEntry(LogEntry entry);
+    LogLevel MaxLogLevelEnabled { get; }
 }

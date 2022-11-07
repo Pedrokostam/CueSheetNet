@@ -99,7 +99,7 @@ internal class CueContainer
         CueTrack track = Tracks[trackIndex];
         CueFile file = Files[fileIndex];
         if (track.ParentFile != file) throw new InvalidOperationException("Specified track does not belong to specified file");
-        if (file.Duration is CueTime maxTime && time > maxTime)
+        if (file.Meta?.CueDuration is CueTime maxTime && time > maxTime)
             throw new ArgumentOutOfRangeException("Specified time occurs after the file ends");
 
         //No indices at all
