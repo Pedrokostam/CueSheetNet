@@ -52,7 +52,7 @@ namespace CueSheetNET.FileIO
                     }
                 }
             }
-            Logger.Log(LogLevel.Warning, "Could not read audio file metadata", filePath, "");
+            Logger.Log(LogLevel.Warning, $"Could not read audio file metadata", filePath, "");
             return null;
         }
 

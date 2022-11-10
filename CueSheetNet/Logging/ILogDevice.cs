@@ -10,6 +10,9 @@ public interface ILogDevice
     /// Processes the given entry, for example by displaying it in the Console, or storing in a collection
     /// </summary>
     /// <param name="entry"></param>
-    void WriteEntry(LogEntry entry);
-    LogLevel MaxLogLevelEnabled { get; }
+    void WriteLog(LogEntry entry);
+    /// <summary>
+    /// The minimum value of LogLevel that can be reported by this ILogDevice
+    /// </summary>
+    LogLevel MinimumLogLevel { get; }
 }

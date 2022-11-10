@@ -8,21 +8,18 @@ using System.Threading.Tasks;
 namespace CueSheetNet.Test;
 internal class HybridLogger : ILogDevice
 {
-    public void WriteEntry(LogEntry entry)
+	public void WriteLog(LogEntry entry)
 	{
-		if (entry.Level > MaxLogLevelEnabled) return;
-		Console.WriteLine($"[{entry.Timestamp:HH:mm:ss:ffff}] {entry.Level} - {entry.Message}");
-		Console.WriteLine($"                {entry.Location.Source} / {entry.Location.Context}");
+        if (entry.Level < MinimumLogLevel) return;
 		LogEntries.Add(entry);
+		Console.WriteLine($"{entry.Timestamp:HH:mm:ss.fff} [{entry.Level}] {entry.Message}");
 	}
-	public readonly Logbook DaBook = new ();
+
 	public List<LogEntry> LogEntries = new();
 
-	public LogLevel MaxLogLevelEnabled => LogLevel.Debug;
+	public LogLevel MinimumLogLevel => LogLevel.Debug;
 
 	public HybridLogger()
 	{
-		Logger.SetLogbook(DaBook);
-		DaBook.Register(this);
 	}
 }

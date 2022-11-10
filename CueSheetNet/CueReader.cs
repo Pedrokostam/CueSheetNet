@@ -18,11 +18,6 @@ public class CueReader
     public string CurrentPath { get;private set; }
     public string CurrentLine { get; private set; }
 
-    private void LogError(string msg) => Logger.Log(LogLevel.Error, msg, CurrentPath, $"Line {CurrentLineIndex}: \"{CurrentLine}\"");
-    private void LogWarning(string msg) => Logger.Log(LogLevel.Warning, msg, CurrentPath, $"Line {CurrentLineIndex}: \"{CurrentLine}\"");
-    private void LogInformation(string msg) => Logger.Log(LogLevel.Information, msg, CurrentPath, $"Line {CurrentLineIndex}: \"{CurrentLine}\"");
-    private void LogVerbose(string msg) => Logger.Log(LogLevel.Verbose, msg, CurrentPath, $"Line {CurrentLineIndex}: \"{CurrentLine}\"");
-    private void LogDebug(string msg) => Logger.Log(LogLevel.Debug, msg, CurrentPath, $"Line {CurrentLineIndex}: \"{CurrentLine}\"");
     CueSheet? Sheet { get; set; }
     public char Quotation { get; set; } = '"';
     public Encoding? Encoding { get; set; }
@@ -50,7 +45,7 @@ public class CueReader
     {
         Reset();
         CurrentPath = cuePath;
-        LogDebug("Loading bytes from file");
+        Logger.LogDebug("Loading bytes from {File}",CurrentPath);
         if (!File.Exists(cuePath)) throw new FileNotFoundException($"{cuePath} does not exist");
         var cueFileBytes = File.ReadAllBytes(cuePath);
         return ParseCueSheet(cuePath, cueFileBytes);
@@ -61,7 +56,7 @@ public class CueReader
     {
         Reset();
         CurrentPath = cuePath;
-        LogDebug("Creating memory stream");
+        Logger.LogDebug("Creating memory stream from {File}",CurrentPath);
         using MemoryStream fs = new(cueFileBytes, false);
         return ParseCueSheet(cuePath, fs);
     }
@@ -71,10 +66,10 @@ public class CueReader
     {
         Reset();
         CurrentPath = cuePath;
-        LogDebug("Parsing started");
+        Logger.LogDebug("Parsing started");
         if (!File.Exists(cuePath))
         {
-            LogError("Specified file does not exist");
+            Logger.LogError("Specified file does not exist ({File})",CurrentPath);
             throw new FileNotFoundException($"{cuePath} does not exist");
         }
 
@@ -93,6 +88,7 @@ public class CueReader
         st.Stop();
         fs.Seek(0, SeekOrigin.Begin);
         using StreamReader strr = new(fs, encoding, false);
+
         while (strr.ReadLine()?.Trim() is string line)
         {
             CurrentLine = line;
@@ -142,7 +138,7 @@ public class CueReader
             Sheet.SetTrackHasZerothIndex(i, TrackHasZerothIndex[i]);
         }
         Sheet.RefreshIndices();
-        LogInformation("Finished parsing");
+        Logger.LogInformation("Finished parsing {File}",CurrentPath);
         return Sheet;
     }
 
@@ -152,7 +148,7 @@ public class CueReader
         string? title = GetValue(line, 5);
         if (title == null)
         {
-            LogWarning("Invalid TITLE line");
+            Logger.LogWarning("Invalid TITLE at line {Line number}: \"{Line}\"",CurrentLineIndex,CurrentLine);
             return;
         }
 
@@ -177,7 +173,7 @@ public class CueReader
         if (!int.TryParse(num, out int number))
         {
             number = Sheet!.LastTrack?.Number + 1 ?? 1;
-            LogWarning("Invalid TRACK number. Substituting " + number);
+            Logger.LogWarning("Invalid TRACK number at line {Line number}: \\\"{Line}\\\"\". Substituting {Substitute number:d2}",CurrentLineIndex,CurrentLine,number);
         }
         CueTrack tr = Sheet!.AddTrack(number);
 
@@ -188,7 +184,7 @@ public class CueReader
         string? performer = GetValue(line, 10);
         if (performer == null)
         {
-            LogWarning("Invalid PERFORMER line");
+            Logger.LogWarning("Invalid PERFORMER at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
             return;
         }
 
@@ -207,7 +203,7 @@ public class CueReader
         string? cdt = GetValue(line, 11);
         if (cdt == null)
         {
-            LogWarning("Invalid CDTEXT line");
+            Logger.LogWarning("Invalid CDTEXT at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
             return;
         }
         Sheet!.SetCdTextFile(cdt);
@@ -217,7 +213,7 @@ public class CueReader
 
         if (Sheet!.LastTrack is not CueTrack track)
         {
-            LogWarning("FLAGS present before any track");
+            Logger.LogWarning("FLAGS present before any track at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
             return;
         }
         TrackFlags flags = TrackFlags.None;
@@ -242,7 +238,7 @@ public class CueReader
         string? isrc = GetValue(line, 5);
         if (isrc == null)
         {
-            LogWarning("Invalid ISRC line");
+            Logger.LogWarning("Invalid ISRC at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
 
             return;
         }
@@ -253,7 +249,7 @@ public class CueReader
         string? cata = GetValue(line, 8);
         if (cata == null)
         {
-            LogWarning("Invalid CATALOG line");
+            Logger.LogWarning("Invalid CATALOG at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
             return;
         }
         Sheet!.Catalog = cata;
@@ -262,21 +258,22 @@ public class CueReader
     private void ParseIndex(string line)
     {
 
+            Logger.LogWarning("INDEX line present before any track at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
         if (Sheet!.LastTrack is not CueTrack track)
         {
-            LogWarning("INDEX line present before any track");
+            Logger.LogWarning("INDEX line present before any track at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
             return;
         }
 
         string number = GetKeyword(line, 6);
         if (!int.TryParse(number, out int num))
         {
-            LogError("Incorrect Index number format ");
+            Logger.LogError("Incorrect Index number format at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
             throw new FormatException($"Incorrect Index number format at line {CurrentLineIndex}: {line}");
         }
         if (!CueTime.TryParse(line.AsSpan(6 + number.Length + 1), out CueTime cueTime))
         {
-            LogError("Incorrect Index format");
+            Logger.LogError("Incorrect Index format at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
             throw new FormatException($"Incorrect Index format at line {CurrentLineIndex}: {line}");
         }
         if (Sheet.LastTrack is CueTrack ctr && Sheet.LastFile is CueFile cfl)
@@ -294,19 +291,19 @@ public class CueReader
 
         if (Sheet!.LastFile is null)
         {
-            LogWarning("GAP line present before any file");
+            Logger.LogWarning("GAP line present before any file at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
             return;
         }
         if (Sheet!.LastTrack is not CueTrack track)
         {
-            LogWarning("GAP line present before any track");
+            Logger.LogWarning("GAP line present before any track at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
             return;
         }
 
         string type = GetKeyword(line, 0);
         if (!CueTime.TryParse(line.AsSpan(6 + type.Length + 1), out CueTime cueTime))
         {
-            LogError("Incorrect Gap format");
+            Logger.LogError("Incorrect Gap format at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
             throw new FormatException($"Incorrect Gap format at line {CurrentLineIndex}: {line}");
         }
         if (gapType.StartsWith("PRE"))

@@ -1,10 +1,11 @@
 ﻿// See https://aka.ms/new-console-template for more information
 using CueSheetNet;
+using CueSheetNet.Logging;
 using CueSheetNet.Test;
 using CueSheetNet.TextParser;
 using System.Diagnostics;
+using System.Drawing;
 using System.Text;
-
 IEnumerable<T> Repeat<T>(T[] em, int count)
 {
 	for (int i = 0; i < count; i++)
@@ -18,25 +19,23 @@ IEnumerable<T> Repeat<T>(T[] em, int count)
 
 
 
-
-
 string PATH= @"C:\Users\Pedro\Downloads\CUE\Violator.cue";
 var eo = new EnumerationOptions() { IgnoreInaccessible = true, RecurseSubdirectories = true, ReturnSpecialDirectories = false };
 var fies = Directory.GetFiles(@"E:\FLACBAZA\RawRips\", "*.cue", eo);
-string[] dafak = Repeat(fies, 1).ToArray();
+string[] dafak = Repeat(fies, 100).ToArray();
 List<CueSheet> l = new(dafak.Length);
 HybridLogger hb = new();
-var s = Stopwatch.StartNew();
+Logger.Register(hb);
 CueReader cr = new();
-//cr.Encoding = Encoding.UTF32;
-foreach (var f in dafak.Take(2))
+var s = Stopwatch.StartNew();
+foreach (var f in dafak)
 {
 	var ccc = cr.ParseCueSheet(f);
     l.Add(ccc);
 }
 s.Stop();
-
-
+Console.WriteLine(s.ElapsedTicks *1.0 / dafak.Length);
+return;
 CueWriter cueWriter = new() { InnerQuotationReplacement=InnerQuotation.Guillemets, IndentationDepth=2 };
 var tttttttt = cueWriter.WriteToString(l[0]);
 tttttttt = cueWriter.WriteToString(l[0]);
