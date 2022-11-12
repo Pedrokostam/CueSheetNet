@@ -1,16 +1,16 @@
 ﻿namespace CueSheetNet;
 
-public record struct CueIndex
+public readonly record struct CueIndex
 {
     public const int MaxNumber = 99;
-    private int _Number;
+    private readonly int _Number;
     public int Number
     {
         get => _Number;
         init
         {
-            if (value < 0) throw new ArgumentOutOfRangeException("Index must not be negative");
-            if (value > MaxNumber) throw new ArgumentOutOfRangeException("Index must be less than 100");
+            if (value < 0) throw new ArgumentOutOfRangeException(nameof(Number),$"Index must not be negative");
+            if (value > MaxNumber) throw new ArgumentOutOfRangeException(nameof(Number), "Index must be less than 100");
             _Number = value;
         }
     }

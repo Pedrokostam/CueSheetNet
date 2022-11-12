@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace CueSheetNet.Logging;
@@ -10,28 +11,46 @@ public record struct Argument(string Identifier, object Object)
 public class LogEntry
 {
     public DateTime Timestamp { get; init; }
+
     public LogLevel Level { get; init; }
+
+    public string Message { get; }
+
     public string MessageTemplate { get; }
-    public IReadOnlyCollection<Argument> Elements { get; }
+
+    public ReadOnlyCollection<Argument> Elements { get; }
 
     string FormattingTemplate { get; }
-    public string Message { get; }
+
     List<string> Identifiers { get; }
+
     internal LogEntry(LogLevel level, string messageTemplate) : this(level, messageTemplate, Array.Empty<object>()) { }
+
     internal LogEntry(string messageTemplate) : this(messageTemplate, Array.Empty<object>()) { }
+
     internal LogEntry(LogLevel level, string messageTemplate, object[] objects) : this(messageTemplate, objects)
     {
         Level = level;
     }
+
     internal LogEntry(string messageTemplate, object[] args)
     {
         Timestamp = DateTime.Now;
         MessageTemplate = messageTemplate;
         Identifiers = new List<string>();
+        if(args.Length==0 && !messageTemplate.Contains('{'))
+        {
+            //No objects, no curly brackets - no identifiers -- no need to check
+            Message = messageTemplate;
+            FormattingTemplate = string.Empty;
+            Elements=new (Array.Empty<Argument>()); 
+            return;
+        }
+
         FormattingTemplate = Tokenize();
         if (args.Length < Identifiers.Count)
         {
-            throw new Exception();
+            throw new ArgumentException("Not enough arguments for the specified message template");
         }
         object[] objects = new object[Identifiers.Count];
         List<Argument> temp = new(Identifiers.Count);
@@ -43,6 +62,7 @@ public class LogEntry
         Elements = temp.AsReadOnly();
         Message = string.Format(FormattingTemplate, objects);
     }
+
     private string Tokenize()
     {
         int i = 0;

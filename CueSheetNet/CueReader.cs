@@ -330,7 +330,7 @@ public class CueReader
                     Sheet.AddComment(value);
                     break;
                 default:
-                    Sheet.AddRem(field, value);
+                    Sheet.AddRemark(field, value);
                     break;
             }
         }
@@ -351,7 +351,7 @@ public class CueReader
                     Sheet.AddComment(value);
                     break;
                 default:
-                    Sheet.AddRem(field, value);
+                    Sheet.AddRemark(field, value);
                     break;
             }
         }

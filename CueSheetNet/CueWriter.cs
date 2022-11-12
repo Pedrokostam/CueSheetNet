@@ -13,7 +13,7 @@ namespace CueSheetNet
 {
     public class CueWriter
     {
-        readonly StringBuilder Builder = new StringBuilder();
+        readonly StringBuilder Builder = new();
         private char indentationCharacter = ' ';
 
         public Encoding Encoding { get; set; } = new UTF8Encoding(false);
@@ -65,7 +65,7 @@ namespace CueSheetNet
         }
         [return: NotNullIfNotNull("str")]
         private string? Replace(string? str) => InnerQuotationReplacement.ReplaceQuotes(str);
-        private bool AppendStringify(RemEntry rem, int depth) => AppendStringify("REM " + rem.Field, Replace(rem.Value), depth);
+        private bool AppendStringify(Remark rem, int depth) => AppendStringify("REM " + rem.Field, Replace(rem.Value), depth);
         private bool AppendStringify(CueIndexImpl cim, int depth) => AppendStringify("INDEX " + cim.Number.ToString("D2"), cim.Time.ToString(), depth);
         [return: NotNullIfNotNull("s")]
         private static string? Enquote(string? s)
@@ -81,7 +81,7 @@ namespace CueSheetNet
             else return Header + " " + value;
         }
 
-        private void AppendRems(IEnumerable<RemEntry> rems, int depth)
+        private void AppendRems(IEnumerable<Remark> rems, int depth)
         {
             foreach (var item in rems)
                 AppendStringify(item, depth);

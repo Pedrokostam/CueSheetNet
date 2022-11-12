@@ -2,7 +2,7 @@
 
 namespace CueSheetNet;
 
-public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemCommentable
+public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemarkableCommentable
 {
     /// <summary>
     /// Absolute index for the whole CueSheet
@@ -76,20 +76,20 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemCommentable
         return "Track " + Number.ToString("D2") + ": " + Title;
     }
     #region Rem
-    public readonly List<RemEntry> RawRems = new();
-    public void ClearRems() => RawRems.Clear();
+    public readonly List<Remark> RawRems = new();
+    public void ClearRemarks() => RawRems.Clear();
 
-    public void AddRem(string type, string value) => AddRem(new RemEntry(type, value));
-    public void AddRem(RemEntry entry) => RawRems.Add(entry);
+    public void AddRemark(string type, string value) => AddRemark(new Remark(type, value));
+    public void AddRemark(Remark entry) => RawRems.Add(entry);
 
-    public void RemoveRem(int index)
+    public void RemoveRemark(int index)
     {
         if (index >= 0 || index < RawRems.Count)
             RawRems.RemoveAt(index);
     }
 
-    public void RemoveRem(string field, string value, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase) => RemoveRem(new RemEntry(field, value), comparisonType);
-    public void RemoveRem(RemEntry entry, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase)
+    public void RemoveRemark(string field, string value, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase) => RemoveRemark(new Remark(field, value), comparisonType);
+    public void RemoveRemark(Remark entry, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase)
     {
         int ind = RawRems.FindIndex(x => x.Equals(entry, comparisonType));
         if (ind >= 0)
@@ -141,6 +141,11 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemCommentable
                 return false;
         }
         return true;
+    }
+
+    public override bool Equals(object obj)
+    {
+        return Equals(obj as CueTrack);
     }
 }
 

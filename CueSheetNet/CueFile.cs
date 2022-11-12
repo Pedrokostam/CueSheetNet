@@ -78,5 +78,9 @@ public class CueFile : CueItemBase, IEquatable<CueFile>
         return true;
     }
 
+    public override bool Equals(object? obj)
+    {
+        return Equals(obj as CueFile);
+    }
 }
 

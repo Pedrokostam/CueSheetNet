@@ -5,17 +5,16 @@ using System.Net.Http.Headers;
 
 namespace CueSheetNet;
 
-public record struct CueTime : IComparable<CueTime>
+public readonly record struct CueTime : IComparable<CueTime>, IComparable<int>, IComparable<TimeSpan>, IComparable
 {
     private const int SecondsPerMinute = 60;
     private const int MillisecondsPerSecond = 1000;
     public const int FramesPerSecond = 75;
-    public const int FramesPerMinute = FramesPerSecond * SecondsPerMinute;
-    public const double MillisecondsPerFrame = 1000D / FramesPerSecond;
-    public const int MaxValue = 100 * FramesPerMinute - 1;
+    public const int FramesPerMinute = FramesPerSecond * SecondsPerMinute; // 45'000
+    public const double MillisecondsPerFrame = (double)MillisecondsPerSecond / FramesPerSecond; // 13.333333
     public static readonly CueTime Zero = new(0);
-    public static readonly CueTime Max = new(MaxValue);
-    public static readonly CueTime Min = new(-MaxValue);
+    public static readonly CueTime Max = new(int.MaxValue);
+    public static readonly CueTime Min = new(int.MinValue);
     public int Minutes => (TotalFrames - Frames - SecondsPerMinute * Seconds) / FramesPerMinute;
     public int Seconds => ((TotalFrames - Frames) / FramesPerSecond) % SecondsPerMinute;
     public double Milliseconds => MillisecondsPerFrame * Frames;
@@ -29,10 +28,6 @@ public record struct CueTime : IComparable<CueTime>
     public CueTime(TimeSpan timeSpan) : this((int)(timeSpan.TotalMinutes * FramesPerMinute)) { }
     public CueTime(int totalFrames)
     {
-        if (totalFrames > MaxValue)
-            throw new ArgumentOutOfRangeException($"Specified number of frames ({totalFrames}) is greater than {MaxValue}");
-        if (totalFrames < -MaxValue)
-            throw new ArgumentOutOfRangeException($"Specified number of frames ({totalFrames}) is less than {-MaxValue}");
         TotalFrames = totalFrames;
     }
     public CueTime(int minutes, int seconds, int frames) : this(frames + FramesPerSecond * seconds + FramesPerMinute * minutes)
@@ -54,7 +49,8 @@ public record struct CueTime : IComparable<CueTime>
         seconds = Seconds;
         frames = Frames;
     }
-    public int CompareTo(CueTime other) => TotalFrames.CompareTo(other.TotalFrames);
+    public override int GetHashCode() => TotalFrames.GetHashCode();
+    #region Parsing
     /// <summary>
     /// Parses string to CueTime (±mm:ss:ff)
     /// </summary>
@@ -87,7 +83,7 @@ public record struct CueTime : IComparable<CueTime>
     {
         cueTime = default;
         ReadOnlySpan<char> spanTrimmed = span.Trim();
-        List<int> inds = new(4) { -1};
+        List<int> inds = new(4) { -1 };
         for (int i = 0; i < spanTrimmed.Length; i++)
         {
             if (spanTrimmed[i] == ':')
@@ -123,30 +119,87 @@ public record struct CueTime : IComparable<CueTime>
         if (s == null) return false;
         return TryParse(s, out cueTime);
     }
-
-    public override int GetHashCode() => TotalFrames.GetHashCode();
+    #endregion
+    #region Comparison
+    public int CompareTo(object? obj)
+    {
+        if (obj == null) return 1;
+        return obj switch
+        {
+            CueTime => CompareTo((CueTime)obj),
+            int => CompareTo((int)obj),
+            TimeSpan => CompareTo((TimeSpan)obj),
+            _ => throw new ArgumentException("Compared object must be a CueTime, Int, or TimeSpan"),
+        };
+    }
+    public int CompareTo(CueTime other) => TotalFrames.CompareTo(other.TotalFrames);
+    /// <summary>
+    /// Compares the time to the integer, treating it as the number of frames
+    /// </summary>
+    /// <param name="other"></param>
+    /// <returns></returns>
+    public int CompareTo(int other) => TotalFrames.CompareTo(other);
+    /// <summary>
+    /// Compares the time to the TimeSpan, by comparing their total milliseconds
+    /// </summary>
+    /// <param name="other"></param>
+    /// <returns></returns>
+    public int CompareTo(TimeSpan other) => TotalMilliseconds.CompareTo(other.TotalMilliseconds);
+    #endregion
+    #region Math
+    /// <summary>
+    /// Divides the time by the divisor
+    /// </summary>
+    /// <param name="time">The time</param>
+    /// <param name="divisor">The divisor</param>
+    /// <returns></returns>
+    /// <exception cref="DivideByZeroException">Thrown if parameter <paramref name="divisor"/> is zero</exception>
+    public CueTime Divide(int divisor)
+    {
+        if (divisor == 0) throw new DivideByZeroException();
+        return new(TotalFrames / divisor);
+    }
+    /// <summary>
+    /// Divides the time by the divisor
+    /// </summary>
+    /// <param name="time">The time</param>
+    /// <param name="divisor">The divisor</param>
+    /// <returns></returns>
+    /// <exception cref="DivideByZeroException">Thrown if parameter <paramref name="divisor"/> is zero</exception>
+    public CueTime Divide(double divisor)
+    {
+        if (divisor == 0) throw new DivideByZeroException();
+        return new((int)(TotalFrames / divisor));
+    }
+    public CueTime Multiply(int multiplier) => new(TotalFrames * multiplier);
+    public CueTime Multiply(double multiplier) => new((int)(TotalFrames * multiplier));
+    public CueTime Add(CueTime right) => new(TotalFrames + right.TotalFrames);
+    public CueTime Add(int right) => new(TotalFrames + right);
+    public CueTime Subtract(CueTime right) => new(TotalFrames - right.TotalFrames);
+    public CueTime Subtract(int right) => new(TotalFrames - right);
+    #endregion
     #region Operators
     public static bool operator <(CueTime left, CueTime right) => left.CompareTo(right) < 0;
     public static bool operator >(CueTime left, CueTime right) => left.CompareTo(right) > 0;
     public static bool operator >=(CueTime left, CueTime right) => left.CompareTo(right) >= 0;
     public static bool operator <=(CueTime left, CueTime right) => left.CompareTo(right) <= 0;
-    public static bool operator <(CueTime left, int right) => left.TotalFrames < right;
-    public static bool operator >(CueTime left, int right) => left.TotalFrames > right;
-    public static bool operator >=(CueTime left, int right) => left.TotalFrames >= right;
-    public static bool operator <=(CueTime left, int right) => left.TotalFrames <= right;
-    public static bool operator <(int left, CueTime right) => left < right.TotalFrames;
-    public static bool operator >(int left, CueTime right) => left > right.TotalFrames;
-    public static bool operator >=(int left, CueTime right) => left >= right.TotalFrames;
-    public static bool operator <=(int left, CueTime right) => left <= right.TotalFrames;
-    public static CueTime operator +(CueTime left, CueTime right) => new(left.TotalFrames + right.TotalFrames);
-    public static CueTime operator +(CueTime left, int right) => new(left.TotalFrames + right);
-    public static CueTime operator +(int left, CueTime right) => new(left + right.TotalFrames);
+    public static bool operator <(CueTime left, int right) => left.CompareTo(right) < 0;
+    public static bool operator >(CueTime left, int right) => left.CompareTo(right) > 0;
+    public static bool operator >=(CueTime left, int right) => left.CompareTo(right) <= 0;
+    public static bool operator <=(CueTime left, int right) => left.CompareTo(right) >= 0;
+    public static bool operator <(int left, CueTime right) => right.CompareTo(left) < 0;
+    public static bool operator >(int left, CueTime right) => right.CompareTo(left) > 0;
+    public static bool operator >=(int left, CueTime right) => right.CompareTo(left) <= 0;
+    public static bool operator <=(int left, CueTime right) => right.CompareTo(left) >= 0;
+    public static CueTime operator +(CueTime left, CueTime right) => left.Add(right);
+    public static CueTime operator +(CueTime left, int right) => left.Add(right);
+    public static CueTime operator +(int left, CueTime right) => right.Add(left);
     public static CueTime operator -(CueTime time) => new(-time.TotalFrames);
-    public static CueTime operator --(CueTime time) => new(time.TotalFrames - 1);
+    public static CueTime operator --(CueTime time) => time.Subtract(1);
     public static CueTime operator +(CueTime time) => time;
-    public static CueTime operator ++(CueTime time) => new(time.TotalFrames + 1);
-    public static CueTime operator -(CueTime left, CueTime right) => new(left.TotalFrames - right.TotalFrames);
-    public static CueTime operator -(CueTime left, int right) => new(left.TotalFrames - right);
+    public static CueTime operator ++(CueTime time) => time.Add(1);
+    public static CueTime operator -(CueTime left, CueTime right) => left.Subtract(right);
+    public static CueTime operator -(CueTime left, int right) => left.Subtract(right);
     /// <summary>
     /// Divides the time by the divisor
     /// </summary>
@@ -154,12 +207,7 @@ public record struct CueTime : IComparable<CueTime>
     /// <param name="divisor">The divisor</param>
     /// <returns></returns>
     /// <exception cref="DivideByZeroException">Thrown if parameter <paramref name="divisor"/> is zero</exception>
-    public static CueTime operator /(CueTime time, double divisor)
-    {
-        if (divisor == 0)
-            throw new DivideByZeroException();
-        return new((int)(time.TotalFrames / divisor));
-    }
+    public static CueTime operator /(CueTime time, double divisor) => time.Divide(divisor);
     /// <summary>
     /// Divides the time by the divisor
     /// </summary>
@@ -167,17 +215,11 @@ public record struct CueTime : IComparable<CueTime>
     /// <param name="divisor">The divisor</param>
     /// <returns></returns>
     /// <exception cref="DivideByZeroException">Thrown if parameter <paramref name="divisor"/> is zero</exception>
-    public static CueTime operator /(CueTime left, int divisor)
-    {
-        if (divisor == 0)
-            throw new DivideByZeroException();
-        return new((left.TotalFrames / divisor));
-    }
-
-    public static CueTime operator *(CueTime left, double multiplier) => new((int)(left.TotalFrames * multiplier));
-    public static CueTime operator *(CueTime left, int multiplier) => new((left.TotalFrames * multiplier));
-    public static CueTime operator *(int multiplier, CueTime right) => new((right.TotalFrames * multiplier));
-    public static CueTime operator *(double multiplier, CueTime right) => new((int)(right.TotalFrames * multiplier));
+    public static CueTime operator /(CueTime left, int divisor) => left.Divide(divisor);
+    public static CueTime operator *(CueTime left, double multiplier) => left.Multiply(multiplier);
+    public static CueTime operator *(CueTime left, int multiplier) => left.Multiply(multiplier);
+    public static CueTime operator *(int multiplier, CueTime right) => right.Multiply(multiplier);
+    public static CueTime operator *(double multiplier, CueTime right) => right.Multiply(multiplier);
     public static CueTime operator <<(CueTime left, int right) => new(left.TotalFrames >> right);
     public static CueTime operator >>(CueTime left, int right) => new(left.TotalFrames >> right);
     #endregion

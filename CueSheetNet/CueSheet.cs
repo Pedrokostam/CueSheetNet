@@ -28,24 +28,24 @@ public enum CueType
     MultipleFilesWithPrependedGaps = MultipleFiles | GapsPrepended,
     MultipleFileWithSimulatedGaps = MultipleFiles | SimulatedGaps,
 }
-public class CueSheet :IEquatable<CueSheet>, IRemCommentable
+public class CueSheet :IEquatable<CueSheet>, IRemarkableCommentable
 {
     #region Rem
-    internal readonly List<RemEntry> RawRems = new();
-    public ReadOnlyCollection<RemEntry> Remarks => RawRems.AsReadOnly();
-    public void ClearRems() => RawRems.Clear();
+    internal readonly List<Remark> RawRems = new();
+    public ReadOnlyCollection<Remark> Remarks => RawRems.AsReadOnly();
+    public void ClearRemarks() => RawRems.Clear();
 
-    public void AddRem(string type, string value) => AddRem(new RemEntry(type, value));
-    public void AddRem(RemEntry entry) => RawRems.Add(entry);
+    public void AddRemark(string type, string value) => AddRemark(new Remark(type, value));
+    public void AddRemark(Remark entry) => RawRems.Add(entry);
 
-    public void RemoveRem(int index)
+    public void RemoveRemark(int index)
     {
         if (index >= 0 || index < RawRems.Count)
             RawRems.RemoveAt(index);
     }
 
-    public void RemoveRem(string field, string value, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase)=>RemoveRem(new RemEntry(field,value),comparisonType);
-    public void RemoveRem(RemEntry entry, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase)
+    public void RemoveRemark(string field, string value, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase)=>RemoveRemark(new Remark(field,value),comparisonType);
+    public void RemoveRemark(Remark entry, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase)
     {
         int ind = RawRems.FindIndex(x => x.Equals(entry, comparisonType));
         if (ind >= 0)

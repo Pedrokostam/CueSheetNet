@@ -8,9 +8,6 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace CueSheetNet.Logging;
-
-
-
 public static class Logger
 {
     private delegate void LogDelegateType(LogEntry entry);
@@ -23,12 +20,23 @@ public static class Logger
     /// </summary>
     public static LogLevel MinimumLogLevel { get; private set; } = LogLevel.Off;
 
-    public static void Register(ILogDevice device)
+    /// <summary>
+    /// Registers the specified <paramref name="device"/> as a log consumer. Updates <see cref="MinimumLogLevel"/> if necessary.
+    /// </summary>
+    /// <param name="device"><see cref="ILogDevice"/> to be registered</param>
+    /// <returns>Number of registered log devices after the operation</returns>
+    public static int Register(ILogDevice device)
     {
         logDevices.Add(device);
         MinimumLogLevel = logDevices.Min(x => x.MinimumLogLevel);
+        return logDevices.Count;
     }
-    public static void Unregister(ILogDevice device)
+    /// <summary>
+    /// Unregisters the specified <paramref name="device"/> removeing it from log consumers. Updates <see cref="MinimumLogLevel"/> if necessary.
+    /// </summary>
+    /// <param name="device"><see cref="ILogDevice"/> to be removed</param>
+    /// <returns>Number of registered log devices after the operation</returns>
+    public static int Unregister(ILogDevice device)
     {
         if (logDevices.Remove(device))
         {
@@ -37,6 +45,7 @@ public static class Logger
             else
                 MinimumLogLevel = logDevices.Min(x => x.MinimumLogLevel);
         }
+        return logDevices.Count;
     }
 
     /// <summary>

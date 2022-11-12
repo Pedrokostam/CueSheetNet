@@ -30,5 +30,5 @@ public enum LogLevel
     /// Requested could not be performed
     /// </summary>
     Error = 8,
-    Off = 1073741824,
+    Off = int.MaxValue,
 }
