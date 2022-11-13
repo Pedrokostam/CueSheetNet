@@ -123,7 +123,7 @@ namespace CueSheetNet
                 }
                 if (track != ind.Track)
                 {
-                    if (track != null && track.PostGap > 0)
+                    if (track != null && track.PostGap > CueTime.Zero)
                         AppendStringify("POSTGAP", track.PostGap, 2);
                     track = ind.Track;
                     AppendIndentation(1);
@@ -139,7 +139,7 @@ namespace CueSheetNet
                         AppendStringify("FLAGS", track.Flags.ToCueCompatible(), 2);
                     AppendRems(track.RawRems, 2);
                     AppendComments(track.RawComments, 2);
-                    if (track.PreGap > 0)
+                    if (track.PreGap > CueTime.Zero)
                         AppendStringify("PREGAP", track.PreGap, 2);
                 }
                 AppendStringify(ind, 2);

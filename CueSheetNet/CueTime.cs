@@ -5,7 +5,7 @@ using System.Net.Http.Headers;
 
 namespace CueSheetNet;
 
-public readonly record struct CueTime : IComparable<CueTime>, IComparable<int>, IComparable
+public readonly record struct CueTime : IComparable<CueTime>, IComparable
 {
     private const int SecondsPerMinute = 60;
 
@@ -17,11 +17,22 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable<int>, 
 
     public const double MillisecondsPerFrame = (double)MillisecondsPerSecond / FramesPerSecond; // 13.333333
 
+    /// <summary>
+    /// CueTime corresponding to <see cref="TotalFrames"/> of 0.
+    /// </summary>
     public static readonly CueTime Zero = new(0);
 
+    /// <summary>
+    /// CueTime corresponding to <see cref="TotalFrames"/> of <see cref="int.MaxValue"/>.
+    /// </summary>
     public static readonly CueTime Max = new(int.MaxValue);
 
+    /// <summary>
+    /// CueTime corresponding to <see cref="TotalFrames"/> of <see cref="int.MinValue"/>.
+    /// </summary>
     public static readonly CueTime Min = new(int.MinValue);
+
+    public int TotalFrames { get; }
 
     public int Minutes => (TotalFrames - Frames - SecondsPerMinute * Seconds) / FramesPerMinute;
 
@@ -33,14 +44,17 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable<int>, 
 
     public bool Negative => TotalFrames < 0;
 
-    public int TotalFrames { get; }
-
     public double TotalSeconds => TotalFrames / (double)FramesPerSecond;
 
     public double TotalMilliseconds => TotalFrames * MillisecondsPerFrame;
 
     public double TotalMinutes => TotalFrames / (double)FramesPerMinute;
 
+    /// <summary>
+    /// Calculates the equivalent milliseconds to the given frames. Rounds it to the nearest integer.
+    /// </summary>
+    /// <param name="milliseconds"></param>
+    /// <returns>Equivalent number of frames, rounded to the nearest integer</returns>
     public static int MillisecondsToFrames(double milliseconds)
     {
         double frames = milliseconds / MillisecondsPerFrame;
@@ -55,19 +69,39 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable<int>, 
         TotalFrames = totalFrames;
     }
 
-    public CueTime(int minutes, int seconds, int frames) : this(checked(frames + FramesPerSecond * seconds + FramesPerMinute * minutes))
+    public CueTime(int minutes, int seconds, int frames)
     {
         bool allNonNegative = minutes >= 0 && seconds >= 0 && frames >= 0;
         bool allNonPositive = minutes <= 0 && seconds <= 0 && frames <= 0;
-        if (seconds > 59 || seconds < -59) throw new ArgumentOutOfRangeException("The seconds part has to be less than 60 (or more than -60");
-        if (frames > 74 || seconds < -74) throw new ArgumentOutOfRangeException("The frames part has to be less than 75 (or more than -75");
         if (!(allNonNegative || allNonPositive))
             throw new ArgumentException($"Parameters must all be either be all non-negative or all non-positive");
+
+        TotalFrames = CalculateTotalFrames(minutes, seconds, frames);
     }
+
+    /// <summary>
+    /// Calculates total frames from the specified components. Operation is checked - <see cref="OverflowException"/> is thrown if overflow happens. Components don't have to have the same sign.
+    /// </summary>
+    /// <param name="minutes"></param>
+    /// <param name="seconds"></param>
+    /// <param name="frames"></param>
+    /// <exception cref="OverflowException">Thrown if multiplication results in overflow</exception>
+    /// <returns></returns>
+    public static int CalculateTotalFrames(int minutes, int seconds, int frames) => checked(frames + FramesPerSecond * seconds + FramesPerMinute * minutes);
+
+    /// <summary>
+    /// Calculates total frames from the specified components. Operation is unchecked - overflow can cause incorrect results. Components don't have to have the same sign.
+    /// </summary>
+    /// <param name="minutes"></param>
+    /// <param name="seconds"></param>
+    /// <param name="frames"></param>
+    /// <returns></returns>
+    public static int CalculateTotalFrames_Unchecked(int minutes, int seconds, int frames) => unchecked(frames + FramesPerSecond * seconds + FramesPerMinute * minutes);
 
     public TimeSpan ToTimeSpan() => TimeSpan.FromMilliseconds(TotalMilliseconds);
 
     public static implicit operator TimeSpan(CueTime cueTime) => cueTime.ToTimeSpan();
+
     public static explicit operator CueTime(TimeSpan timeSpan) => new(timeSpan);
 
     public static CueTime FromMilliseconds(double millis) => new((int)(millis / MillisecondsPerFrame));
@@ -76,7 +110,7 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable<int>, 
 
     public static CueTime FromMinutes(double minutes) => new((int)(minutes * FramesPerMinute));
 
-    public override string ToString() => $"{(Negative ? "-" : "")}{Math.Abs(Minutes):d2}:{Math.Abs(Seconds):d2}:{Math.Abs(Frames):d2}";
+    public override string ToString() => $"{Minutes:d2}:{Math.Abs(Seconds):d2}:{Math.Abs(Frames):d2}";
 
     public void Deconstruct(out int minutes, out int seconds, out int frames)
     {
@@ -86,7 +120,6 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable<int>, 
     }
 
     public override int GetHashCode() => TotalFrames.GetHashCode();
-
     #region Parsing
     /// <summary>
     /// Parses string to CueTime (±mm:ss:ff)
@@ -98,15 +131,7 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable<int>, 
     {
         ReadOnlySpan<char> spanTrimmed = span.Trim();
         if (spanTrimmed.Length == 0) throw new ArgumentException("Empty CueTime string");
-        List<int> inds = new(4) { -1 };
-        for (int i = 0; i < spanTrimmed.Length; i++)
-        {
-            if (spanTrimmed[i] == ':')
-            {
-                inds.Add(i);
-            }
-        }
-        inds.Add(spanTrimmed.Length);
+        List<int> inds = SeekSeparator(spanTrimmed);
         if (inds.Count < 4) throw new ArgumentException("CueTime string has less than 3 parts");
         Span<int> nums = stackalloc int[3];
         int numCount = 0;
@@ -123,11 +148,23 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable<int>, 
         int _minutes = Math.Abs(nums[0]);
         int _seconds = Math.Abs(nums[1]);
         int _frames = Math.Abs(nums[2]);
+        int totalFrames = checked(CalculateTotalFrames(_minutes, _seconds, _frames) * multiplier);
+        return new CueTime(totalFrames);
+    }
 
-        return new CueTime(
-                _minutes * multiplier,
-                _seconds * multiplier,
-                _frames * multiplier);
+    private static List<int> SeekSeparator(ReadOnlySpan<char> spanTrimmed)
+    {
+        List<int> inds = new(4) { -1 };
+        for (int i = 0; i < spanTrimmed.Length; i++)
+        {
+            char czar = spanTrimmed[i];
+            if (czar == ':')
+            {
+                inds.Add(i);
+            }
+        }
+        inds.Add(spanTrimmed.Length);
+        return inds;
     }
 
     public static CueTime Parse([NotNull] string? str)
@@ -145,15 +182,7 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable<int>, 
     {
         cueTime = default;
         ReadOnlySpan<char> spanTrimmed = span.Trim();
-        List<int> inds = new(4) { -1 };
-        for (int i = 0; i < spanTrimmed.Length; i++)
-        {
-            if (spanTrimmed[i] == ':')
-            {
-                inds.Add(i);
-            }
-        }
-        inds.Add(spanTrimmed.Length);
+        List<int> inds = SeekSeparator(spanTrimmed);
         if (inds.Count < 4) return false;
         Span<int> nums = stackalloc int[3];
         int numCount = 0;
@@ -171,25 +200,19 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable<int>, 
         int _minutes = Math.Abs(nums[0]);
         int _seconds = Math.Abs(nums[1]);
         int _frames = Math.Abs(nums[2]);
-
         try
         {
-            cueTime = new CueTime(
-                _minutes * multiplier,
-                _seconds * multiplier,
-                _frames * multiplier);
+            int totalFrames = CalculateTotalFrames(_minutes, _seconds, _frames) * multiplier;
+            cueTime = new CueTime(totalFrames);
         }
         catch (OverflowException)
-        {
-            return false;
-        }
-        catch (ArgumentOutOfRangeException)
         {
             return false;
         }
         //ensure every part is non-negative or non-positive
         return true;
     }
+
     /// <summary>
     /// Tries to parse string (±mm:ss:ff)
     /// </summary>
@@ -202,7 +225,6 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable<int>, 
         if (s == null) return false;
         return TryParse(s.AsSpan(), out cueTime);
     }
-
     #endregion
     #region Comparison and Equality
     public static int Compare(CueTime ct1, CueTime ct2) => ct1.TotalFrames.CompareTo(ct2.TotalFrames);
@@ -210,26 +232,12 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable<int>, 
     public int CompareTo(object? obj)
     {
         if (obj == null) return 1;
-        return obj switch
-        {
-            CueTime => CompareTo((CueTime)obj),
-            int => CompareTo((int)obj),
-            TimeSpan => CompareTo((TimeSpan)obj),
-            _ => throw new ArgumentException("Compared object must be a CueTime, Int, or TimeSpan"),
-        };
+        return CompareTo((CueTime)obj);
     }
 
     public int CompareTo(CueTime other) => TotalFrames.CompareTo(other.TotalFrames);
 
-    /// <summary>
-    /// Compares the time to the integer, treating it as the number of frames
-    /// </summary>
-    /// <param name="other"></param>
-    /// <returns></returns>
-    public int CompareTo(int other) => TotalFrames.CompareTo(other);
-
     public static bool Equals(CueTime ct1, CueTime ct2) => ct1.TotalFrames == ct2.TotalFrames;
-
     #endregion
     #region Math
     /// <summary>
@@ -274,7 +282,6 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable<int>, 
     public CueTime Subtract(CueTime right) => new(TotalFrames - right.TotalFrames);
 
     public CueTime SubtractFrames(int right) => new(TotalFrames - right);
-
     #endregion
     #region Operators
     public static bool operator <(CueTime left, CueTime right) => left.CompareTo(right) < 0;
@@ -285,27 +292,7 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable<int>, 
 
     public static bool operator <=(CueTime left, CueTime right) => left.CompareTo(right) <= 0;
 
-    public static bool operator <(CueTime left, int right) => left.CompareTo(right) < 0;
-
-    public static bool operator >(CueTime left, int right) => left.CompareTo(right) > 0;
-
-    public static bool operator >=(CueTime left, int right) => left.CompareTo(right) <= 0;
-
-    public static bool operator <=(CueTime left, int right) => left.CompareTo(right) >= 0;
-
-    public static bool operator <(int left, CueTime right) => right.CompareTo(left) < 0;
-
-    public static bool operator >(int left, CueTime right) => right.CompareTo(left) > 0;
-
-    public static bool operator >=(int left, CueTime right) => right.CompareTo(left) <= 0;
-
-    public static bool operator <=(int left, CueTime right) => right.CompareTo(left) >= 0;
-
     public static CueTime operator +(CueTime left, CueTime right) => left.Add(right);
-
-    public static CueTime operator +(CueTime left, int right) => left.AddFrames(right);
-
-    public static CueTime operator +(int left, CueTime right) => right.AddFrames(left);
 
     public static CueTime operator -(CueTime time) => new(-time.TotalFrames);
 
@@ -317,7 +304,13 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable<int>, 
 
     public static CueTime operator -(CueTime left, CueTime right) => left.Subtract(right);
 
-    public static CueTime operator -(CueTime left, int right) => left.SubtractFrames(right);
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="time"></param>
+    /// <param name="frames"></param>
+    /// <returns></returns>
+    public static CueTime operator -(CueTime time, int frames) => time.SubtractFrames(frames);
 
     /// <summary>
     /// Divides the time by the divisor
@@ -344,6 +337,5 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable<int>, 
     public static CueTime operator *(int multiplier, CueTime right) => right.Multiply(multiplier);
 
     public static CueTime operator *(double multiplier, CueTime right) => right.Multiply(multiplier);
-
     #endregion
 }
