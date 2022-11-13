@@ -2,34 +2,34 @@
 
 namespace CueSheetNet.TextParser;
 
-public record struct InnerQuotation
+public readonly record struct InnerQuotation
 {
     public const char DefaultOpening = '“';
     public const char DefaultClosing = '”';
     /// <summary>
     /// Quotation marks consisting of simple symmetrical apostrophes. 'Example'.
     /// </summary>
-    public static InnerQuotation Apostrophes => new ('\'', '\'');
+    public static readonly InnerQuotation Apostrophes = new ('\'', '\'');
     /// <summary>
     /// Quotation marks consisting of two asymmentrical double quotes, both at the top. Commonly used in English. “Example”.
     /// </summary>
-    public static InnerQuotation CurvedDoubleTopQuotation => new (DefaultOpening, DefaultClosing);
+    public static readonly InnerQuotation CurvedDoubleTopQuotation = new (DefaultOpening, DefaultClosing);
     /// <summary>
     /// Quotation marks consisting of two asymmentrical double quotes, both comma like, opening one at the bottom , closing one at the top .„Example”.
     /// </summary>
-    public static InnerQuotation CommaLikeBottomTopQuotation => new('„', '”');
+    public static readonly InnerQuotation CommaLikeBottomTopQuotation = new('„', '”');
     /// <summary>
     /// Quotation marks consisting of two asymmentrical double angle marks. Also known as guillemets. «Example».
     /// </summary>
-    public static InnerQuotation DoubleAngleQuotation => new ('«', '»');
+    public static readonly InnerQuotation DoubleAngleQuotation = new ('«', '»');
     /// <summary>
     /// Quotation marks consisting of two asymmentrical double angle marks. «Example»
     /// </summary>
-    public static InnerQuotation Guillemets => DoubleAngleQuotation;
+    public static readonly InnerQuotation Guillemets = DoubleAngleQuotation;
 
-    private char openingQuote;
-    private char closingQuote;
-    private bool symmetrical;
+    private readonly char openingQuote;
+    private readonly char closingQuote;
+    private readonly bool symmetrical;
 
     public char OpeningQuote
     {

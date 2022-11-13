@@ -17,7 +17,29 @@ IEnumerable<T> Repeat<T>(T[] em, int count)
 	}
 }
 
+int j = 1; //frames
+decimal t = j * (decimal)CueTime.MillisecondsPerFrame * TimeSpan.TicksPerMillisecond;
+long tt = (long)t;
 
+var q = tt / (decimal)CueTime.MillisecondsPerFrame / TimeSpan.TicksPerMillisecond; 
+var q2 = tt / CueTime.MillisecondsPerFrame / TimeSpan.TicksPerMillisecond; 
+
+
+
+for (int i = -5000; i < 5000000; i++)
+{
+	CueTime ct = new(i);
+	TimeSpan ts = ct.ToTimeSpan();
+	var p = ct + ts;
+	CueTime back = new CueTime(ts);
+	Debug.Assert(ct == back, $"{ct.TotalFrames:d25}\r\n{back.TotalFrames:d25}");
+	//Debug.WriteLineIf(ct != back, $"------\r\n{ct.TotalFrames:d25}\r\n{back.TotalFrames:d25}");
+}
+
+
+
+
+return;
 
 string PATH= @"C:\Users\Pedro\Downloads\CUE\Violator.cue";
 var eo = new EnumerationOptions() { IgnoreInaccessible = true, RecurseSubdirectories = true, ReturnSpecialDirectories = false };
