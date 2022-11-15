@@ -4,6 +4,7 @@ namespace CueSheetNet;
 
 public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemarkableCommentable
 {
+    public FieldSetFlags CommonFieldsSet { get;private set; }
     /// <summary>
     /// Absolute index for the whole CueSheet
     /// </summary>
@@ -31,21 +32,18 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemarkableCommentabl
     private string? _Title;
     public string Title
     {
-        get
-        {
-            if (_Title != null)
-                return _Title;
-            return Path.ChangeExtension(ParentFile.FileInfo.Name, null);
-        }
+        get=>_Title ?? Path.ChangeExtension(ParentFile.FileInfo.Name, null);
         set
         {
             if (string.IsNullOrEmpty(value))
             {
                 _Title = null;
+                CommonFieldsSet &= ~FieldSetFlags.Title;
             }
             else
             {
                 _Title = value;
+                CommonFieldsSet |= FieldSetFlags.Title;
             }
         }
     }
@@ -53,13 +51,37 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemarkableCommentabl
     public string? Performer
     {
         get => _Performer ?? ParentSheet.Performer;
-        set => _Performer = value;
+        set
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                _Performer = null;
+                CommonFieldsSet &= ~FieldSetFlags.Performer;
+            }
+            else
+            {
+                _Performer = value;
+                CommonFieldsSet |= FieldSetFlags.Performer;
+            }
+        }
     }
     private string? _Composer;
     public string? Composer
     {
         get => _Composer ?? ParentSheet.Composer;
-        set => _Composer = value;
+        set
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                _Composer = null;
+                CommonFieldsSet &= ~FieldSetFlags.Composer;
+            }
+            else
+            {
+                _Composer = value;
+                CommonFieldsSet |= FieldSetFlags.Composer;
+            }
+        }
     }
     public TrackFlags Flags { get; set; } = TrackFlags.None;
     public string? ISRC { get; set; }
@@ -143,7 +165,7 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemarkableCommentabl
         return true;
     }
 
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
     {
         return Equals(obj as CueTrack);
     }

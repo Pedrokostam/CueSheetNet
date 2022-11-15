@@ -259,7 +259,7 @@ public class CueReader
     {
 
             Logger.LogWarning("INDEX line present before any track at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
-        if (Sheet!.LastTrack is not CueTrack track)
+        if (Sheet!.LastTrack is null)
         {
             Logger.LogWarning("INDEX line present before any track at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
             return;
@@ -320,7 +320,6 @@ public class CueReader
         if (value == null) return;
         if (Sheet!.LastTrack is CueTrack track)
         {
-
             switch (field)
             {
                 case "COMPOSER":
