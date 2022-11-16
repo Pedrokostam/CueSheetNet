@@ -28,7 +28,7 @@ public enum CueType
     MultipleFilesWithPrependedGaps = MultipleFiles | GapsPrepended,
     MultipleFileWithSimulatedGaps = MultipleFiles | SimulatedGaps,
 }
-public class CueSheet :IEquatable<CueSheet>, IRemarkableCommentable
+public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
 {
     #region Rem
     internal readonly List<Remark> RawRems = new();
@@ -44,7 +44,7 @@ public class CueSheet :IEquatable<CueSheet>, IRemarkableCommentable
             RawRems.RemoveAt(index);
     }
 
-    public void RemoveRemark(string field, string value, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase)=>RemoveRemark(new Remark(field,value),comparisonType);
+    public void RemoveRemark(string field, string value, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase) => RemoveRemark(new Remark(field, value), comparisonType);
     public void RemoveRemark(Remark entry, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase)
     {
         int ind = RawRems.FindIndex(x => x.Equals(entry, comparisonType));
@@ -54,7 +54,7 @@ public class CueSheet :IEquatable<CueSheet>, IRemarkableCommentable
     #endregion
     #region Comments
     internal readonly List<string> RawComments = new();
-    public  ReadOnlyCollection<string> Comments=>RawComments.AsReadOnly();
+    public ReadOnlyCollection<string> Comments => RawComments.AsReadOnly();
     public void AddComment(string comment) => RawComments.Add(comment);
     public void RemoveComment(string comment, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase)
     {
@@ -151,7 +151,7 @@ public class CueSheet :IEquatable<CueSheet>, IRemarkableCommentable
     public CueFile? LastFile => Container.Files.LastOrDefault();
     public CueTrack? LastTrack => Container.Tracks.LastOrDefault();
 
-    public CueSheet(string cuePath) : this()
+    public CueSheet(string? cuePath) : this()
     {
         SetCuePath(cuePath);
     }
@@ -160,6 +160,82 @@ public class CueSheet :IEquatable<CueSheet>, IRemarkableCommentable
     {
         Container = new(this);
     }
+
+    public CueSheet(CueSheet sheet)
+    {
+        Catalog = sheet.Catalog;
+        Composer = sheet.Composer;
+        Title = sheet.Title;
+        Date = sheet.Date;
+        SheetType = sheet.SheetType;
+        DiscID = sheet.DiscID;
+
+        SetCdTextFile(sheet.CdTextFile?.FullName);
+
+        foreach (var item in sheet.Comments)
+            AddComment(item);
+        foreach (var item in sheet.Remarks)
+            AddRemark(item);
+
+        Container = new(this);
+        //foreach (var item in sheet.Files)
+        //    Container.AddFile(item.FileInfo.FullName, item.Type);
+        //foreach (var item in sheet.Tracks)
+        //{
+        //    CueTrack track = Container.AddTrack(item.Number, item.ParentFile.Index);
+        //    if (item.CommonFieldsSet.HasFlag(FieldSetFlags.Title))
+        //        track.Title = item.Title;
+        //    track.Composer = item.CommonFieldsSet.HasFlag(FieldSetFlags.Composer) ? item.Composer : null;
+        //    track.Performer = item.CommonFieldsSet.HasFlag(FieldSetFlags.Performer) ? item.Performer : null;
+        //    track.Flags = item.Flags;
+        //    track.HasZerothIndex = item.HasZerothIndex;
+        //    track.Index = item.Index;
+        //    track.ISRC = item.ISRC;
+        //    track.PreGap = item.PreGap;
+        //    track.PostGap = item.PostGap;
+
+        //    foreach (var com in item.Comments)
+        //        track.AddComment(com);
+        //    foreach (var rem in item.Remarks)
+        //        track.AddRemark(rem);
+        //}
+        int lastTrackIndex = -1;
+        int lastFileIndex = -1;
+        foreach (var cimpl in sheet.IndexesImpl)
+        {
+            int currFileIndex = Math.Max(cimpl.File.Index, cimpl.Track.Index);
+            if (lastFileIndex != currFileIndex)
+            {
+                Container.AddFile(cimpl.File.FileInfo.FullName, cimpl.File.Type);
+                lastFileIndex= currFileIndex;
+            }
+            if (lastTrackIndex!= cimpl.Track.Index)
+            {
+                lastTrackIndex= cimpl.Track.Index;
+                CueTrack item = cimpl.Track;
+                CueTrack track = Container.AddTrack(item.Number, item.ParentFile.Index);
+                if (item.CommonFieldsSet.HasFlag(FieldSetFlags.Title))
+                    track.Title = item.Title;
+                track.Composer = item.CommonFieldsSet.HasFlag(FieldSetFlags.Composer) ? item.Composer : null;
+                track.Performer = item.CommonFieldsSet.HasFlag(FieldSetFlags.Performer) ? item.Performer : null;
+                track.Flags = item.Flags;
+                track.HasZerothIndex = item.HasZerothIndex;
+                track.Index = item.Index;
+                track.ISRC = item.ISRC;
+                track.PreGap = item.PreGap;
+                track.PostGap = item.PostGap;
+
+                foreach (var com in item.Comments)
+                    track.AddComment(com);
+                foreach (var rem in item.Remarks)
+                    track.AddRemark(rem);
+            }
+            Container.AddIndex(cimpl.Time);
+        }
+
+    }
+
+    public CueSheet Copy() => new(this);
 
     public CueFile AddFile(string path, string type) => Container.AddFile(path, type);
     public CueTrack AddTrack(int index, CueFile file)
@@ -229,21 +305,21 @@ public class CueSheet :IEquatable<CueSheet>, IRemarkableCommentable
     }
     public override string ToString()
     {
-        return String.Format("CueSheet: {0} - {1} - {2}",Performer ?? "No performer",Title ?? "No title", FileInfo?.Name ?? "No file"); 
+        return String.Format("CueSheet: {0} - {1} - {2}", Performer ?? "No performer", Title ?? "No title", FileInfo?.Name ?? "No file");
     }
-    public bool Equals(CueSheet? other)=>Equals( other,StringComparison.CurrentCulture);
+    public bool Equals(CueSheet? other) => Equals(other, StringComparison.CurrentCulture);
     public bool Equals(CueSheet? other, StringComparison stringComparison)
     {
         if (other == null) return false;
-        if(ReferenceEquals(this, other)) return true;
-        if(Container.Indexes.Count != other.Container.Indexes.Count) return false;
-        if(Container.Tracks.Count != other.Container.Tracks.Count) return false;
-        if(Container.Files.Count != other.Container.Files.Count) return false;
+        if (ReferenceEquals(this, other)) return true;
+        if (Container.Indexes.Count != other.Container.Indexes.Count) return false;
+        if (Container.Tracks.Count != other.Container.Tracks.Count) return false;
+        if (Container.Files.Count != other.Container.Files.Count) return false;
         for (int i = 0; i < Container.Indexes.Count; i++)
         {
             CueIndexImpl one = Container.Indexes[i];
             CueIndexImpl two = other.Container.Indexes[i];
-            if (one.Number!=two.Number || one.Time!=two.Time)
+            if (one.Number != two.Number || one.Time != two.Time)
                 return false;
         }
         for (int i = 0; i < Container.Tracks.Count; i++)
@@ -271,6 +347,8 @@ public class CueSheet :IEquatable<CueSheet>, IRemarkableCommentable
             return false;
         return true;
     }
+
+
 
 
 

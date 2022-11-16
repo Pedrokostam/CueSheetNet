@@ -21,7 +21,7 @@ public class CueFile : CueItemBase, IEquatable<CueFile>
     {
         get => _Type;
         [MemberNotNull(nameof(_Type))]
-        set => _Type = value.ToUpperInvariant();
+        set => _Type = value.ToUpperInvariant().Trim();
     }
     public FileMetadata? Meta { get; private set; }
     public bool ValidFile { get; private set; }

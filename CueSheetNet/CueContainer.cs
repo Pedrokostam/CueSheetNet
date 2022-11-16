@@ -59,14 +59,14 @@ internal class CueContainer
             Index = Files.Count
         };
         Files.Add(cf);
-                return cf;
+        return cf;
     }
     public CueFile InsertFile(int insertionIndex, string filePath, string type)
     {
         CueFile cf = new(ParentSheet, filePath, type);
         Files.Insert(insertionIndex, cf);
         RefreshFileIndices(insertionIndex);
-                return cf;
+        return cf;
     }
     public CueTrack AddTrack(int parsedIndex, int fileIndex = -1)
     {
@@ -78,7 +78,7 @@ internal class CueContainer
         };
         cf.Offset = parsedIndex - cf.Number;
         Tracks.Add(cf);
-                return cf;
+        return cf;
     }
     public CueTrack InsertTrack(int insertionIndex, int parsedIndex, int fileIndex = -1)
     {
@@ -87,7 +87,7 @@ internal class CueContainer
         Tracks.Insert(insertionIndex, cf);
         RefreshIndexIndices(insertionIndex);
         cf.Offset = cf.Number - parsedIndex;
-                return cf;
+        return cf;
     }
     public CueIndexImpl AddIndex(CueTime time, int fileIndex = -1, int trackIndex = -1)
     {
@@ -107,7 +107,7 @@ internal class CueContainer
         {
             CueIndexImpl pioneer = new CueIndexImpl(track, file) { Time = time, Number = 1 };
             Indexes.Add(pioneer);
-                        return pioneer;
+            return pioneer;
         }
         (int Start, int End) fileIndices = GetCueIndicesOfFile(fileIndex);
         //No indices in selected file
@@ -125,7 +125,7 @@ internal class CueContainer
                 CueIndexImpl inserted = new(track, file) { Time = time };
                 Indexes.Insert(i, inserted);
                 RefreshIndexIndices(i);
-                                return inserted;
+                return inserted;
             }
         }
         //Found no successors
@@ -133,7 +133,7 @@ internal class CueContainer
         CueIndexImpl insertedEnd = new(track, file) { Time = time, Number = endTime.Number + 1 };
         Indexes.Insert(fileIndices.End, insertedEnd);
         RefreshTracksIndices(fileIndices.End + 1);
-                return insertedEnd;
+        return insertedEnd;
     }
     private CueIndexImpl AddIndex_NoIndexInTrack(CueTime time, CueFile file, CueTrack lastTrack)
     {
@@ -146,7 +146,7 @@ internal class CueContainer
             lastTrack.ParentFile = file;
             CueIndexImpl insertedNoPrev = new(lastTrack, file) { Time = time, Number = 1 };
             Indexes.Add(insertedNoPrev);
-                        return insertedNoPrev;
+            return insertedNoPrev;
         }
         //there are multiple indices for the track in the previous file
         if (length > 1) throw new InvalidOperationException("Track cannot be split due to having more than one index in the previous file");
@@ -155,7 +155,7 @@ internal class CueContainer
         lastTrack.HasZerothIndex = true;
         CueIndexImpl insertedSplit = new(lastTrack, file) { Time = time, Number = 1 };
         Indexes.Add(insertedSplit);
-                return insertedSplit;
+        return insertedSplit;
     }
     private (int Start, int End) GetCueTracksOfFile(int fileIndex = -1)
     {

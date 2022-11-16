@@ -1,4 +1,5 @@
 ﻿using CueSheetNet.Syntax;
+using System.Collections.ObjectModel;
 
 namespace CueSheetNet;
 
@@ -99,6 +100,7 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemarkableCommentabl
     }
     #region Rem
     public readonly List<Remark> RawRems = new();
+    public ReadOnlyCollection<Remark> Remarks => RawRems.AsReadOnly();
     public void ClearRemarks() => RawRems.Clear();
 
     public void AddRemark(string type, string value) => AddRemark(new Remark(type, value));
@@ -120,6 +122,7 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemarkableCommentabl
     #endregion
     #region Comments
     public readonly List<string> RawComments = new();
+    public ReadOnlyCollection<string> Comments => RawComments.AsReadOnly();
     public void AddComment(string comment) => RawComments.Add(comment);
     public void RemoveComment(string comment, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase)
     {
