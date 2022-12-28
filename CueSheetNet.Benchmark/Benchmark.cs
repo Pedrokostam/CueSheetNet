@@ -1,39 +1,102 @@
-﻿using System.Diagnostics;
+﻿using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 using BenchmarkDotNet.Attributes;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace CueSheetNet.Benchmark;
 
-public record struct TS(string A, string B, string C, string D, string F, string E, string G) { }
-public record C(string A, string B, string CC, string D, string F, string E, string G) { }
-[MemoryDiagnoser(false)]
+[MemoryDiagnoser(true)]
 public class Benchmark
 {
-    public static string A { get; set; } = "141521171618542";
-    public TS TTT { get; set; } = new TS(A, A, A, A, A, A, A);
-    public C CCC { get; set; } = new C(A, A, A, A, A, A, A);
+    public static string[] Text =
+    {
+        "hapukle",
+        "kerfufle",
+        "kerfuba",
+        "dlfjkdgvnkjdfnvkjdfnv",
+        "osdjkfnfgoerjf",
+        "jsdfbnvkerfubasdfvsdf",
+        "jsdfbnvhapuklesdf",
+        "jsdfbnvkerfuflesdfvsdf",
+        "sdf",
+        "s",
+        "sjkdnmfjklsdnfjklnsdjklfnsdkjlfjnmsdjklfnsdkjlfnjskldnf",
+        "iqwjeqo328"
+    };
+    public string[] Input { get; set; }
+    [GlobalSetup]
+    public void Init()
+    {
+        int x = 50000;
+        int l = x * Text.Length;
+        Input = new string[l];
+        for (int i = 0; i < l; i++)
+        {
+            Input[i] = Text[i % Text.Length];
+        }
 
-    private static string T(string a, string b, string c, string D, string E, string F, string G)
-    {
-        return a + b + c+D+E+F+G;
     }
-    private static string T(TS ts)
-    {
-        return ts.A + ts.B + ts.C +ts.F+ts.E+ts.F+ts.G;
-    }
-    private static string C(C ts)
-    {
-        return ts.A + ts.B + ts.CC + ts.F + ts.E + ts.F + ts.G;
-    }
+    public static IEnumerable<string> Patterns => new string[] {
+        "^kerfuba$",
+        "^.?.?.?.?.?.?kerfuba.?.?.?.?.?$",
+        "^.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?kerfuba.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?$",
+        "^sdf$",
+        "^.?.?.?sdf$",
+        "^sdf.?.?.?$",
+    };
+    [ParamsSource(nameof(Patterns))]
+    public string Pattern { get; set; } = "^kerfuba$";
 
-    [Benchmark(Baseline = true)]
-    public string JoinSep() => T(A, A, A,A,A,A,A);
     [Benchmark]
-    public string JoinStr() => T(new(A, A, A,A,A,A,A));
+    public List<Match> Natural()
+    {
+        List<Match> Results = new List<Match>();
+        foreach (var item in Input)
+        {
+            var m = Regex.Match(item, Pattern, RegexOptions.IgnoreCase);
+            if (m.Success)
+                Results.Add(m);
+        }
+        return Results;
+    }
     [Benchmark]
-    public string JoinTTT() => T(TTT);
+    public List<Match> Compiled()
+    {
+        var r = new Regex(Pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        List<Match> Results = new List<Match>();
+        foreach (var item in Input)
+        {
+            var m = r.Match(item);
+            if (m.Success)
+                Results.Add(m);
+        }
+        return Results;
+    }
     [Benchmark]
-    public string JoinStrC() => C(new(A, A, A, A, A, A, A));
+    public List<Match> Compiled_Parallel()
+    {
+        var r = new Regex(Pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        ConcurrentBag<Match> Results = new();
+        Parallel.ForEach(Input, (x) =>
+        {
+            var m = r.Match(x);
+            if (m.Success)
+                Results.Add(m);
+        });
+        return Results.AsEnumerable().ToList();
+    }
     [Benchmark]
-    public string JoinTTTC() => C(CCC);
+    public List<Match> Natural_Parallel()
+    {
+        var r = new Regex(Pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        ConcurrentBag<Match> Results = new();
+        Parallel.ForEach(Input, (x) =>
+        {
+            var m = Regex.Match(x, Pattern, RegexOptions.IgnoreCase);
+            if (m.Success)
+                Results.Add(m);
+        });
+        return Results.AsEnumerable().ToList();
+    }
 }

@@ -38,7 +38,7 @@ public class CueFile : CueItemBase, IEquatable<CueFile>
     {
         string absPath = Path.Combine(ParentSheet.FileInfo?.DirectoryName ?? ".", value);
         _file = new FileInfo(absPath);
-        if (_file?.Exists ?? false)
+        if (_file.Exists )
         {
             Meta = AudioFileReader.ParseDuration(_file.FullName);
             ValidFile = true;

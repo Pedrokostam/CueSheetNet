@@ -26,7 +26,7 @@ internal class CueEncodingTester
         }
     }
 
-    public string FilePath { get; }
+    public CueSource Source { get; }
     public Stream Stream { get; }
 
     /// <summary>
@@ -39,13 +39,6 @@ internal class CueEncodingTester
         Encoding.UTF32,
         Encoding.GetEncoding("utf-32BE"),
     };
-
-
-    private void LogError(string msg, string context) => Logger.Log(LogLevel.Error, msg, FilePath, context);
-    private void LogWarning(string msg, string context) => Logger.Log(LogLevel.Warning, msg, FilePath, context);
-    private void LogInformation(string msg, string context) => Logger.Log(LogLevel.Information, msg, FilePath, context);
-    private void LogVerbose(string msg, string context) => Logger.Log(LogLevel.Verbose, msg, FilePath, context);
-    private void LogDebug(string msg, string context) => Logger.Log(LogLevel.Debug, msg, FilePath, context);
 
 
     /// <summary>
@@ -99,7 +92,7 @@ internal class CueEncodingTester
     /// <returns>Detected encoding. If method could exactly tell the encoding the Default encoding for the system is returned</returns>
     public Encoding DetectCueEncoding()
     {
-        LogDebug("Encoding detection started", "");
+        Logger.LogDebug("Encoding detection started. Source: {Source}", Source);
         if (DetectEncodingFromBOM(Stream) is Encoding encodingBom)
             return encodingBom;
         if (DetectFixedWidthEncoding(Stream) is Encoding encodingFixed)
@@ -112,7 +105,7 @@ internal class CueEncodingTester
     }
     private Encoding DetectUtf8Heuristically(List<byte> b)
     {
-        LogDebug("Heuristic encoding detection started", "");
+        Logger.LogDebug("Heuristic encoding detection started. Source: {}", Source);
         bool utf8 = false;
         for (int i = 0; i < b.Count - 4; i++)
         {
@@ -175,7 +168,7 @@ internal class CueEncodingTester
     }
     private List<byte> GetPotentialDiacritizedLines(Stream fs)
     {
-        LogDebug("Keyword line selection started", "");
+        Logger.LogDebug("Keyword line selection started. Source: {Source}", Source);
         ByteInvariantComparer bytey = new();
         fs.Seek(0, SeekOrigin.Begin);
         List<byte> bytes = new(512);
@@ -214,13 +207,13 @@ internal class CueEncodingTester
                     AddUntilNewLine(fs, bytes);
             }
         }
-        LogDebug($"Found {bytes.Count} bytes of keyword lines", "");
+        Logger.LogDebug("Found {Keyword count} bytes of keyword lines. Source: {Source}", bytes.Count,Source);
         return bytes;
     }
 
     public Encoding? DetectEncodingFromBOM(Stream fs)
     {
-        LogDebug("Preamble encoding detection started", "");
+        Logger.LogDebug("Preamble encoding detection started. Source: {Source}", Source);
         Span<byte> bomArea = stackalloc byte[4];
         fs.Seek(0, SeekOrigin.Begin);
         fs.Read(bomArea);
@@ -229,7 +222,7 @@ internal class CueEncodingTester
         {
             if (CompareBytes(bomArea, encoding))
             {
-                LogVerbose("Encoding detected from preamble", encoding.EncodingName);
+                Logger.LogVerbose("Encoding {Encoding} detected from preamble. Source: {Source}", encoding.EncodingName,Source);
                 return encoding;
             }
         }
@@ -237,7 +230,7 @@ internal class CueEncodingTester
     }
     public Encoding? DetectFixedWidthEncoding(Stream fs)
     {
-        LogDebug("UTF16/32 encoding detection started", "");
+        Logger.LogDebug("UTF16/32 encoding detection started. Source: {Source}", Source);
         // first 512 byte should contain many English keyword of cuesheet
         int length = 512;
         var sample = new byte[length];
@@ -283,7 +276,7 @@ internal class CueEncodingTester
                 maxIndex = i;
             }
         }
-        Logger.Log(LogLevel.Debug, $"UTF16/32 encoding detection results: 16LE - {counters[0]}, 16BE - {counters[1]}, 32LE - {counters[2]}, 32BE - {counters[3]}",FilePath, ""); ;
+        Logger.LogDebug("UTF16/32 encoding detection results: 16LE - {16LE Count}, 16BE - {16BE Count}, 32LE - {32LE Count}, 32BE - {32BE Count}. Source: {Source}",counters[0], counters[1], counters[2], counters[3],Source); ;
         //if no encoding had more than 33 % hit rate - return null
         if (maximum < length / 3)
         {
@@ -299,10 +292,10 @@ internal class CueEncodingTester
         };
 
     }
-    public CueEncodingTester(Stream stream, string filePath)
+    public CueEncodingTester(Stream stream, CueSource source)
     {
         Stream = stream;
-        FilePath = filePath;
+        Source = source;
 
     }
 }
