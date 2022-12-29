@@ -181,7 +181,7 @@ public class CueReader
         }
         Sheet!.RefreshIndices();
         st.Stop();
-        Logger.LogInformation("Finished parsing {Source} ion {Time}ms", Source, st.ElapsedMilliseconds);
+        Logger.LogInformation("Finished parsing {Source} in {Time}ms", Source, st.ElapsedMilliseconds);
         return Sheet;
     }
 
