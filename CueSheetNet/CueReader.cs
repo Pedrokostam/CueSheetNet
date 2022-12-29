@@ -111,7 +111,7 @@ public class CueReader
         return ParseCueSheet_Impl(fs);
     }
 
-    public CueSheet ParseCueSheet_Impl(Stream fs)
+    private CueSheet ParseCueSheet_Impl(Stream fs)
     {
         Logger.LogDebug("Parsing started");
         Sheet = new();
@@ -121,7 +121,7 @@ public class CueReader
             var tester = new CueEncodingTester(fs, Source);
             Encoding = tester.DetectCueEncoding();
             st.Stop();
-            Logger.LogVerbose("Detected {Encoding} encoding in {Time}ms", Encoding, st.ElapsedMilliseconds);
+            Logger.LogVerbose("Detected {Encoding.EncodingName} encoding in {Time}ms", Encoding, st.ElapsedMilliseconds);
         }
         fs.Seek(0, SeekOrigin.Begin);
         using TextReader strr = new StreamReader(fs, Encoding, false);
@@ -182,6 +182,7 @@ public class CueReader
         Sheet!.RefreshIndices();
         st.Stop();
         Logger.LogInformation("Finished parsing {Source} in {Time}ms", Source, st.ElapsedMilliseconds);
+        Sheet.SourceEncoding = Encoding;
         return Sheet;
     }
 

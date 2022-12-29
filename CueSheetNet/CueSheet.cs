@@ -125,7 +125,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
     public CueTrack? LastTrack => Container.Tracks.LastOrDefault();
     public string? Performer { get; set; }
     public CueType SheetType { get; internal set; }
-    public Encoding? SourceEncoding { get; private set; }
+    public Encoding? SourceEncoding { get; internal set; }
     public string? Title { get; set; }
     public ReadOnlyCollection<CueTrack> Tracks => Container.Tracks.AsReadOnly();
 

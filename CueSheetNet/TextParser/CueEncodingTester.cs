@@ -105,7 +105,7 @@ internal class CueEncodingTester
     }
     private Encoding DetectUtf8Heuristically(List<byte> b)
     {
-        Logger.LogDebug("Heuristic encoding detection started. Source: {}", Source);
+        Logger.LogDebug("Heuristic encoding detection started. Source: {Source}", Source);
         bool utf8 = false;
         for (int i = 0; i < b.Count - 4; i++)
         {
@@ -164,7 +164,11 @@ internal class CueEncodingTester
         if (utf8)
             return new UTF8Encoding(false);
         else
-            return Encoding.Default;
+        {
+            Encoding enc = Encoding.GetEncoding("windows-1252");
+            Logger.LogDebug("Non-UTF-8 bytes detected. Using {Encoding.EncodingName} encoding.",enc);
+            return enc;
+        }
     }
     private List<byte> GetPotentialDiacritizedLines(Stream fs)
     {
@@ -222,7 +226,7 @@ internal class CueEncodingTester
         {
             if (CompareBytes(bomArea, encoding))
             {
-                Logger.LogVerbose("Encoding {Encoding} detected from preamble. Source: {Source}", encoding.EncodingName,Source);
+                Logger.LogVerbose("Encoding {Encoding.EncodingName} detected from preamble. Source: {Source}", encoding,Source);
                 return encoding;
             }
         }

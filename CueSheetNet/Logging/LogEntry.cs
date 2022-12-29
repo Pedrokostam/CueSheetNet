@@ -1,15 +1,43 @@
 ﻿using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace CueSheetNet.Logging;
 
-public record struct Argument(string Identifier, object Object)
+public record struct Argument(string Identifier, object Object, string? Accessor = null)
 {
     public Type ObjectType => Object.GetType();
+    public object Get()
+    {
+        if (Accessor is null) return Object;
+        PropertyInfo? prop = ObjectType.GetProperty(Accessor);
+        if (prop is not null)
+            return prop.GetValue(Object) ?? Object;
+        MethodInfo? meth = ObjectType.GetMethod(Accessor);
+        if (meth is not null)
+            return meth.Invoke(Object, Array.Empty<Object>()) ?? Object;
+        return Object;
+    }
+    //public override string ToString()
+    //{
+    //    string def = Object.ToString() ?? "N/A";
+    //    if (Accessor is null) return def;
+    //    PropertyInfo? prop = ObjectType.GetProperty(Accessor);
+    //    if (prop is not null)
+    //        return prop.GetValue(Object)?.ToString() ?? def;
+    //    MethodInfo? meth = ObjectType.GetMethod(Accessor);
+    //    if (meth is not null)
+    //        return meth.Invoke(Object, Array.Empty<Object>())?.ToString() ?? def;
+    //    return def;
+    //}
 }
+
+
 public class LogEntry
 {
+    private static readonly Regex Parenthesis = new Regex(@"\(.*\)", RegexOptions.Compiled);
     public DateTime Timestamp { get; init; }
 
     public LogLevel Level { get; init; }
@@ -38,12 +66,12 @@ public class LogEntry
         Timestamp = DateTime.Now;
         MessageTemplate = messageTemplate;
         Identifiers = new List<string>();
-        if(args.Length==0 && !messageTemplate.Contains('{'))
+        if (args.Length == 0 && !messageTemplate.Contains('{'))
         {
             //No objects, no curly brackets - no identifiers -- no need to check
             Message = messageTemplate;
             FormattingTemplate = string.Empty;
-            Elements=new (Array.Empty<Argument>()); 
+            Elements = new(Array.Empty<Argument>());
             return;
         }
 
@@ -57,10 +85,21 @@ public class LogEntry
         for (int i = 0; i < Identifiers.Count; i++)
         {
             objects[i] = args[i];
-            temp.Add(new(Identifiers[i], args[i]));
+            if (Identifiers[i].Contains('.'))
+            {
+                string[] namePropMeth = Identifiers[i].Split('.');
+                string name = namePropMeth[0];
+                string propMeth = namePropMeth[1];
+                propMeth = Parenthesis.Replace(propMeth, "");
+                temp.Add(new(name, args[i], propMeth));
+            }
+            else
+            {
+                temp.Add(new(Identifiers[i], args[i]));
+            }
         }
         Elements = temp.AsReadOnly();
-        Message = string.Format(FormattingTemplate, objects);
+        Message = string.Format(FormattingTemplate, Elements.Select(x => x.Get()).ToArray());
     }
 
     private string Tokenize()
