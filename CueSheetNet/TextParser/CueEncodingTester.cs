@@ -296,6 +296,11 @@ internal class CueEncodingTester
         };
 
     }
+    static CueEncodingTester()
+    {
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
+    }
     public CueEncodingTester(Stream stream, CueSource source)
     {
         Stream = stream;

@@ -91,7 +91,9 @@ public class CueReader
         if (!File.Exists(cuePath)) throw new FileNotFoundException($"{cuePath} does not exist");
         byte[] cueFileBytes = File.ReadAllBytes(cuePath);
         using MemoryStream fs = new(cueFileBytes, false);
-        return ParseCueSheet_Impl(fs);
+        CueSheet cue = ParseCueSheet_Impl(fs);
+        cue.SetCuePath(cuePath);
+        return cue;
     }
     public CueSheet ParseCueSheets(byte[] cueFileBytes)
     {

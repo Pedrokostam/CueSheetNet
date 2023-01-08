@@ -17,15 +17,14 @@ IEnumerable<T> Repeat<T>(T[] em, int count)
 	}
 }
 
-string PATH= @"C:\Users\Pedro\Downloads\CUE\Violator.cue";
 var eo = new EnumerationOptions() { IgnoreInaccessible = true, RecurseSubdirectories = true, ReturnSpecialDirectories = false };
 var fies = Directory.GetFiles(@"E:\FLACBAZA\RawRips\", "*.cue", eo);
-string[] dafak = Repeat(fies, 1).ToArray();
-List<CueSheet> l = new(dafak.Length);
+string PATH= fies[0];
 HybridLogger hb = new();
 Logger.Register(hb);
 var re = new CueReader();
 var cc  = re.ParseCueSheet(PATH);
+var cuep = new CuePackage(cc);
 int x = 8;
 ////var s = Stopwatch.StartNew();
 ////foreach (var f in dafak)
