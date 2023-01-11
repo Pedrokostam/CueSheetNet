@@ -1,4 +1,5 @@
 ﻿using System.Collections.ObjectModel;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace CueSheetNet;
@@ -135,7 +136,10 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
 
     //}
     public static CueSheet Copy(CueSheet cueSheet) => cueSheet.Copy();
-
+    public void ChangeFile(int index, string newPath)
+    {
+        Files[index].SetFile(newPath);
+    }
     public CueFile AddFile(string path, string type) => Container.AddFile(path, type);
 
     public CueIndex AddIndex(CueTime time, CueFile file, CueTrack track)
@@ -330,6 +334,15 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
         }
         if (CdTextFile != null)
             CdTextFile.Refresh();
+    }
+
+    public void Save(string? path)
+    {
+        if (path is not null)
+            SetCuePath(path);
+        ArgumentException.ThrowIfNullOrEmpty(path);
+        CueWriter writer = new();
+        writer.SaveCueSheet(this);
     }
     //public CueSheet(CueSheet sheet)
     //{

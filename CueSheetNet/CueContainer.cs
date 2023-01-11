@@ -51,6 +51,7 @@ internal class CueContainer
     {
         ParentSheet = cueSheet;
     }
+
     public CueFile AddFile(string filePath, string type)
     {
         if (string.IsNullOrEmpty(type)) type = "WAVE";

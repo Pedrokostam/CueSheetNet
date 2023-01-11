@@ -25,6 +25,7 @@ Logger.Register(hb);
 var re = new CueReader();
 var cc  = re.ParseCueSheet(PATH);
 var cuep = new CuePackage(cc);
+cuep.CopyFiles(@"E:\XDDDDDDD\LEL", "%performer%/%title%/%date%/%old%");
 int x = 8;
 ////var s = Stopwatch.StartNew();
 ////foreach (var f in dafak)
