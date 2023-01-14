@@ -178,12 +178,12 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
             RedundantFieldsBehavior = CueWriterSettings.RedundantFieldBehaviors.KeepAsIs,
             ForceQuoting = true,
         };
-        CueWriter tempWriter = new();
-        string tempData = tempWriter.WriteToString(this);
-        throw new NotImplementedException();
-        //CueReaderInner reader = new();
-        //var v = Encoding.Unicode.GetBytes(tempData);
-        //return reader.ParseCueSheet_Bytes(this.FileInfo!.FullName,v );
+        CueWriter tempWriter = new(settings);
+        char[] czaryMary = tempWriter.WriteToCharArray(this);
+        CueReader reader = new();
+        CueSheet newCue = reader.ParseCueSheet(czaryMary);
+        newCue.SourceEncoding = this.SourceEncoding;
+        return newCue;
     }
 
     public bool Equals(CueSheet? other) => Equals(other, StringComparison.CurrentCulture);
@@ -335,7 +335,11 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
         if (CdTextFile != null)
             CdTextFile.Refresh();
     }
-
+    /// <summary>
+    /// Save the CueSheet to the location specified by its fileinfo. If <paramref name="path"/> is not null, it is set as cue path of this instance.
+    /// After changing, path is not reverted if saving was unsuccessful.
+    /// </summary>
+    /// <param name="path"></param>
     public void Save(string? path)
     {
         if (path is not null)

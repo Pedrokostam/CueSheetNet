@@ -95,7 +95,7 @@ public class CueReader
         cue.SetCuePath(cuePath);
         return cue;
     }
-    public CueSheet ParseCueSheets(byte[] cueFileBytes)
+    public CueSheet ParseCueSheet(byte[] cueFileBytes)
     {
         Reset();
         Source = new CueSource(cueFileBytes);
