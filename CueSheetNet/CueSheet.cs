@@ -46,6 +46,13 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
     public void AddRemark(string type, string value) => AddRemark(new Remark(type, value));
 
     public void AddRemark(Remark entry) => RawRems.Add(entry);
+    public void AddRemark(IEnumerable<Remark> entries)
+    {
+        foreach (Remark remark in entries)
+        {
+            RawRems.Add(remark);
+        }
+    }
 
     public void ClearRemarks() => RawRems.Clear();
     public void RemoveRemark(int index)
@@ -70,6 +77,13 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
     internal readonly List<string> RawComments = new();
     public ReadOnlyCollection<string> Comments => RawComments.AsReadOnly();
 
+    public void AddComment(IEnumerable<string> comments)
+    {
+        foreach (string comment in comments)
+        {
+            AddComment(comment);
+        }
+    }
     public void AddComment(string comment) => RawComments.Add(comment);
 
     public void ClearComments() => RawComments.Clear();
@@ -134,8 +148,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
 
     private CueContainer Container { get; }
 
-    //}
-    public static CueSheet Copy(CueSheet cueSheet) => cueSheet.Copy();
+    public static CueSheet Clone(CueSheet cueSheet) => cueSheet.Clone();
     public void ChangeFile(int index, string newPath)
     {
         Files[index].SetFile(newPath);
@@ -170,19 +183,21 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
     public CueTrack AddTrack(int index, int fileIndex = -1) => Container.AddTrack(index, fileIndex);
 
 
-    public CueSheet Copy()
+    public CueSheet Clone()
     {
-        CueWriterSettings settings = new()
+        CueSheet newCue = new(FileInfo?.FullName)
         {
-            IndentationDepth = 0,
-            RedundantFieldsBehavior = CueWriterSettings.RedundantFieldBehaviors.KeepAsIs,
-            ForceQuoting = true,
+            Catalog = Catalog,
+            Composer = Composer,
+            Date = Date,
+            DiscID = DiscID,
+            Performer = Performer,
+            Title = Title,
         };
-        CueWriter tempWriter = new(settings);
-        char[] czaryMary = tempWriter.WriteToCharArray(this);
-        CueReader reader = new();
-        CueSheet newCue = reader.ParseCueSheet(czaryMary);
-        newCue.SourceEncoding = this.SourceEncoding;
+        newCue.Container.CloneFrom(Container);
+        newCue.AddComment(RawComments);
+        newCue.AddRemark(RawRems.Select(x => x with { }));// creates new remark
+        newCue.SetCdTextFile(CdTextFile?.FullName);
         return newCue;
     }
 
@@ -230,14 +245,14 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
 
     public CueIndex[] GetIndexesOfFile(int fileIndex)
     {
-        (int start, int end) = Container.GetCueIndicesOfFile(fileIndex);
+        (int start, int end) = Container.GetCueIndicesOfFile_Range(fileIndex);
         if (start == end) return Array.Empty<CueIndex>();
         return Container.Indexes.Skip(start).Take(end - start).Select(x => new CueIndex(x)).ToArray();
     }
 
     public CueIndex[] GetIndexesOfTrack(int trackIndex)
     {
-        (int start, int end) = Container.GetCueIndicesOfTrack(trackIndex);
+        (int start, int end) = Container.GetCueIndicesOfTrack_Range(trackIndex);
         if (start == end) return Array.Empty<CueIndex>();
         return Container.Indexes.Skip(start).Take(end - start).Select(x => new CueIndex(x)).ToArray();
     }
@@ -271,7 +286,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
     {
         CueTrack? track = Container.Tracks.ElementAtOrDefault(trackIndex);
         if (track is null) throw new KeyNotFoundException("Specified track does not exist");
-        (int Start, int End) = Container.GetCueIndicesOfTrack(trackIndex, true);
+        (int Start, int End) = Container.GetCueIndicesOfTrack_Range(trackIndex, true);
         int count = End - Start;
         //0
         if (count == 0) throw new InvalidOperationException("Track has no indices");
@@ -304,7 +319,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
 
     internal CueIndexImpl AddIndexInternal(CueTime time, int fileIndex = -1, int trackIndex = -1) => Container.AddIndex(time, fileIndex, trackIndex);
 
-    internal (int Start, int End) GetCueIndicesOfTrack(int trackIndex) => Container.GetCueIndicesOfTrack(trackIndex, true);
+    internal (int Start, int End) GetCueIndicesOfTrack(int trackIndex) => Container.GetCueIndicesOfTrack_Range(trackIndex, true);
 
     internal void RefreshIndices()
     {
@@ -347,6 +362,27 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
         ArgumentException.ThrowIfNullOrEmpty(path);
         CueWriter writer = new();
         writer.SaveCueSheet(this);
+    }
+
+    public override bool Equals(object? obj)
+    {
+        if (obj is CueSheet) return Equals((CueSheet)obj);
+        else return false;
+    }
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(Performer, Title, Date, Files.Count, Tracks.Count, Remarks.Count, Comments.Count);
+    }
+    public static bool operator ==(CueSheet? left, CueSheet? right)
+    {
+        if (left is not null) return left.Equals(right); //not null and whatever
+        else if (right is not null) return false; // null and not null
+        else return true; // null and null
+    }
+    public static bool operator !=(CueSheet? left, CueSheet? right)
+    {
+        return !(left == right);
     }
     //public CueSheet(CueSheet sheet)
     //{

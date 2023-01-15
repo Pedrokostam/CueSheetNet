@@ -16,6 +16,17 @@ internal class CueIndexImpl : CueItemBase
         File = file;
     }
 
+    internal CueIndexImpl ClonePartial(CueTrack newOwnerTrack, CueFile newOwnerFile)
+    {
+        return new(newOwnerTrack, newOwnerFile)
+        {
+            Index= Index,
+            Time= Time,
+            Orphaned=Orphaned,
+            Number=Number,
+        };
+    }
+
     public int Index { get; internal set; }
 
     public int Number { get; internal set; }

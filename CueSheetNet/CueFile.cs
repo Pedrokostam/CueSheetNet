@@ -16,6 +16,10 @@ public class CueFile : CueItemBase, IEquatable<CueFile>
         SetFile(filePath);
         Type = type;
     }
+    internal CueFile ClonePartial(CueSheet newOwner)
+    {
+        return new(newOwner, FileInfo.FullName, Type);
+    }
     private string _Type;
     public string Type
     {

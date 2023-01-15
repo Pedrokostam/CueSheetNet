@@ -1,4 +1,6 @@
-﻿using System.Diagnostics;
+﻿using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace CueSheetNet;
 
@@ -110,7 +112,7 @@ internal class CueContainer
             Indexes.Add(pioneer);
             return pioneer;
         }
-        (int Start, int End) fileIndices = GetCueIndicesOfFile(fileIndex);
+        (int Start, int End) fileIndices = GetCueIndicesOfFile_Range(fileIndex);
         //No indices in selected file
         if (fileIndices.Start == fileIndices.End)
         {
@@ -139,7 +141,7 @@ internal class CueContainer
     private CueIndexImpl AddIndex_NoIndexInTrack(CueTime time, CueFile file, CueTrack lastTrack)
     {
         CueIndexImpl lastIndex = Indexes[^1];
-        (int Start, int End) trackIndices = GetCueIndicesOfTrack(lastTrack.Index, true);
+        (int Start, int End) trackIndices = GetCueIndicesOfTrack_Range(lastTrack.Index, true);
         // track has no indices, and the previous file has no tracks - move track to current file
         int length = trackIndices.End - trackIndices.Start;
         if (length == 0)
@@ -158,7 +160,23 @@ internal class CueContainer
         Indexes.Add(insertedSplit);
         return insertedSplit;
     }
-    private (int Start, int End) GetCueTracksOfFile(int fileIndex = -1)
+    internal void CloneFrom(CueContainer donor)
+    {
+        foreach (CueFile file in donor.Files)
+        {
+            Files.Add(file.ClonePartial(ParentSheet));
+            foreach (CueTrack track in donor.GetCueTracksOfFile(file.Index))
+            {
+                Tracks.Add(track.ClonePartial(Files[^1]));
+                //var t = donor.GetCueIndicesOfTrack(track.Index);
+                foreach (CueIndexImpl ci in donor.GetCueIndicesOfTrack(track.Index))
+                {
+                    Indexes.Add(ci.ClonePartial(Tracks[^1], Files[^1]));
+                }
+            }
+        }
+    }
+    private (int Start, int End) GetCueTracksOfFile_Range(int fileIndex = -1)
     {
         if (fileIndex < 0) fileIndex = Files.Count - 1;
         CueFile file = Files[fileIndex];
@@ -176,7 +194,17 @@ internal class CueContainer
         }
         return (start, start + count);
     }
-    internal (int Start, int End) GetCueIndicesOfFile(int fileIndex = -1)
+    private IEnumerable<CueTrack> GetCueTracksOfFile(int fileIndex = -1)
+    {
+        (int Start, int End) = GetCueTracksOfFile_Range(fileIndex);
+        return Tracks.Skip(Start).Take(End - Start);
+    }
+    private IEnumerable<CueIndexImpl> GetCueIndicesOfTrack(int fileIndex = -1)
+    {
+        (int Start, int End) = GetCueIndicesOfTrack_Range(fileIndex);
+        return Indexes.Skip(Start).Take(End - Start);
+    }
+    internal (int Start, int End) GetCueIndicesOfFile_Range(int fileIndex = -1)
     {
         if (fileIndex < 0) fileIndex = Files.Count - 1;
         CueFile file = Files[fileIndex];
@@ -194,7 +222,7 @@ internal class CueContainer
         }
         return (start, start + count);
     }
-    internal (int Start, int End) GetCueIndicesOfTrack(int trackIndex = -1, bool includeDangling = false)
+    internal (int Start, int End) GetCueIndicesOfTrack_Range(int trackIndex = -1, bool includeDangling = false)
     {
         if (trackIndex < 0) trackIndex = Tracks.Count - 1;
         CueTrack track = Tracks[trackIndex];

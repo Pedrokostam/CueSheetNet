@@ -1,11 +1,12 @@
 ﻿using CueSheetNet.Syntax;
 using System.Collections.ObjectModel;
+using System.Xml.Linq;
 
 namespace CueSheetNet;
 
 public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemarkableCommentable
 {
-    public FieldSetFlags CommonFieldsSet { get;private set; }
+    public FieldSetFlags CommonFieldsSet { get; private set; }
     /// <summary>
     /// Absolute index for the whole CueSheet
     /// </summary>
@@ -33,7 +34,7 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemarkableCommentabl
     private string? _Title;
     public string Title
     {
-        get=>_Title ?? Path.ChangeExtension(ParentFile.FileInfo.Name, null);
+        get => _Title ?? Path.ChangeExtension(ParentFile.FileInfo.Name, null);
         set
         {
             if (string.IsNullOrEmpty(value))
@@ -105,6 +106,13 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemarkableCommentabl
 
     public void AddRemark(string type, string value) => AddRemark(new Remark(type, value));
     public void AddRemark(Remark entry) => RawRems.Add(entry);
+    public void AddRemark(IEnumerable<Remark> entries)
+    {
+        foreach (Remark remark in entries)
+        {
+            AddRemark(remark);
+        }
+    }
 
     public void RemoveRemark(int index)
     {
@@ -112,6 +120,27 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemarkableCommentabl
             RawRems.RemoveAt(index);
     }
 
+    internal CueTrack ClonePartial(CueFile newOwner)
+    {
+        CueTrack newTrack = new(newOwner)
+        {
+            CommonFieldsSet = CommonFieldsSet,
+            Composer = Composer,
+            Flags = Flags,
+            Title = Title,
+            PostGap = PostGap,
+            PreGap = PreGap,
+            Performer=Performer,
+            ISRC=ISRC,
+            HasZerothIndex=HasZerothIndex,
+            Index=Index,
+            Offset=Offset,
+            Orphaned=Orphaned,
+        };
+        newTrack.AddRemark(RawRems.Select(x=>x with { }));
+        newTrack.AddComment(RawComments);
+        return newTrack;
+    }
     public void RemoveRemark(string field, string value, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase) => RemoveRemark(new Remark(field, value), comparisonType);
     public void RemoveRemark(Remark entry, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase)
     {
@@ -123,6 +152,13 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemarkableCommentabl
     #region Comments
     public readonly List<string> RawComments = new();
     public ReadOnlyCollection<string> Comments => RawComments.AsReadOnly();
+    public void AddComment(IEnumerable<string> comments)
+    {
+        foreach (string comment in comments)
+        {
+            AddComment(comment);
+        }
+    }
     public void AddComment(string comment) => RawComments.Add(comment);
     public void RemoveComment(string comment, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase)
     {
