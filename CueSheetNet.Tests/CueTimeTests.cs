@@ -68,9 +68,9 @@ public class CueTimeTests
         };
     }
     [TestMethod("Convert CueTime to TimeSpan and back to CueTime")]
-    public void RoundTripConversionTest()
+    public void RoundTripConversionTest_CtTsCt()
     {
-        for (int i = -99000; i <= 99000; i++)
+        for (int i = CueTime.Min.TotalFrames; i <= CueTime.Max.TotalFrames; i++)
         {
             CueTime ct = new(i);
             TimeSpan ts = ct;
@@ -78,6 +78,29 @@ public class CueTimeTests
             Assert.AreEqual(back, ct);
         }
     }
+    //[TestMethod("Roundtrip conversion from TimeSpan to CueTime and back to Timespan should not be larger than source")]
+    //public void RoundTripConversionTest_TsCtTs()
+    //{
+    //    int span = 100000;
+    //    int[] basevals = { -1000000, -100000, -10000, -1000, 1000, 10000, 100000, 1000000 };
+    //    foreach (int baseval in basevals)
+    //    {
+    //        for (int i = baseval; i <= baseval + span; i++)
+    //        {
+    //            TimeSpan ts = TimeSpan.FromTicks(-933332);
+    //            CueTime ct = (CueTime)ts;
+    //            TimeSpan ts2 = ct;
+    //            if (ts.Ticks > 0)
+    //            {
+    //                Assert.IsTrue(ts >= ts2, $"{ts} - {ts2} - {i}");
+    //            }
+    //            else
+    //            {
+    //                Assert.IsTrue(ts <= ts2,$"{ts} - {ts2} - {i}");
+    //            }
+    //        }
+    //    }
+    //}
     [TestMethod("TryParse various valid strings")]
     public void TryParseTestString()
     {

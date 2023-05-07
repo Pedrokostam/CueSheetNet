@@ -21,7 +21,7 @@ public readonly record struct CueIndex
     internal CueIndex(CueIndexImpl iimpl) : this(iimpl.Number,iimpl.Index,iimpl.File,iimpl.Track,iimpl.Time){ }
     public CueIndex(int number,int absoluteIndex,CueFile file, CueTrack track, int minutes, int seconds, int frames) : this(number,absoluteIndex,file,track, minutes * 75 * 60 + seconds * 60 + frames){ }
     public CueIndex(int number,int absoluteIndex,CueFile file, CueTrack track, CueTime cueTime) : this(number, absoluteIndex, file, track, cueTime.TotalFrames) { }
-    public CueIndex(int number,int absoluteIndex,CueFile file, CueTrack track, TimeSpan timeSpan) : this(number, absoluteIndex, file, track, new CueTime(timeSpan)) { }
+    public CueIndex(int number,int absoluteIndex,CueFile file, CueTrack track, TimeSpan timeSpan) : this(number, absoluteIndex, file, track, CueTime.FromTimeSpan(timeSpan)) { }
     public CueIndex(int number,int absoluteIndex,CueFile file, CueTrack track, int totalFrames)
     {
         AbsoluteIndex=absoluteIndex;

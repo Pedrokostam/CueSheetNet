@@ -40,9 +40,9 @@ public class CueFile : CueItemBase, IEquatable<CueFile>
     [MemberNotNull(nameof(_file))]
     public void SetFile(string value)
     {
-        string absPath = Path.Combine(ParentSheet.FileInfo?.DirectoryName ?? ".", value);
+        string absPath = Path.Combine(ParentSheet.SourceFile?.DirectoryName ?? ".", value);
         _file = new FileInfo(absPath);
-        if (_file.Exists )
+        if (_file.Exists)
         {
             Meta = AudioFileReader.ParseDuration(_file.FullName);
             ValidFile = true;
@@ -52,6 +52,7 @@ public class CueFile : CueItemBase, IEquatable<CueFile>
             Meta = null;
             ValidFile = false;
         }
+        PathComparer.NormalizePath(_file);
     }
     public CueIndex[] Indexes => ParentSheet.GetIndexesOfFile(Index);
 
@@ -63,22 +64,21 @@ public class CueFile : CueItemBase, IEquatable<CueFile>
     public void RefreshFileInfo()
     {
         string name = FileInfo.Name;
-        string absPath = Path.Combine(ParentSheet.FileInfo?.DirectoryName ?? ".", name);
+        string absPath = Path.Combine(ParentSheet.SourceFile?.DirectoryName ?? ".", name);
         SetFile(absPath);
     }
 
     public bool Equals(CueFile? other) => Equals(other, StringComparison.CurrentCulture);
 
+    public string NormalizedPath { get; private set; }
+
     public bool Equals(CueFile? other, StringComparison stringComparison)
     {
         if (ReferenceEquals(this, other)) return true;
         if (other == null) return false;
-        if (
-               !string.Equals(FileInfo.Name, FileInfo.Name, StringComparison.OrdinalIgnoreCase)
-            || !string.Equals(Type, other.Type)
-            || Index != other.Index
-           )
-            return false;
+        if (NormalizedPath != other.NormalizedPath) return false;
+        if (Type != other.Type) return false;
+        if (Index != other.Index) return false;
         return true;
     }
 
@@ -86,5 +86,7 @@ public class CueFile : CueItemBase, IEquatable<CueFile>
     {
         return Equals(obj as CueFile);
     }
+
+    public override int GetHashCode()=>HashCode.Combine(NormalizedPath,Index);
 }
 

@@ -2,26 +2,36 @@
 
 namespace CueSheetNet.TextParser;
 
+/// <summary>
+/// Used to replace all occurences of double quotes in the field's value.
+/// Quotation parsing is not standardized and some music players may ignore everything after the seconds occurence of a double quote.
+/// </summary>
 public readonly record struct InnerQuotation
 {
     public const char DefaultOpening = '“';
     public const char DefaultClosing = '”';
+    private const char DoubleQuote = '"';
+
+    /// <summary>
+    /// No replacement is done. Strings returned as is. (Replacement quotes set to '"').
+    /// </summary>
+    public static readonly InnerQuotation NoReplacement = new(DoubleQuote);
     /// <summary>
     /// Quotation marks consisting of simple symmetrical apostrophes. 'Example'.
     /// </summary>
-    public static readonly InnerQuotation Apostrophes = new ('\'', '\'');
+    public static readonly InnerQuotation Apostrophes = new('\'', '\'');
     /// <summary>
     /// Quotation marks consisting of two asymmentrical double quotes, both at the top. Commonly used in English. “Example”.
     /// </summary>
-    public static readonly InnerQuotation CurvedDoubleTopQuotation = new (DefaultOpening, DefaultClosing);
+    public static readonly InnerQuotation CurvedDoubleTopQuotation = new(DefaultOpening, DefaultClosing);
     /// <summary>
-    /// Quotation marks consisting of two asymmentrical double quotes, both comma like, opening one at the bottom , closing one at the top .„Example”.
+    /// Quotation marks consisting of two asymmentrical double quotes, both comma like, opening one at the bottom , closing one at the top. „Example”.
     /// </summary>
     public static readonly InnerQuotation CommaLikeBottomTopQuotation = new('„', '”');
     /// <summary>
     /// Quotation marks consisting of two asymmentrical double angle marks. Also known as guillemets. «Example».
     /// </summary>
-    public static readonly InnerQuotation DoubleAngleQuotation = new ('«', '»');
+    public static readonly InnerQuotation DoubleAngleQuotation = new('«', '»');
     /// <summary>
     /// Quotation marks consisting of two asymmentrical double angle marks. «Example»
     /// </summary>
@@ -29,17 +39,15 @@ public readonly record struct InnerQuotation
 
     private readonly char openingQuote;
     private readonly char closingQuote;
-    private readonly bool symmetrical;
+    private readonly bool Symmetrical => closingQuote == openingQuote;
+    private readonly bool Redundant => closingQuote == DoubleQuote && Symmetrical;
 
     public char OpeningQuote
     {
         get => openingQuote;
         init
         {
-            if (value == '"')
-                throw new ArgumentException("Cannot set double quotes as replacement");
             openingQuote = value;
-            symmetrical = closingQuote == openingQuote;
         }
     }
     public char ClosingQuote
@@ -47,10 +55,7 @@ public readonly record struct InnerQuotation
         get => closingQuote;
         init
         {
-            if (value == '"')
-                throw new ArgumentException("Cannot set double quotes as replacement");
             closingQuote = value;
-            symmetrical = closingQuote == openingQuote;
         }
     }
     /// <summary>
@@ -58,7 +63,6 @@ public readonly record struct InnerQuotation
     /// </summary>
     public InnerQuotation()
     {
-        symmetrical = false;
         openingQuote = DefaultOpening;
         closingQuote = DefaultClosing;
     }
@@ -75,17 +79,29 @@ public readonly record struct InnerQuotation
     /// </summary>
     public InnerQuotation(char symmetricalQuote) : this(symmetricalQuote, symmetricalQuote) { }
 
-    [return: NotNullIfNotNull("input")]
+    /// <summary>
+    /// Replaces any double quotes in the string with <see cref="OpeningQuote"/> and <see cref="ClosingQuote"/>. If replacement quotes are set to duble quotes, string is returned as is.
+    /// </summary>
+    /// <param name="input">Input string to replace double quotes in.</param>
+    /// <returns>The input string with double quotes replaced by <see cref="OpeningQuote"/> and <see cref="ClosingQuote"/>.</returns>
+    [return: NotNullIfNotNull(nameof(input))]
     public string? ReplaceQuotes(string? input)
     {
-        if (input == null) return input;
-        if (symmetrical)
-            return input.Replace('"', OpeningQuote);
+        if (input == null || Redundant) 
+            return input;
+        if (Symmetrical)
+            return input.Replace(DoubleQuote, OpeningQuote);
+        else
+            return ReplaceNonsymmetricalQuotes(input);
+    }
+
+    private string ReplaceNonsymmetricalQuotes(string input)
+    {
         List<int> ints = new();
         int j = 0;
         for (int i = 0; i < input.Length; i++)
         {
-            if (input[i] == '"')
+            if (input[i] == DoubleQuote)
             {
                 ints.Add(i);
             }
@@ -93,7 +109,8 @@ public readonly record struct InnerQuotation
         if (ints.Count == 0)
             return input; ;
         Span<char> inter = stackalloc char[input.Length];
-        input.AsSpan().CopyTo(inter);
+        input.CopyTo(inter);
+        //For the first half of the list
         for (int i = 0; i < ints.Count / 2; i++)
         {
             //take left and right extrema

@@ -6,18 +6,25 @@ using System.Text.RegularExpressions;
 
 namespace CueSheetNet.Logging;
 
-public record struct Argument(string Identifier, object Object, string? Accessor = null)
+/// <summary>
+/// Wrapper around a named object.
+/// Allows specifying the name of a property or parameterless method to be used instead of the input object.
+/// </summary>
+/// <param name="Identifier">Label used to call the argument</param>
+/// <param name="Object">Actual data</param>
+/// <param name="Accessor">Optional property or parameterless method to be used instead of value of object</param>
+public record struct Argument(string Identifier, object? Object, string? Accessor = null)
 {
-    public Type ObjectType => Object.GetType();
-    public object Get()
+    public Type? ObjectType => Object?.GetType();
+    public object? Get()
     {
         if (Accessor is null) return Object;
-        PropertyInfo? prop = ObjectType.GetProperty(Accessor);
+        PropertyInfo? prop = ObjectType?.GetProperty(Accessor);
         if (prop is not null)
             return prop.GetValue(Object) ?? Object;
-        MethodInfo? meth = ObjectType.GetMethod(Accessor);
+        MethodInfo? meth = ObjectType?.GetMethod(Accessor);
         if (meth is not null)
-            return meth.Invoke(Object, Array.Empty<Object>()) ?? Object;
+            return meth.Invoke(Object, Array.Empty<Object?>()) ?? Object;
         return Object;
     }
     //public override string ToString()
@@ -35,9 +42,8 @@ public record struct Argument(string Identifier, object Object, string? Accessor
 }
 
 
-public class LogEntry
+public partial class LogEntry
 {
-    private static readonly Regex Parenthesis = new Regex(@"\(.*\)", RegexOptions.Compiled);
     public DateTime Timestamp { get; init; }
 
     public LogLevel Level { get; init; }
@@ -52,17 +58,10 @@ public class LogEntry
 
     List<string> Identifiers { get; }
 
-    internal LogEntry(LogLevel level, string messageTemplate) : this(level, messageTemplate, Array.Empty<object>()) { }
 
-    internal LogEntry(string messageTemplate) : this(messageTemplate, Array.Empty<object>()) { }
-
-    internal LogEntry(LogLevel level, string messageTemplate, object[] objects) : this(messageTemplate, objects)
+    internal LogEntry(LogLevel level, string messageTemplate, object?[] args)
     {
-        Level = level;
-    }
-
-    internal LogEntry(string messageTemplate, object[] args)
-    {
+        Level= level;
         Timestamp = DateTime.Now;
         MessageTemplate = messageTemplate;
         Identifiers = new List<string>();
@@ -80,7 +79,7 @@ public class LogEntry
         {
             throw new ArgumentException("Not enough arguments for the specified message template");
         }
-        object[] objects = new object[Identifiers.Count];
+        object?[] objects = new object?[Identifiers.Count];
         List<Argument> temp = new(Identifiers.Count);
         for (int i = 0; i < Identifiers.Count; i++)
         {
@@ -90,7 +89,7 @@ public class LogEntry
                 string[] namePropMeth = Identifiers[i].Split('.');
                 string name = namePropMeth[0];
                 string propMeth = namePropMeth[1];
-                propMeth = Parenthesis.Replace(propMeth, "");
+                propMeth = ParenthesisRegex().Replace(propMeth, "");
                 temp.Add(new(name, args[i], propMeth));
             }
             else
@@ -164,4 +163,6 @@ public class LogEntry
         }
     }
 
+    [GeneratedRegex(@"\(.*\)", RegexOptions.Compiled)]
+    private static partial Regex ParenthesisRegex();
 }

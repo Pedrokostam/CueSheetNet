@@ -14,5 +14,5 @@ public interface ILogDevice
     /// <summary>
     /// The minimum value of LogLevel that can be reported by this ILogDevice
     /// </summary>
-    LogLevel MinimumLogLevel { get; }
+    LogLevel RequestedLogLevels { get; }
 }

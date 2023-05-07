@@ -54,7 +54,6 @@ public readonly record struct CueSource
 public class CueReader
 {
     static private readonly Lazy<Regex> EmergencyFile = new(() => new(@"(?<PATH>.*\..+) (?<TYPE>\w*)", RegexOptions.Compiled));
-
     public int CurrentLineIndex { get; private set; } = -1;
 
     public CueSource Source { get; private set; }

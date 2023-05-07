@@ -251,10 +251,11 @@ public class CueWriter
 
     public void SaveCueSheet(CueSheet sheet)
     {
-        ArgumentNullException.ThrowIfNull(sheet.FileInfo);
+        ArgumentNullException.ThrowIfNull(sheet.SourceFile);
         string textData = WriteToString(sheet);
         Encoding encoding = Settings.Encoding ?? sheet.SourceEncoding ?? CueWriterSettings.DefaultEncoding;
-        File.WriteAllText(sheet.FileInfo.FullName, textData, encoding);
+        sheet.SourceFile.Directory!.Create();
+        File.WriteAllText(sheet.SourceFile.FullName, textData, encoding);
         sheet.SourceEncoding = encoding;
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 using BenchmarkDotNet.Attributes;
@@ -9,94 +10,44 @@ namespace CueSheetNet.Benchmark;
 [MemoryDiagnoser(true)]
 public class Benchmark
 {
-    public static string[] Text =
+    [Params(10,1000,1000000)]
+    public int Size { get; set; }
+    public IEnumerable<decimal> A { get; set; }=Enumerable.Empty<decimal>();
+    public IEnumerable<decimal> B()
     {
-        "hapukle",
-        "kerfufle",
-        "kerfuba",
-        "dlfjkdgvnkjdfnvkjdfnv",
-        "osdjkfnfgoerjf",
-        "jsdfbnvkerfubasdfvsdf",
-        "jsdfbnvhapuklesdf",
-        "jsdfbnvkerfuflesdfvsdf",
-        "sdf",
-        "s",
-        "sjkdnmfjklsdnfjklnsdjklfnsdkjlfjnmsdjklfnsdkjlfnjskldnf",
-        "iqwjeqo328"
-    };
-    public string[] Input { get; set; }
+        for (int i = 0; i < Size; i++)
+        {
+            yield return (decimal)i;
+        }
+    }
+
     [GlobalSetup]
-    public void Init()
+  public  void Setup()
     {
-        int x = 50000;
-        int l = x * Text.Length;
-        Input = new string[l];
-        for (int i = 0; i < l; i++)
-        {
-            Input[i] = Text[i % Text.Length];
-        }
-
+        A = B();
     }
-    public static IEnumerable<string> Patterns => new string[] {
-        "^kerfuba$",
-        "^.?.?.?.?.?.?kerfuba.?.?.?.?.?$",
-        "^.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?kerfuba.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?.?$",
-        "^sdf$",
-        "^.?.?.?sdf$",
-        "^sdf.?.?.?$",
-    };
-    [ParamsSource(nameof(Patterns))]
-    public string Pattern { get; set; } = "^kerfuba$";
-
+    private List<decimal> ListImpl()
+    {
+        return A.ToList();
+    }
+    private decimal[] ArrayImpl()
+    {
+        return A.ToArray();
+    }
+    private ImmutableArray<decimal> ImmutableArrayImpl()
+    {
+        return A.ToImmutableArray();
+    }
+    private ImmutableList<decimal> ImmutableListImpl()
+    {
+        return A.ToImmutableList();
+    }
+    [Benchmark(Baseline =true)]
+    public int List() => ListImpl().Count;
     [Benchmark]
-    public List<Match> Natural()
-    {
-        List<Match> Results = new List<Match>();
-        foreach (var item in Input)
-        {
-            var m = Regex.Match(item, Pattern, RegexOptions.IgnoreCase);
-            if (m.Success)
-                Results.Add(m);
-        }
-        return Results;
-    }
+    public int Array() => ArrayImpl().Length;
     [Benchmark]
-    public List<Match> Compiled()
-    {
-        var r = new Regex(Pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
-        List<Match> Results = new List<Match>();
-        foreach (var item in Input)
-        {
-            var m = r.Match(item);
-            if (m.Success)
-                Results.Add(m);
-        }
-        return Results;
-    }
+    public int ImmutableArray() => ImmutableArrayImpl().Length;
     [Benchmark]
-    public List<Match> Compiled_Parallel()
-    {
-        var r = new Regex(Pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
-        ConcurrentBag<Match> Results = new();
-        Parallel.ForEach(Input, (x) =>
-        {
-            var m = r.Match(x);
-            if (m.Success)
-                Results.Add(m);
-        });
-        return Results.AsEnumerable().ToList();
-    }
-    [Benchmark]
-    public List<Match> Natural_Parallel()
-    {
-        var r = new Regex(Pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
-        ConcurrentBag<Match> Results = new();
-        Parallel.ForEach(Input, (x) =>
-        {
-            var m = Regex.Match(x, Pattern, RegexOptions.IgnoreCase);
-            if (m.Success)
-                Results.Add(m);
-        });
-        return Results.AsEnumerable().ToList();
-    }
+    public int ImmutableList() => ImmutableListImpl().Count;
 }

@@ -103,13 +103,13 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
     #endregion Comments
 
     private FileInfo? _CdTextFile;
-    private FileInfo? _fileInfo;
+    private FileInfo? _sourceFile;
     public CueSheet()
     {
         Container = new(this);
     }
 
-    internal CueSheet(string? cuePath) : this()
+    public CueSheet(string? cuePath) : this()
     {
         SetCuePath(cuePath);
     }
@@ -133,7 +133,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
         }
     }
 
-    public FileInfo? FileInfo => _fileInfo;
+    public FileInfo? SourceFile => _sourceFile;
     public ReadOnlyCollection<CueFile> Files => Container.Files.AsReadOnly();
     public CueIndex[] Indexes => Container.Indexes.Select(x => new CueIndex(x)).ToArray();
     public CueFile? LastFile => Container.Files.LastOrDefault();
@@ -149,6 +149,16 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
     private CueContainer Container { get; }
 
     public static CueSheet Clone(CueSheet cueSheet) => cueSheet.Clone();
+    //public void ChangeFile(FileInfo file)
+    //{
+
+    //    Files[index].SetFile(newPath);
+    //}
+    //public void ChangeFile(FileInfo file)
+    //{
+
+    //    Files[index].SetFile(newPath);
+    //}
     public void ChangeFile(int index, string newPath)
     {
         Files[index].SetFile(newPath);
@@ -185,7 +195,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
 
     public CueSheet Clone()
     {
-        CueSheet newCue = new(FileInfo?.FullName)
+        CueSheet newCue = new(SourceFile?.FullName)
         {
             Catalog = Catalog,
             Composer = Composer,
@@ -233,7 +243,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
         }
         if (
                !string.Equals(CdTextFile?.Name, other.CdTextFile?.Name, StringComparison.OrdinalIgnoreCase)
-            || !string.Equals(FileInfo?.Name, other.FileInfo?.Name, StringComparison.OrdinalIgnoreCase)
+            || !string.Equals(SourceFile?.Name, other.SourceFile?.Name, StringComparison.OrdinalIgnoreCase)
             || !string.Equals(Performer, other.Performer, stringComparison)
             || !string.Equals(Catalog, other.Catalog)
             || !string.Equals(Composer, other.Composer, stringComparison)
@@ -267,17 +277,17 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
             _CdTextFile = null;
         else
         {
-            string absPath = Path.Combine(FileInfo?.DirectoryName ?? ".", value);
+            string absPath = Path.Combine(SourceFile?.DirectoryName ?? ".", value);
             _CdTextFile = new FileInfo(absPath);
         }
     }
     public void SetCuePath(string? value)
     {
         if (value == null)
-            _fileInfo = null;
+            _sourceFile = null;
         else
         {
-            _fileInfo = new FileInfo(value);
+            _sourceFile = new FileInfo(value);
         }
         RefreshFiles();
     }
@@ -313,7 +323,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
 
     public override string ToString()
     {
-        return String.Format("CueSheet: {0} - {1} - {2}", Performer ?? "No performer", Title ?? "No title", FileInfo?.Name ?? "No file");
+        return String.Format("CueSheet: {0} - {1} - {2}", Performer ?? "No performer", Title ?? "No title", SourceFile?.Name ?? "No file");
     }
 
 
@@ -341,8 +351,8 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
 
     private void RefreshFiles()
     {
-        if (FileInfo != null)
-            FileInfo.Refresh();
+        if (SourceFile != null)
+            SourceFile.Refresh();
         foreach (var file in Container.Files)
         {
             file.RefreshFileInfo();

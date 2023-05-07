@@ -9,7 +9,7 @@ namespace CueSheetNet.FileIO;
 public readonly record struct FileMetadata
     (long Size, TimeSpan Duration, int SampleRate, int Channels, int BitDepth, bool Lossy, string FormatName)
 {
-    public CueTime CueDuration => new(Duration);
+    public CueTime CueDuration =>CueTime.FromTimeSpan(Duration);
     public long WaveCdEquivalentSize
     {
         get

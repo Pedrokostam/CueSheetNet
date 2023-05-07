@@ -12,9 +12,15 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable
     private const int MillisecondsPerSecond = 1000;
 
     public const int FramesPerSecond = 75;
+    /// <summary>133'333.(3)</summary>
+    public const double TicksPerFrame = (double)TimeSpan.TicksPerSecond / FramesPerSecond;
+    /// <summary>133'333</summary>
+    private const int TicksPerFrameInt = (int)TicksPerFrame;
 
+    /// <summary>45'000</summary>
     public const int FramesPerMinute = FramesPerSecond * SecondsPerMinute; // 45'000
 
+    /// <summary>13.(3)</summary>
     public const double MillisecondsPerFrame = (double)MillisecondsPerSecond / FramesPerSecond; // 13.333333
 
     /// <summary>
@@ -25,12 +31,22 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable
     /// <summary>
     /// CueTime corresponding to <see cref="TotalFrames"/> of <see cref="int.MaxValue"/>.
     /// </summary>
-    public static readonly CueTime Max = new(int.MaxValue);
+    public static readonly CueTime TheoreticalMax = new(int.MaxValue);
+
+    /// <summary>
+    /// CueTime corresponding to 99:59:74, which is the maximum an ordinary CueSheet syntax can represent..
+    /// </summary>
+    public static readonly CueTime Max = new(99, 59, 74);
 
     /// <summary>
     /// CueTime corresponding to <see cref="TotalFrames"/> of <see cref="int.MinValue"/>.
     /// </summary>
-    public static readonly CueTime Min = new(int.MinValue);
+    public static readonly CueTime ThereoticalMin = new(int.MinValue);
+
+    /// <summary>
+    /// CueTime corresponding to -99:59:74.
+    /// </summary>
+    public static readonly CueTime Min = new(-99, -59, -74);
 
     public int TotalFrames { get; }
 
@@ -51,18 +67,46 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable
     public double TotalMinutes => TotalFrames / (double)FramesPerMinute;
 
     /// <summary>
-    /// Calculates the equivalent milliseconds to the given frames. Rounds it to the nearest integer.
+    /// Indicates whether the number of equivalent Ticks is rational, i.e. has no fractional part. Every 3 frames (or every 40ms) is rational.
+    /// </summary>
+    public bool IsRational => TotalFrames % 3 == 0;
+
+    /// <summary>
+    /// Tick equivalent for <see cref="TimeSpan"/> represented as a real number.
+    /// </summary>
+    public double Ticks => TotalFrames * TicksPerFrame;
+    /// <summary>
+    /// Tick equivalent for <see cref="TimeSpan"/> truncated to <see cref="long"/>
+    /// </summary>
+    public long LongTicks => (long)(TotalFrames * TicksPerFrame);
+
+
+    /// <summary>
+    /// Calculates the equivalent milliseconds to the given frames. Truncates it to the nearest integer.
     /// </summary>
     /// <param name="milliseconds"></param>
     /// <returns>Equivalent number of frames, rounded to the nearest integer</returns>
+    /// <exception cref="OverflowException">When after conversion the number of frames exceeds the size of int</exception>
     public static int MillisecondsToFrames(double milliseconds)
     {
         double frames = milliseconds / MillisecondsPerFrame;
-        double rounded = Math.Round(frames);
-        return (int)rounded;
+        // Round to 4 digits - There are 10000 ticks per millisecond, so anything after the 4th decimal place is below 1 tick, so it's a rounding error.
+        double round = Math.Round(frames, 4);
+        int intFrames = checked((int)round);
+        // If there are fractional frames, we must truncate them.
+        // Otherwise, it would be possible to have a time longer than the length of the audio file.
+        // Casting to int is better, as it always does to towards zero.
+        // Math.Floor would not work correctly with negative milliseconds.
+        return intFrames;
     }
 
-    public CueTime(TimeSpan timeSpan) : this(MillisecondsToFrames(timeSpan.TotalMilliseconds)) { }
+    public static int TicksToFrames(long ticks)
+    {
+        double frames = ticks / TicksPerFrame;
+        double round = Math.Round(frames);
+        return checked((int)round);
+    }
+
 
     public CueTime(int totalFrames)
     {
@@ -98,11 +142,12 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable
     /// <returns></returns>
     public static int CalculateTotalFrames_Unchecked(int minutes, int seconds, int frames) => unchecked(frames + FramesPerSecond * seconds + FramesPerMinute * minutes);
 
-    public TimeSpan ToTimeSpan() => TimeSpan.FromMilliseconds(TotalMilliseconds);
+    public static CueTime FromTimeSpan(TimeSpan timeSpan) => new(totalFrames: TicksToFrames(timeSpan.Ticks));
+    public TimeSpan ToTimeSpan() => TimeSpan.FromTicks(LongTicks);
 
     public static implicit operator TimeSpan(CueTime cueTime) => cueTime.ToTimeSpan();
 
-    public static explicit operator CueTime(TimeSpan timeSpan) => new(timeSpan);
+    public static explicit operator CueTime(TimeSpan timeSpan) => FromTimeSpan(timeSpan);
 
     public static CueTime FromMilliseconds(double millis) => new((int)(millis / MillisecondsPerFrame));
 
@@ -122,7 +167,8 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable
     public override int GetHashCode() => TotalFrames.GetHashCode();
     #region Parsing
     /// <summary>
-    /// Parses string to CueTime (±mm:ss:ff)
+    /// Parses string to CueTime (±mm:ss:ff). The parsed time is negative, only if the minute part is negative.
+    /// The frame and seconds parts do not affect the negativity.
     /// </summary>
     /// <param name="span"></param>
     /// <returns>CueTime instance corresponding to <see cref="s"/></returns>
@@ -132,12 +178,14 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable
         ReadOnlySpan<char> spanTrimmed = span.Trim();
         if (spanTrimmed.Length == 0) throw new ArgumentException("Empty CueTime string");
         List<int> inds = SeekSeparator(spanTrimmed);
-        if (inds.Count < 4) throw new ArgumentException("CueTime string has less than 3 parts");
+        if (inds.Count < 4) throw new ArgumentException($"CueTime string has less than 3 parts ({span})");
         Span<int> nums = stackalloc int[3];
         int numCount = 0;
         for (int i = 1; i < inds.Count; i++)
         {
             int rangeStart = inds[i - 1] + 1;//plus one, because it was included in previous range
+            //That';'s why the SeekSeparator add -1 as the first element
+            //so that the first rangeStart will be equal to 0
             int rangeEnd = inds[i];
             int x = int.Parse(spanTrimmed[rangeStart..rangeEnd], NumberStyles.Integer, CultureInfo.InvariantCulture);
             nums[numCount] = x;
@@ -151,7 +199,11 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable
         int totalFrames = checked(CalculateTotalFrames(_minutes, _seconds, _frames) * multiplier);
         return new CueTime(totalFrames);
     }
-
+    /// <summary>
+    /// Finds all separators (':') in the given span.
+    /// </summary>
+    /// <param name="spanTrimmed"></param>
+    /// <returns>A list with indices of the separator occurences. The first element of the list is always -1</returns>
     private static List<int> SeekSeparator(ReadOnlySpan<char> spanTrimmed)
     {
         List<int> inds = new(4) { -1 };
@@ -173,7 +225,8 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable
         return Parse(str.AsSpan());
     }
     /// <summary>
-    /// Tries to parse string (±mm:ss:ff)
+    /// Tries to parse string (±mm:ss:ff). The parsed time is negative, only if the minute part is negative.
+    /// The frame and seconds parts do not affect the negativity.
     /// </summary>
     /// <param name="span">Text to be parsed. Whether the time is positive or negative depends only on the minutes part</param>
     /// <param name="cueTime"></param>
@@ -189,6 +242,8 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable
         for (int i = 1; i < inds.Count; i++)
         {
             int rangeStart = inds[i - 1] + 1;//plus one, because it was included in previous range
+            //That';'s why the SeekSeparator add -1 as the first element
+            //so that the first rangeStart will be equal to 0
             int rangeEnd = inds[i];
             if (!int.TryParse(spanTrimmed[rangeStart..rangeEnd], NumberStyles.Integer, CultureInfo.InvariantCulture, out int x))
                 return false;
@@ -305,7 +360,7 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable
     public static CueTime operator -(CueTime left, CueTime right) => left.Subtract(right);
 
     /// <summary>
-    /// 
+    /// Subtract the frames from the time
     /// </summary>
     /// <param name="time"></param>
     /// <param name="frames"></param>

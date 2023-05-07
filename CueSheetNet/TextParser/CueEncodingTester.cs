@@ -1,8 +1,10 @@
 ﻿using CueSheetNet.Logging;
+using Microsoft.VisualBasic;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -103,15 +105,18 @@ internal class CueEncodingTester
         List<byte> b = GetPotentialDiacritizedLines(Stream);
         return DetectUtf8Heuristically(b);
     }
-    private Encoding DetectUtf8Heuristically(List<byte> b)
+    private Encoding DetectUtf8Heuristically(List<byte> bajtos)
     {
+        Span<byte> s = CollectionsMarshal.AsSpan(bajtos);
         Logger.LogDebug("Heuristic encoding detection started. Source: {Source}", Source);
+        int length = s.Length - 4;
         bool utf8 = false;
-        for (int i = 0; i < b.Count - 4; i++)
+        bool abnormalBytes = false;
+        for (int i = 0; i < length; i++)
         {
             // One byte
             // U+0000..U+007F     00..7F
-            if (b[i] <= 0x7F)
+            if (s[i] <= 0x7F)
             {
                 continue;
                 // not setting utf8 to true, because ASCII also meets this criterion, and if you can work in ASCII, why not?
@@ -119,8 +124,8 @@ internal class CueEncodingTester
             // Two bytes
             // U+0080..U+07FF     C2..DF     80..BF
             // skipping C0, C1 - non-minimal
-            else if (CheckRange(b[i], 0xC2, 0xE0)
-               && CheckRange(b[i + 1], 0x80, 0xC0))
+            else if (CheckRange(s[i], 0xC2, 0xE0)
+               && CheckRange(s[i + 1], 0x80, 0xC0))
             {
                 utf8 = true;
                 i += 1; // skip next character
@@ -133,9 +138,9 @@ internal class CueEncodingTester
             // skipping U+D800..U+DBFF - not valid UTF8
             // slightly simplified, as with first byte equal to E0 second has to be greater than A0, not 80...
             // but the third byte is consistent
-            else if (CheckRange(b[i], 0xE0, 0xF0)
-                && CheckRange(b[i + 1], 0x80, 0xC0)
-                && CheckRange(b[i + 2], 0x80, 0xC0))
+            else if (CheckRange(s[i], 0xE0, 0xF0)
+                && CheckRange(s[i + 1], 0x80, 0xC0)
+                && CheckRange(s[i + 2], 0x80, 0xC0))
             {
                 utf8 = true;
                 i += 2;// skip next 2 characters
@@ -146,27 +151,30 @@ internal class CueEncodingTester
             // U+100000..U+10FFFF F4         80..8F      80..BF     80..BF
             // slightly simplified, as with first byte equal to F0 second has to be greater than 90, not 80...
             // but the third and forth bytes are consistent
-            else if (CheckRange(b[i], 0xF0, 0xF5)
-                && CheckRange(b[i + 1], 0x80, 0xC0)
-                && CheckRange(b[i + 2], 0x80, 0xC0)
-                && CheckRange(b[i + 3], 0x80, 0xC0))
+            else if (CheckRange(s[i], 0xF0, 0xF5)
+                && CheckRange(s[i + 1], 0x80, 0xC0)
+                && CheckRange(s[i + 2], 0x80, 0xC0)
+                && CheckRange(s[i + 3], 0x80, 0xC0))
             {
                 utf8 = true;
                 i += 3; //skip next 3 characters
             }
             else
             {
+                Logger.LogVerbose("Non-UTF-8 bytes detected. Last 4 bytes: 0x{Byte1:X2}, 0x{Byte2:X2}, 0x{Byte3:X2}, 0x{Byte4:X2}", s[i], s[i + 1], s[i + 2], s[i + 3]);
                 // most propably something from 0x7F up - some regional codepage
                 utf8 = false;
+                abnormalBytes = true;
                 break;
             }
         }
         if (utf8)
+        {
             return new UTF8Encoding(false);
+        }
         else
         {
             Encoding enc = Encoding.GetEncoding("windows-1252");
-            Logger.LogDebug("Non-UTF-8 bytes detected. Using {Encoding.EncodingName} encoding.",enc);
             return enc;
         }
     }
@@ -211,7 +219,7 @@ internal class CueEncodingTester
                     AddUntilNewLine(fs, bytes);
             }
         }
-        Logger.LogDebug("Found {Keyword count} bytes of keyword lines. Source: {Source}", bytes.Count,Source);
+        Logger.LogDebug("Found {Keyword count} bytes of keyword lines. Source: {Source}", bytes.Count, Source);
         return bytes;
     }
 
@@ -226,7 +234,7 @@ internal class CueEncodingTester
         {
             if (CompareBytes(bomArea, encoding))
             {
-                Logger.LogVerbose("Encoding {Encoding.EncodingName} detected from preamble. Source: {Source}", encoding,Source);
+                Logger.LogVerbose("Encoding {Encoding.EncodingName} detected from preamble. Source: {Source}", encoding, Source);
                 return encoding;
             }
         }
@@ -280,7 +288,7 @@ internal class CueEncodingTester
                 maxIndex = i;
             }
         }
-        Logger.LogDebug("UTF16/32 encoding detection results: 16LE - {16LE Count}, 16BE - {16BE Count}, 32LE - {32LE Count}, 32BE - {32BE Count}. Source: {Source}",counters[0], counters[1], counters[2], counters[3],Source); ;
+        Logger.LogDebug("UTF16/32 encoding detection results: 16LE - {16LE Count}, 16BE - {16BE Count}, 32LE - {32LE Count}, 32BE - {32BE Count}. Source: {Source}", counters[0], counters[1], counters[2], counters[3], Source); ;
         //if no encoding had more than 33 % hit rate - return null
         if (maximum < length / 3)
         {
