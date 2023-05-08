@@ -15,22 +15,18 @@ public enum LogLevel
     /// <summary>
     /// Information about current state of step/sub-step
     /// </summary>
-    Debug = 1,
-    /// <summary>
-    /// Information about finishing sub-step
-    /// </summary>
-    Verbose = 2,
+    Warning = 1,
+
     /// <summary>
     /// Information about finishing of an important step
     /// </summary>
-    Information = 4,
+    Information = 2,
     /// <summary>
     /// Requested operation was performed, but with problems
     /// </summary>
-    Warning = 8,
-    /// <summary>
-    /// Requested could not be performed
-    /// </summary>
-    Error = 16,
-    All = Debug | Verbose | Information | Warning | Error,
+    Debug = 4,
+
+
+
+    All = Debug | Information | Warning,
 }

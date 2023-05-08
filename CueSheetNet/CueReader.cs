@@ -82,7 +82,7 @@ public class CueReader
         Reset();
         if (!File.Exists(cuePath))
         {
-            Logger.LogError("Specified file does not exist ({File})", cuePath);
+            //Logger.LogError("Specified file does not exist ({File})", cuePath);
             throw new FileNotFoundException($"{cuePath} does not exist");
         }
         Source = new CueSource(cuePath);
@@ -122,7 +122,7 @@ public class CueReader
             var tester = new CueEncodingTester(fs, Source);
             Encoding = tester.DetectCueEncoding();
             st.Stop();
-            Logger.LogVerbose("Detected {Encoding.EncodingName} encoding in {Time}ms", Encoding, st.ElapsedMilliseconds);
+            Logger.LogInformation("Detected {Encoding.EncodingName} encoding in {Time}ms", Encoding, st.ElapsedMilliseconds);
         }
         fs.Seek(0, SeekOrigin.Begin);
         using TextReader strr = new StreamReader(fs, Encoding, false);
@@ -304,12 +304,12 @@ public class CueReader
         string number = GetKeyword(line, 6);
         if (!int.TryParse(number, out int num))
         {
-            Logger.LogError("Incorrect Index number format at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
+            //Logger.LogError("Incorrect Index number format at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
             throw new FormatException($"Incorrect Index number format at line {CurrentLineIndex}: {line}");
         }
         if (!CueTime.TryParse(line.AsSpan(6 + number.Length + 1), out CueTime cueTime))
         {
-            Logger.LogError("Incorrect Index format at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
+            //Logger.LogError("Incorrect Index format at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
             throw new FormatException($"Incorrect Index format at line {CurrentLineIndex}: {line}");
         }
         if (Sheet.LastTrack is CueTrack ctr && Sheet.LastFile is CueFile cfl)
@@ -338,7 +338,7 @@ public class CueReader
         string type = GetKeyword(line, 0);
         if (!CueTime.TryParse(line.AsSpan(6 + type.Length + 1), out CueTime cueTime))
         {
-            Logger.LogError("Incorrect Gap format at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
+            //Logger.LogError("Incorrect Gap format at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
             throw new FormatException($"Incorrect Gap format at line {CurrentLineIndex}: {line}");
         }
         if (gapType.StartsWith("PRE"))

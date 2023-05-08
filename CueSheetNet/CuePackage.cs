@@ -10,6 +10,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Net.WebSockets;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Text;
@@ -191,7 +192,7 @@ public partial class CuePackage
             object? value = prop?.GetValue(Sheet) as object;
             if (value is null)
             {
-                Logger.LogVerbose("No matching property found for {Property} when parsing tree format {Format}", val, treeFormat);
+                Logger.LogInformation("No matching property found for {Property} when parsing tree format {Format}", val, treeFormat);
                 continue;
             }
             treeFormat = treeFormat.Replace(val, value.ToString());
@@ -236,7 +237,7 @@ public partial class CuePackage
             {
                 item.Delete();
             }
-            Logger.LogError("Could not copy file to destination {Destination}: {Exception}", destinationDir, e);
+            ExceptionDispatchInfo.Capture(e).Throw();
             throw;
         }
         if (delete)
@@ -244,7 +245,7 @@ public partial class CuePackage
             foreach (var item in tfs)
             {
                 item.DeleteSource();
-                Logger.LogVerbose("Deleted original file \"{Source}\"", item.SourceFile);
+                Logger.LogInformation("Deleted original file \"{Source}\"", item.SourceFile);
             }
         }
         List<(string source, string dest)> lista = new();
@@ -276,32 +277,33 @@ public partial class CuePackage
             foreach (var copee in lista)
             {
                 File.Copy(copee.source, copee.dest, true);
-                Logger.LogVerbose("Copied file from \"{Source}\" to \"{Destination}\"", copee.source, copee.dest);
+                Logger.LogInformation("Copied file from \"{Source}\" to \"{Destination}\"", copee.source, copee.dest);
             }
         }
         catch (Exception e)
         {
-            Logger.LogError("Error while copying: {Error}", e);
+            Logger.LogWarning("Error while copying: {Error}", e);
             // remove any copied file
             foreach (var (_, dest) in lista)
             {
                 if (File.Exists(dest))
                 {
                     File.Delete(dest);
-                    Logger.LogVerbose("Deleted file {File}", dest);
+                    Logger.LogInformation("Deleted file {File}", dest);
                 }
             }
             // if destination directory is empty, delete it
             if (!Directory.EnumerateFiles(destination).Any())
-            {
+            {;
                 Directory.Delete(destination);
-                Logger.LogVerbose("Deleted empty directory {Directory}", destination);
+                Logger.LogInformation("Deleted empty directory {Directory}", destination);
             }
+            throw;
         }
         var originalPath = Sheet.SourceFile;
         string cuePath = Path.ChangeExtension(Path.Combine(destination, name), "cue");
         Sheet.Save(cuePath);
-        Logger.LogVerbose("Saved {CueSheet}", Sheet);
+        Logger.LogInformation("Saved {CueSheet}", Sheet);
         // remove original files
         if (!delete)
             return Sheet;
@@ -309,7 +311,7 @@ public partial class CuePackage
         foreach (var (source, _) in lista)
         {
             File.Delete(source);
-            Logger.LogVerbose("Deleted source file {Source}", source);
+            Logger.LogInformation("Deleted source file {Source}", source);
         }
         return Sheet;
     }

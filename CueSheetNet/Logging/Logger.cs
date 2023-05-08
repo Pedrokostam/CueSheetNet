@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace CueSheetNet.Logging;
-public static class Logger
+public  class Logger
 {
     private delegate void LogDelegateType(LogEntry entry);
 
@@ -29,6 +29,7 @@ public static class Logger
     {
         logDevices.Add(device);
         RequestedLogLevels = logDevices.Min(x => x.RequestedLogLevels);
+        Logger.LogDebug("Registered new logger with LogLevel: {Level}", device.RequestedLogLevels);
         return logDevices.Count;
     }
     /// <summary>
@@ -75,15 +76,6 @@ public static class Logger
         //Log(LogLevel.Error, message, errors);
 
     }
-    public static void LogError(string message) => Log(LogLevel.Error, message);
-    public static void LogError<T1>(string messageTemplate, T1 arg1) => Log(LogLevel.Error, messageTemplate, arg1);
-    public static void LogError<T1, T2>(string messageTemplate, T1 arg1, T2 arg2) => Log(LogLevel.Error, messageTemplate, arg1, arg2);
-    public static void LogError<T1, T2, T3>(string messageTemplate, T1 arg1, T2 arg2, T3 arg3) => Log(LogLevel.Error, messageTemplate, arg1, arg2, arg3);
-    public static void LogError<T1, T2, T3, T4>(string messageTemplate, T1 arg1, T2 arg2, T3 arg3, T4 arg4) => Log(LogLevel.Error, messageTemplate, arg1, arg2, arg3, arg4);
-    public static void LogError<T1, T2, T3, T4, T5>(string messageTemplate, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5) => Log(LogLevel.Error, messageTemplate, arg1, arg2, arg3, arg4, arg5);
-    public static void LogError<T1, T2, T3, T4, T5, T6>(string messageTemplate, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6) => Log(LogLevel.Error, messageTemplate, arg1, arg2, arg3, arg4, arg5, arg6);
-    public static void LogError<T>(string messageTemplate, params T[] args) => Log(LogLevel.Error, messageTemplate, args);
-    public static void LogError(string messageTemplate, params object[] args) => Log(LogLevel.Error, messageTemplate, args);
     public static void LogWarning(string message) => Log(LogLevel.Warning, message);
     public static void LogWarning<T1>(string messageTemplate, T1 arg1) => Log(LogLevel.Warning, messageTemplate, arg1);
     public static void LogWarning<T1, T2>(string messageTemplate, T1 arg1, T2 arg2) => Log(LogLevel.Warning, messageTemplate, arg1, arg2);
@@ -102,15 +94,6 @@ public static class Logger
     public static void LogInformation<T1, T2, T3, T4, T5, T6>(string messageTemplate, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6) => Log(LogLevel.Information, messageTemplate, arg1, arg2, arg3, arg4, arg5, arg6);
     public static void LogInformation<T>(string messageTemplate, params T[] args) => Log(LogLevel.Information, messageTemplate, args);
     public static void LogInformation(string messageTemplate, params object[] args) => Log(LogLevel.Information, messageTemplate, args);
-    public static void LogVerbose(string message) => Log(LogLevel.Verbose, message);
-    public static void LogVerbose<T1>(string messageTemplate, T1 arg1) => Log(LogLevel.Verbose, messageTemplate, arg1);
-    public static void LogVerbose<T1, T2>(string messageTemplate, T1 arg1, T2 arg2) => Log(LogLevel.Verbose, messageTemplate, arg1, arg2);
-    public static void LogVerbose<T1, T2, T3>(string messageTemplate, T1 arg1, T2 arg2, T3 arg3) => Log(LogLevel.Verbose, messageTemplate, arg1, arg2, arg3);
-    public static void LogVerbose<T1, T2, T3, T4>(string messageTemplate, T1 arg1, T2 arg2, T3 arg3, T4 arg4) => Log(LogLevel.Verbose, messageTemplate, arg1, arg2, arg3, arg4);
-    public static void LogVerbose<T1, T2, T3, T4, T5>(string messageTemplate, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5) => Log(LogLevel.Verbose, messageTemplate, arg1, arg2, arg3, arg4, arg5);
-    public static void LogVerbose<T1, T2, T3, T4, T5, T6>(string messageTemplate, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6) => Log(LogLevel.Verbose, messageTemplate, arg1, arg2, arg3, arg4, arg5, arg6);
-    public static void LogVerbose<T>(string messageTemplate, params T[] args) => Log(LogLevel.Verbose, messageTemplate, args);
-    public static void LogVerbose(string messageTemplate, params object[] args) => Log(LogLevel.Verbose, messageTemplate, args);
     public static void LogDebug(string message) => Log(LogLevel.Debug, message);
     public static void LogDebug<T1>(string messageTemplate, T1 arg1) => Log(LogLevel.Debug, messageTemplate, arg1);
     public static void LogDebug<T1, T2>(string messageTemplate, T1 arg1, T2 arg2) => Log(LogLevel.Debug, messageTemplate, arg1, arg2);

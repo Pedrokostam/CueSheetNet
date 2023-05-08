@@ -1,5 +1,6 @@
 ﻿namespace CueSheetNET.FileIO
 {
+   
     class UnsupportedFileFormatException : Exception
     {
         public UnsupportedFileFormatException(string msg) : base(msg)

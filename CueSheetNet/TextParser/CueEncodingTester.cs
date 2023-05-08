@@ -161,7 +161,7 @@ internal class CueEncodingTester
             }
             else
             {
-                Logger.LogVerbose("Non-UTF-8 bytes detected. Last 4 bytes: 0x{Byte1:X2}, 0x{Byte2:X2}, 0x{Byte3:X2}, 0x{Byte4:X2}", s[i], s[i + 1], s[i + 2], s[i + 3]);
+                Logger.LogInformation("Non-UTF-8 bytes detected. Last 4 bytes: 0x{Byte1:X2}, 0x{Byte2:X2}, 0x{Byte3:X2}, 0x{Byte4:X2}", s[i], s[i + 1], s[i + 2], s[i + 3]);
                 // most propably something from 0x7F up - some regional codepage
                 utf8 = false;
                 abnormalBytes = true;
@@ -234,7 +234,7 @@ internal class CueEncodingTester
         {
             if (CompareBytes(bomArea, encoding))
             {
-                Logger.LogVerbose("Encoding {Encoding.EncodingName} detected from preamble. Source: {Source}", encoding, Source);
+                Logger.LogInformation("Encoding {Encoding.EncodingName} detected from preamble. Source: {Source}", encoding, Source);
                 return encoding;
             }
         }

@@ -42,17 +42,16 @@ namespace CueSheetNET.FileIO
                             return meta;
                         }
                     }
-                    catch (FileFormatRecognitionException ffre)
+                    catch (Exception x) when (x is FileFormatRecognitionException
+                                              || x is InvalidFileFormatException)
                     {
-                        Logger.Log(LogLevel.Error, ffre.Message, filePath, reader.FormatName);
+                        Logger.Log(LogLevel.Warning, "Could not read audio file metadata of \"{File}\". Error: {Error}", filePath, x);
+
                     }
-                    catch (InvalidFileFormatException iffe)
-                    {
-                        Logger.Log(LogLevel.Error, iffe.Message, filePath, reader.FormatName);
-                    }
+                   
                 }
             }
-            Logger.Log(LogLevel.Warning, $"Could not read audio file metadata", filePath, "");
+            Logger.Log(LogLevel.Warning, "Could not read audio file metadata of \"{File}\" - no matching exception", filePath);
             return null;
         }
 
