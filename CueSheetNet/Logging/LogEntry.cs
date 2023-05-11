@@ -59,7 +59,7 @@ public partial class LogEntry
     List<string> Identifiers { get; }
 
 
-    internal LogEntry(LogLevel level, string messageTemplate, object?[] args)
+    public LogEntry(LogLevel level, string messageTemplate, object?[] args)
     {
         Level= level;
         Timestamp = DateTime.Now;

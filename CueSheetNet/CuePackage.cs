@@ -318,6 +318,7 @@ public partial class CuePackage
 
     [GeneratedRegex(@"%(?<property>\w+)%")]
     private static partial Regex PropertyParser();
+    public void DeleteFiles() => throw new NotImplementedException();
 }
 
 //public struct NumberedPath
