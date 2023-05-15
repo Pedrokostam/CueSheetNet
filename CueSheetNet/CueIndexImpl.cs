@@ -40,4 +40,6 @@ internal class CueIndexImpl : CueItemBase
     {
         return HashCode.Combine(File.GetHashCode(), Track.GetHashCode(), Time.GetHashCode(), Number.GetHashCode());
     }
+    public static explicit operator CueIndex(CueIndexImpl cimpl) => new(cimpl);
+
 }

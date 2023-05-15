@@ -38,6 +38,7 @@ public class CueFile : CueItemBase, IEquatable<CueFile>
 
 
     [MemberNotNull(nameof(_file))]
+    [MemberNotNull(nameof(NormalizedPath))]
     public void SetFile(string value)
     {
         string absPath = Path.Combine(ParentSheet.SourceFile?.DirectoryName ?? ".", value);
@@ -52,9 +53,10 @@ public class CueFile : CueItemBase, IEquatable<CueFile>
             Meta = null;
             ValidFile = false;
         }
-        PathComparer.NormalizePath(_file);
+        NormalizedPath = PathComparer.NormalizePath(_file);
+
     }
-    public CueIndex[] Indexes => ParentSheet.GetIndexesOfFile(Index);
+    public CueIndex[] CueIndexes => ParentSheet.GetIndexesOfFile(Index);
 
     public override string ToString()
     {
@@ -87,6 +89,6 @@ public class CueFile : CueItemBase, IEquatable<CueFile>
         return Equals(obj as CueFile);
     }
 
-    public override int GetHashCode()=>HashCode.Combine(NormalizedPath,Index);
+    public override int GetHashCode() => HashCode.Combine(NormalizedPath, Index);
 }
 

@@ -176,7 +176,7 @@ internal class CueContainer
             }
         }
     }
-    private (int Start, int End) GetCueTracksOfFile_Range(int fileIndex = -1)
+    internal (int Start, int End) GetCueTracksOfFile_Range(int fileIndex = -1)
     {
         if (fileIndex < 0) fileIndex = Files.Count - 1;
         CueFile file = Files[fileIndex];
@@ -194,12 +194,12 @@ internal class CueContainer
         }
         return (start, start + count);
     }
-    private IEnumerable<CueTrack> GetCueTracksOfFile(int fileIndex = -1)
+    internal IEnumerable<CueTrack> GetCueTracksOfFile(int fileIndex = -1)
     {
         (int Start, int End) = GetCueTracksOfFile_Range(fileIndex);
         return Tracks.Skip(Start).Take(End - Start);
     }
-    private IEnumerable<CueIndexImpl> GetCueIndicesOfTrack(int fileIndex = -1)
+    internal IEnumerable<CueIndexImpl> GetCueIndicesOfTrack(int fileIndex = -1)
     {
         (int Start, int End) = GetCueIndicesOfTrack_Range(fileIndex);
         return Indexes.Skip(Start).Take(End - Start);

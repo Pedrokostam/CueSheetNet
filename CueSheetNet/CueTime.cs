@@ -300,7 +300,7 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable
     /// </summary>
     /// <param name="time">The time</param>
     /// <param name="divisor">The divisor</param>
-    /// <returns></returns>
+    /// <returns>CueTime equivalent to the number frames of input CueTime divided by the divisor, truncated towards zero</returns>
     /// <exception cref="DivideByZeroException">Thrown if parameter <paramref name="divisor"/> is zero</exception>
     public CueTime Divide(int divisor)
     {
@@ -311,9 +311,8 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable
     /// <summary>
     /// Divides the time by the divisor
     /// </summary>
-    /// <param name="time">The time</param>
     /// <param name="divisor">The divisor</param>
-    /// <returns></returns>
+    /// <returns>CueTime equivalent to the number frames of input CueTime divided by the divisor, truncated towards zero</returns>
     /// <exception cref="DivideByZeroException">Thrown if parameter <paramref name="divisor"/> is zero</exception>
     public CueTime Divide(double divisor)
     {
@@ -321,9 +320,18 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable
         if (divisor == 0) throw new DivideByZeroException();
         return new((int)(TotalFrames / divisor));
     }
-
+    /// <summary>
+    /// Multiplies the time by the multiplier
+    /// </summary>
+    /// <param name="multiplier"></param>
+    /// <returns>CueTime equivalent to the number frames of input CueTime multiplied by the <paramref name="multiplier"/></returns>
     public CueTime Multiply(int multiplier) => new(TotalFrames * multiplier);
 
+    /// <summary>
+    /// Multiplies the time by the multiplier
+    /// </summary>
+    /// <param name="multiplier"></param>
+    /// <returns>CueTime equivalent to the number frames of input CueTime multiplied by the <paramref name="multiplier"/>, truncated towards zero</returns>
     public CueTime Multiply(double multiplier)
     {
         if (double.IsNaN(multiplier)) throw new ArgumentException("Multiplier must be a number");
@@ -332,7 +340,12 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable
 
     public CueTime Add(CueTime right) => new(TotalFrames + right.TotalFrames);
 
-    public CueTime AddFrames(int right) => new(TotalFrames + right);
+    /// <summary>
+    /// Add the <paramref name="frames"/> number of frames to the time
+    /// </summary>
+    /// <param name="frames"></param>
+    /// <returns></returns>
+    public CueTime AddFrames(int frames) => new(TotalFrames + frames);
 
     public CueTime Subtract(CueTime right) => new(TotalFrames - right.TotalFrames);
 

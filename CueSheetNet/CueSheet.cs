@@ -141,6 +141,9 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
     public string? Performer { get; set; }
     public CueType SheetType { get; internal set; }
     public Encoding? SourceEncoding { get; internal set; }
+    /// <summary>
+    /// AKA Album Name
+    /// </summary>
     public string? Title { get; set; }
     public ReadOnlyCollection<CueTrack> Tracks => Container.Tracks.AsReadOnly();
 
@@ -159,6 +162,11 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
 
     //    Files[index].SetFile(newPath);
     //}
+    /// <summary>
+    /// Change path of the given file (zero-based index)
+    /// </summary>
+    /// <param name="index">Zero-based index</param>
+    /// <param name="newPath"></param>
     public void ChangeFile(int index, string newPath)
     {
         Files[index].SetFile(newPath);
@@ -253,18 +261,27 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
         return true;
     }
 
+    internal (int Start, int End) GetIndexesOfFile_Range(int fileIndex) => Container.GetCueIndicesOfFile_Range(fileIndex);
     public CueIndex[] GetIndexesOfFile(int fileIndex)
     {
         (int start, int end) = Container.GetCueIndicesOfFile_Range(fileIndex);
         if (start == end) return Array.Empty<CueIndex>();
         return Container.Indexes.Skip(start).Take(end - start).Select(x => new CueIndex(x)).ToArray();
     }
+    internal (int Start, int End) GetTracksOfFile_Range(int fileIndex) => Container.GetCueIndicesOfTrack_Range(fileIndex);
+    public CueTrack[] GetTracksOfFile(int fileIndex)
+    {
+        (int start, int end) = Container.GetCueTracksOfFile_Range(fileIndex);
+        if (start == end) return Array.Empty<CueTrack>();
+        return Container.Tracks.Skip(start).Take(end - start).ToArray();
+    }
 
+    internal (int Start, int End) GetIndexesOfTrack_Range(int fileIndex) => Container.GetCueIndicesOfTrack_Range(fileIndex);
     public CueIndex[] GetIndexesOfTrack(int trackIndex)
     {
         (int start, int end) = Container.GetCueIndicesOfTrack_Range(trackIndex);
         if (start == end) return Array.Empty<CueIndex>();
-        return Container.Indexes.Skip(start).Take(end - start).Select(x => new CueIndex(x)).ToArray();
+        return Container.Indexes.Skip(start).Take(end - start).Select(x => (CueIndex)x).ToArray();
     }
 
     public void RemoveCdTextFile() => SetCdTextFile(null);
@@ -365,19 +382,23 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
     /// After changing, path is not reverted if saving was unsuccessful.
     /// </summary>
     /// <param name="path"></param>
-    public void Save(string? path)
+    public void Save(string path, Encoding? encoding = null)
     {
-        if (path is not null)
-            SetCuePath(path);
+        //if (path is not null)
         ArgumentException.ThrowIfNullOrEmpty(path);
+        SetCuePath(path);
         CueWriter writer = new();
+        if (encoding is not null)
+        {
+            CueWriterSettings settings = new() { Encoding = encoding };
+            writer.Settings = settings;
+        }
         writer.SaveCueSheet(this);
     }
 
     public override bool Equals(object? obj)
     {
-        if (obj is CueSheet) return Equals((CueSheet)obj);
-        else return false;
+        return obj is CueSheet sheet ? Equals(sheet) : false;
     }
 
     public override int GetHashCode()
