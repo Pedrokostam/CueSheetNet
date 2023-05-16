@@ -10,7 +10,7 @@ public readonly record struct FileMetadata
     (long Size, TimeSpan Duration, int SampleRate, int Channels, int BitDepth, bool Lossy, string FormatName)
 {
     public CueTime CueDuration =>CueTime.FromTimeSpan(Duration);
-    public long WaveCdEquivalentSize
+    public long RedBookEquivalentSize
     {
         get
         {
@@ -25,7 +25,7 @@ public readonly record struct FileMetadata
             return calculated;
         }
     }
-    public double WaveCdCompressionRatio => Math.Round((double)Size / WaveCdEquivalentSize,3);
+    public double RedBookCompressionRatio => Math.Round((double)Size / RedBookEquivalentSize,3);
 
 
 }
