@@ -11,7 +11,7 @@ internal class FlacFormatDetector : IFileFormatReader
 {
     private readonly string[] extensions = new string[] { ".flac" };
     private readonly string formatName = "Flac";
-    private readonly byte[] fLaC = new byte[] { 0x66, 0x4c, 0x61, 0x43 };
+    private readonly byte[] fLaC = "fLaC"u8.ToArray();// 0x66 0x4c 0x61 0x43
     public string FormatName => formatName;
     public string[] Extensions => extensions;
     public bool ExtensionMatches(string fileName)

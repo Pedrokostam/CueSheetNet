@@ -11,8 +11,8 @@ internal class WaveFormatDetector : IFileFormatReader
 {
     private readonly string[] extensions = new string[] { ".WAV", ".WAVE" };
     private readonly string formatName = "Wave";
-    private readonly byte[] RIFF = new byte[] { 0x52, 0x49, 0x46, 0x46 };
-    private readonly byte[] WAVE = new byte[] { 0x57, 0x41, 0x56, 0x45 };
+    private readonly byte[] RIFF = "RIFF"u8.ToArray();//  0x52 0x49 0x46 0x46
+    private readonly byte[] WAVE = "WAVE"u8.ToArray();//  0x57 0x41 0x56 0x45
     public string FormatName => formatName;
     public string[] Extensions => extensions;
     public bool ExtensionMatches(string fileName)
