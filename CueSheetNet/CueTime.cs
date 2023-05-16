@@ -155,6 +155,8 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable
 
     public static CueTime FromMinutes(double minutes) => new((int)(minutes * FramesPerMinute));
 
+    // Since all elements are either non-negative or non-positive, we can use raw value of minutes (which may or may not have a minus) and absolute value of the rest.
+    // Result will have the minus sign, if the time is negative
     public override string ToString() => $"{Minutes:d2}:{Math.Abs(Seconds):d2}:{Math.Abs(Frames):d2}";
 
     public void Deconstruct(out int minutes, out int seconds, out int frames)
