@@ -130,14 +130,14 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemarkableCommentabl
             Title = Title,
             PostGap = PostGap,
             PreGap = PreGap,
-            Performer=Performer,
-            ISRC=ISRC,
-            HasZerothIndex=HasZerothIndex,
-            Index=Index,
-            Offset=Offset,
-            Orphaned=Orphaned,
+            Performer = Performer,
+            ISRC = ISRC,
+            HasZerothIndex = HasZerothIndex,
+            Index = Index,
+            Offset = Offset,
+            Orphaned = Orphaned,
         };
-        newTrack.AddRemark(RawRems.Select(x=>x with { }));
+        newTrack.AddRemark(RawRems.Select(x => x with { }));
         newTrack.AddComment(RawComments);
         return newTrack;
     }
@@ -207,6 +207,17 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemarkableCommentabl
     public override bool Equals(object? obj)
     {
         return Equals(obj as CueTrack);
+    }
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(Title.GetHashCode(StringComparison.OrdinalIgnoreCase),
+                                Performer?.GetHashCode(StringComparison.OrdinalIgnoreCase),
+                                ISRC?.GetHashCode(StringComparison.OrdinalIgnoreCase),
+                                Composer?.GetHashCode(StringComparison.OrdinalIgnoreCase),
+                                PostGap.GetHashCode(),
+                                RawComments.Count.GetHashCode(),
+                                RawRems.Count.GetHashCode());
     }
 }
 

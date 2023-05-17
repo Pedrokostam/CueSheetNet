@@ -41,11 +41,13 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
     #region Rem
 
     internal readonly List<Remark> RawRems = new();
+
     public ReadOnlyCollection<Remark> Remarks => RawRems.AsReadOnly();
 
     public void AddRemark(string type, string value) => AddRemark(new Remark(type, value));
 
     public void AddRemark(Remark entry) => RawRems.Add(entry);
+
     public void AddRemark(IEnumerable<Remark> entries)
     {
         foreach (Remark remark in entries)
@@ -55,6 +57,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
     }
 
     public void ClearRemarks() => RawRems.Clear();
+
     public void RemoveRemark(int index)
     {
         if (index >= 0 || index < RawRems.Count)
@@ -75,6 +78,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
     #region Comments
 
     internal readonly List<string> RawComments = new();
+
     public ReadOnlyCollection<string> Comments => RawComments.AsReadOnly();
 
     public void AddComment(IEnumerable<string> comments)
@@ -84,6 +88,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
             AddComment(comment);
         }
     }
+
     public void AddComment(string comment) => RawComments.Add(comment);
 
     public void ClearComments() => RawComments.Clear();
@@ -100,10 +105,79 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
         if (index >= 0 && index < RawComments.Count)
             RawComments.RemoveAt(index);
     }
+
     #endregion Comments
 
+    #region Tracks
+    public ReadOnlyCollection<CueTrack> Tracks => Container.Tracks.AsReadOnly();
+    public CueTrack? LastTrack => Container.Tracks.LastOrDefault();
+    public CueTrack AddTrack(int index, CueFile file)
+    {
+        if (file.ParentSheet != this)
+            throw new InvalidOperationException("Specified file does not belong to this cuesheet");
+        return AddTrack(index, file.Index);
+    }
+
+    public CueTrack AddTrack(int index, int fileIndex = -1) => Container.AddTrack(index, fileIndex);
+
+    #endregion
+
+    #region Files
+    public void ChangeFile(int index, string newPath)
+    {
+        Files[index].SetFile(newPath);
+    }
+    public CueFile AddFile(string path, string type) => Container.AddFile(path, type);
+    public CueFile? LastFile => Container.Files.LastOrDefault();
+    #endregion
+
+    #region Index
+    internal ReadOnlyCollection<CueIndexImpl> IndexesImpl => Container.Indexes.AsReadOnly();
+    public CueIndex[] Indexes => Container.Indexes.Select(x => new CueIndex(x)).ToArray();
+    public CueIndex AddIndex(CueTime time, CueFile file, CueTrack track)
+    {
+        if (track.ParentFile != file)
+            throw new InvalidOperationException("Specified track does not belong to specified file");
+        if (file.ParentSheet != this)
+            throw new InvalidOperationException("Specified file does not belong to this cuesheet");
+        if (track.ParentSheet != this)
+            throw new InvalidOperationException("Specified track does not belong to this cuesheet");
+        return AddIndex(time, file.Index, track.Index);
+    }
+
+    public CueIndex AddIndex(CueTime time, int fileIndex = -1, int trackIndex = -1) => new CueIndex(AddIndexInternal(time, fileIndex, trackIndex));
+
+    #endregion
+
+
+    #region Fileops
+    /// <summary>
+    /// Save the CueSheet to the location specified by its fileinfo. If <paramref name="path"/> is not null, it is set as cue path of this instance.
+    /// After changing, path is not reverted if saving was unsuccessful.
+    /// Does not do anything with <see cref="CueFile" />s of the Cuesheet, or other associated files.
+    /// </summary>
+    /// <param name="path"></param>
+    /// <param name="encoding">Optional encoding. If not specified the source encoding of the Cusheet will be used, or <see cref="CueWriterSettings.DefaultEncoding"/></param>
+    public void Save(string path, Encoding? encoding = null)
+    {
+        //if (path is not null)
+        ArgumentException.ThrowIfNullOrEmpty(path);
+        SetCuePath(path);
+        CueWriter writer = new();
+        if (encoding is not null)
+        {
+            CueWriterSettings settings = new() { Encoding = encoding };
+            writer.Settings = settings;
+        }
+        writer.SaveCueSheet(this);
+    }
+    #endregion
+    private CueContainer Container { get; }
     private FileInfo? _CdTextFile;
     private FileInfo? _sourceFile;
+
+
+
     public CueSheet()
     {
         Container = new(this);
@@ -135,9 +209,6 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
 
     public FileInfo? SourceFile => _sourceFile;
     public ReadOnlyCollection<CueFile> Files => Container.Files.AsReadOnly();
-    public CueIndex[] Indexes => Container.Indexes.Select(x => new CueIndex(x)).ToArray();
-    public CueFile? LastFile => Container.Files.LastOrDefault();
-    public CueTrack? LastTrack => Container.Tracks.LastOrDefault();
     public string? Performer { get; set; }
     public CueType SheetType { get; internal set; }
     public Encoding? SourceEncoding { get; internal set; }
@@ -145,11 +216,8 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
     /// AKA Album Name
     /// </summary>
     public string? Title { get; set; }
-    public ReadOnlyCollection<CueTrack> Tracks => Container.Tracks.AsReadOnly();
 
-    internal ReadOnlyCollection<CueIndexImpl> IndexesImpl => Container.Indexes.AsReadOnly();
 
-    private CueContainer Container { get; }
 
     public static CueSheet Clone(CueSheet cueSheet) => cueSheet.Clone();
     //public void ChangeFile(FileInfo file)
@@ -167,57 +235,10 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
     /// </summary>
     /// <param name="index">Zero-based index</param>
     /// <param name="newPath"></param>
-    public void ChangeFile(int index, string newPath)
-    {
-        Files[index].SetFile(newPath);
-    }
-    public CueFile AddFile(string path, string type) => Container.AddFile(path, type);
-
-    public CueIndex AddIndex(CueTime time, CueFile file, CueTrack track)
-    {
-        if (track.ParentFile != file)
-            throw new InvalidOperationException("Specified track does not belong to specified file");
-        if (file.ParentSheet != this)
-            throw new InvalidOperationException("Specified file does not belong to this cuesheet");
-        if (track.ParentSheet != this)
-            throw new InvalidOperationException("Specified track does not belong to this cuesheet");
-        return AddIndex(time, file.Index, track.Index);
-    }
-
-    public CueIndex AddIndex(CueTime time, int fileIndex = -1, int trackIndex = -1) => new CueIndex(AddIndexInternal(time, fileIndex, trackIndex));
-
-    public void AddIndex()
-    {
-        throw new NotImplementedException();
-    }
-
-    public CueTrack AddTrack(int index, CueFile file)
-    {
-        if (file.ParentSheet != this)
-            throw new InvalidOperationException("Specified file does not belong to this cuesheet");
-        return AddTrack(index, file.Index);
-    }
-
-    public CueTrack AddTrack(int index, int fileIndex = -1) => Container.AddTrack(index, fileIndex);
 
 
-    public CueSheet Clone()
-    {
-        CueSheet newCue = new(SourceFile?.FullName)
-        {
-            Catalog = Catalog,
-            Composer = Composer,
-            Date = Date,
-            DiscID = DiscID,
-            Performer = Performer,
-            Title = Title,
-        };
-        newCue.Container.CloneFrom(Container);
-        newCue.AddComment(RawComments);
-        newCue.AddRemark(RawRems.Select(x => x with { }));// creates new remark
-        newCue.SetCdTextFile(CdTextFile?.FullName);
-        return newCue;
-    }
+
+
 
     public bool Equals(CueSheet? other) => Equals(other, StringComparison.CurrentCulture);
 
@@ -249,16 +270,13 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
             if (!one.Equals(two))
                 return false;
         }
-        if (
-               !string.Equals(CdTextFile?.Name, other.CdTextFile?.Name, StringComparison.OrdinalIgnoreCase)
-            || !string.Equals(SourceFile?.Name, other.SourceFile?.Name, StringComparison.OrdinalIgnoreCase)
-            || !string.Equals(Performer, other.Performer, stringComparison)
-            || !string.Equals(Catalog, other.Catalog)
-            || !string.Equals(Composer, other.Composer, stringComparison)
-            || !string.Equals(Title, other.Title, stringComparison)
-           )
-            return false;
-        return true;
+        bool finalCheck = string.Equals(CdTextFile?.Name, other.CdTextFile?.Name, StringComparison.OrdinalIgnoreCase) //Paths are compared without caring for case
+                       && string.Equals(SourceFile?.Name, other.SourceFile?.Name, StringComparison.OrdinalIgnoreCase)
+                       && string.Equals(Performer, other.Performer, stringComparison)
+                       && string.Equals(Catalog, other.Catalog)
+                       && string.Equals(Composer, other.Composer, stringComparison)
+                       && string.Equals(Title, other.Title, stringComparison);
+        return finalCheck;
     }
 
     internal (int Start, int End) GetIndexesOfFile_Range(int fileIndex) => Container.GetCueIndicesOfFile_Range(fileIndex);
@@ -311,8 +329,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
 
     public bool SetTrackHasZerothIndex(int trackIndex, bool hasZerothIndex)
     {
-        CueTrack? track = Container.Tracks.ElementAtOrDefault(trackIndex);
-        if (track is null) throw new KeyNotFoundException("Specified track does not exist");
+        CueTrack? track = Container.Tracks.ElementAtOrDefault(trackIndex) ?? throw new ArgumentOutOfRangeException(nameof(trackIndex), "Specified track does not exist");
         (int Start, int End) = Container.GetCueIndicesOfTrack_Range(trackIndex, true);
         int count = End - Start;
         //0
@@ -338,10 +355,6 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
             return SetZerothIndexImpl(hasZerothIndex, track);
     }
 
-    public override string ToString()
-    {
-        return String.Format("CueSheet: {0} - {1} - {2}", Performer ?? "No performer", Title ?? "No title", SourceFile?.Name ?? "No file");
-    }
 
 
     internal CueIndexImpl AddIndexInternal(CueTime time, int fileIndex = -1, int trackIndex = -1) => Container.AddIndex(time, fileIndex, trackIndex);
@@ -366,45 +379,65 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
         return old != hasZerothIndex;
     }
 
+    public void Refresh()
+    {
+        RefreshFiles();
+        RefreshIndices();
+    }
+
     private void RefreshFiles()
     {
-        if (SourceFile != null)
-            SourceFile.Refresh();
+        SourceFile?.Refresh();
         foreach (var file in Container.Files)
         {
             file.RefreshFileInfo();
         }
-        if (CdTextFile != null)
-            CdTextFile.Refresh();
-    }
-    /// <summary>
-    /// Save the CueSheet to the location specified by its fileinfo. If <paramref name="path"/> is not null, it is set as cue path of this instance.
-    /// After changing, path is not reverted if saving was unsuccessful.
-    /// </summary>
-    /// <param name="path"></param>
-    public void Save(string path, Encoding? encoding = null)
-    {
-        //if (path is not null)
-        ArgumentException.ThrowIfNullOrEmpty(path);
-        SetCuePath(path);
-        CueWriter writer = new();
-        if (encoding is not null)
-        {
-            CueWriterSettings settings = new() { Encoding = encoding };
-            writer.Settings = settings;
-        }
-        writer.SaveCueSheet(this);
-    }
+        CdTextFile?.Refresh();
 
-    public override bool Equals(object? obj)
-    {
-        return obj is CueSheet sheet ? Equals(sheet) : false;
     }
+    private IEnumerable<FileInfo> GetAssociatedFiles()
+    {
+        throw new NotImplementedException();
+        //if (LastFile is null || LastFile.FileInfo?.DirectoryName is null)
+        //{
+        //    return Enumerable.Empty<FileInfo>();
+        //}
+        //// All variations of base name of cuesheet
+        //HashSet<string> matchStrings = GetMatchStringHashset();
 
-    public override int GetHashCode()
-    {
-        return HashCode.Combine(Performer, Title, Date, Files.Count, Tracks.Count, Remarks.Count, Comments.Count);
+        ////Where the sheet is located
+        //DirectoryInfo? sheetDir = Sheet.SourceFile?.Directory;
+        ////Where the last audio file is located
+        //DirectoryInfo? audioDir = Sheet.LastFile.FileInfo.Directory;
+        //IEnumerable<FileInfo> siblingFiles = audioDir?.EnumerateFiles() ?? Enumerable.Empty<FileInfo>();
+
+        //// If audio dir and sheet dir are different, concatenate file sequences
+        //if (!PathComparer.Instance.Equals(sheetDir, audioDir)
+        //    && sheetDir?.EnumerateFiles() is IEnumerable<FileSystemInfo> audioSiblings)
+        //{
+        //    siblingFiles = siblingFiles.Concat(sheetDir.EnumerateFiles());
+        //}
+
+        //// Case-insensitive hashset to get only unique filepaths. Should work with case-sensitive filesystems,
+        //// since what is added is directly enumerated file.
+        //HashSet<FileInfo> compareNames = new(PathComparer.Instance);
+        //foreach (FileInfo file in siblingFiles)
+        //{
+        //    if (file.Extension.Equals(".cue", StringComparison.OrdinalIgnoreCase)) continue;
+        //    if (matchStrings.Contains(Path.GetFileNameWithoutExtension(file.Name)))
+        //    {
+        //        //var ttyu = Sheet.Files.Select(x => x.FileInfo).ToArray();
+        //        //bool zzz=Comparer.Equals(ttyu[0], file);
+        //        bool isAudioFile = Sheet.Files.Select(x => x.FileInfo).Contains(file, PathComparer.Instance);
+        //        if (!isAudioFile)
+        //            compareNames.Add(file);
+        //    }
+        //}
+
     }
+    
+
+
     public static bool operator ==(CueSheet? left, CueSheet? right)
     {
         if (left is not null) return left.Equals(right); //not null and whatever
@@ -415,50 +448,47 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
     {
         return !(left == right);
     }
-    //public CueSheet(CueSheet sheet)
-    //{
-    //    //Catalog = sheet.Catalog;
-    //    //Composer = sheet.Composer;
-    //    //Title = sheet.Title;
-    //    //Date = sheet.Date;
-    //    //SheetType = sheet.SheetType;
-    //    //DiscID = sheet.DiscID;
 
-    //    //SetCdTextFile(sheet.CdTextFile?.FullName);
-    //public bool MoveIndex(int trackNumber, int indexNumber, CueTime difference)
-    //{
-    //    CueTrack? track = Tracks.FindInOrdered(trackNumber, x => x.Number);
-    //    if (track == null) return false;
-    //    return track.MoveIndex(indexNumber, difference);
-    //}
-    //public bool ChangeIndex(int trackNumber, int indexNumber, CueTime newTime)
-    //{
-    //    CueTrack? track = Tracks.FindInOrdered(trackNumber, x => x.Number);
-    //    if (track == null) return false;
-    //    return track.ChangeIndex(indexNumber, newTime);
-    //}
-    //public bool RemoveIndex(int trackNumber, int indexNumber)
-    //{
-    //    CueTrack? track = Tracks.FindInOrdered(trackNumber, x => x.Number);
-    //    if (track == null) return false;
-    //    return track.RemoveIndex(indexNumber);
-    //}
-    //public int InsertIndex(int trackNumber, int emplacement, CueTime cueTime)
-    //{
-    //    CueTrack? track = Tracks.FindInOrdered(trackNumber, x => x.Number);
-    //    if (track == null) return -1;
-    //    return track.InsertIndex(cueTime);
-    //}
-    //public bool RemoveTrack(int trackNumber)
-    //{
-    //    CueTrack? track = Tracks.FindInOrdered(trackNumber, x => x.Number);
-    //    if (track == null) return false;
-    //    IEnumerable<CueFile> files = track.Indices.DistinctBy(x => x.File).Select(x => x.File);
-    //    bool res = false;
-    //    foreach (CueFile file in files)
-    //        res |= file.RemoveTrack(track);
-    //    track.Active = !res;
-    //    return res;
-    //}
-    //public bool RemoveFile(int fileNumber)=> _Files.Remove(fileNumber);
+    /// <summary>
+    /// Creates an independent deep copy of cuesheet contents.
+    /// Copy is functionally the same, but may not be identical (formatting, etc.).
+    /// No objects are shared, everything is created anew
+    /// </summary>
+    /// <returns>Deep copy of the <see cref="CueSheet"/></returns>
+    public CueSheet Clone()
+    {
+        CueSheet newCue = new(SourceFile?.FullName)
+        {
+            Catalog = Catalog,
+            Composer = Composer,
+            Date = Date,
+            DiscID = DiscID,
+            Performer = Performer,
+            Title = Title,
+        };
+        newCue.Container.CloneFrom(Container);
+        newCue.AddComment(RawComments);
+        newCue.AddRemark(RawRems.Select(x => x with { }));// creates new remark
+        newCue.SetCdTextFile(CdTextFile?.FullName);
+        return newCue;
+    }
+    public override string ToString()
+    {
+        return string.Format("CueSheet: {0} - {1} - {2}",
+                             Performer ?? "No performer",
+                             Title ?? "No title",
+                             SourceFile?.Name ?? "No file");
+    }
+    public override bool Equals(object? obj)
+    {
+        return obj is CueSheet sheet && Equals(sheet);
+    }
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(Performer, Title, Date, Files.Count, Tracks.Count, Remarks.Count, Comments.Count);
+    }
+
+    public void CopyFiles(string destination, string? pattern) => throw new NotImplementedException();
+    public void MoveFiles(string destination, string? pattern) => throw new NotImplementedException();
+    public void DeleteFiles() => throw new NotImplementedException();
 }

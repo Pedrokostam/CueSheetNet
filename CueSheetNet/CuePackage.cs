@@ -22,7 +22,7 @@ namespace CueSheetNet;
 /// <summary>
 /// Class which takes care of file operations related to the CueSheet passed to the constructor.
 /// </summary>
-public partial class CuePackage
+public partial class CueMover
 {
     private static readonly Dictionary<string, string> CommonSynonyms = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
     {
@@ -79,7 +79,7 @@ public partial class CuePackage
         _AdditionalFiles = compareNames.Cast<FileSystemInfo>().Order(PathComparer.Instance).Cast<FileInfo>().ToArray();//.Select((file, index) => new IndexedFile(FileType.Additional, index, (FileInfo)file)).ToArray();
     }
 
-    public CuePackage(CueSheet sheet)
+    public CueMover(CueSheet sheet)
     {
         Sheet = sheet;
         RefreshFiles();
