@@ -24,11 +24,19 @@ namespace CueSheetNet;
 /// </summary>
 public partial class CueMover
 {
-    private static readonly Dictionary<string, string> CommonSynonyms = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+    private static readonly Dictionary<string, string> CommonSynonyms = new(StringComparer.OrdinalIgnoreCase)
     {
         {"ARTIST","Performer" },
+        {"ALBUMARTIST","Performer" },
+        {"ALBUM ARTIST","Performer" },
         {"YEAR","Date" },
         {"ALBUM","Title" },
+        {"ALBUMTITLE","Title" },
+        {"ALBUM TITLE","Title" },
+        {"ALBUMNAME","Title" },
+        {"ALBUM NAME","Title" },
+        {"DISC ID","DiscID" },
+        {"CURRENT","old" },
     };
     public CueSheet Sheet { get; private set; }
     private FileInfo[] _AdditionalFiles { get; set; }
@@ -67,21 +75,27 @@ public partial class CueMover
         foreach (FileInfo file in siblingFiles)
         {
             if (file.Extension.Equals(".cue", StringComparison.OrdinalIgnoreCase)) continue;
-            if (matchStrings.Contains(Path.GetFileNameWithoutExtension(file.Name)))
+            string name = Path.GetFileNameWithoutExtension(file.Name);
+            if (matchStrings.Contains(name))
             {
                 //var ttyu = Sheet.Files.Select(x => x.FileInfo).ToArray();
                 //bool zzz=Comparer.Equals(ttyu[0], file);
                 bool isAudioFile = Sheet.Files.Select(x => x.FileInfo).Contains(file, PathComparer.Instance);
-                if (!isAudioFile)
-                    compareNames.Add(file);
+                if (isAudioFile)
+                    continue; //Audio files are already associated with the sheet
+                compareNames.Add(file);
             }
         }
         _AdditionalFiles = compareNames.Cast<FileSystemInfo>().Order(PathComparer.Instance).Cast<FileInfo>().ToArray();//.Select((file, index) => new IndexedFile(FileType.Additional, index, (FileInfo)file)).ToArray();
     }
-
+    /// <summary>
+    /// Creates a mover for a clone of the <paramref name="sheet"/>.
+    /// The original sheet will not be modified
+    /// </summary>
+    /// <param name="sheet"></param>
     public CueMover(CueSheet sheet)
     {
-        Sheet = sheet;
+        Sheet = sheet.Clone();
         RefreshFiles();
     }
     /// <summary>
@@ -151,16 +165,18 @@ public partial class CueMover
             }
             if (groupVal.Equals("old", StringComparison.InvariantCultureIgnoreCase))
             {
-
+                // special tag "old" - reuse current name of the file
                 treeFormat = treeFormat.Replace(val, Path.GetFileNameWithoutExtension(Sheet.SourceFile!.Name));
                 continue;
             }
+            // Flag for case ignoring is set
             var flags = System.Reflection.BindingFlags.IgnoreCase | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public;
             System.Reflection.PropertyInfo? prop = Sheet.GetType().GetProperty(groupVal, flags);
-            object? value = prop?.GetValue(Sheet) as object;
+            object? value = prop?.GetValue(Sheet);
             if (value is null)
             {
-                Logger.LogInformation("No matching property found for {Property} when parsing tree format {Format}", val, treeFormat);
+                // Invalid tags will be left without changing, still in percent signs
+                Logger.LogWarning("No matching property found for {Property} when parsing tree format {Format}.", val, treeFormat);
                 continue;
             }
             treeFormat = treeFormat.Replace(val, value.ToString());
@@ -231,7 +247,7 @@ public partial class CueMover
         return transFiles;
     }
 
-    private IEnumerable<TransFile> GetAdditionalTransFiles(IEnumerable<FileInfo> files, string baseFilename)
+    private static IEnumerable<TransFile> GetAdditionalTransFiles(IEnumerable<FileInfo> files, string baseFilename)
     {
         SortedDictionary<string, List<TransFile>> ExtGroups = new(StringComparer.OrdinalIgnoreCase);
         foreach (FileInfo file in files)
@@ -339,10 +355,8 @@ public partial class CueMover
             Logger.LogInformation("Removed file {File}", file);
         }
     }
-    public bool CopyFiles(string destination, string? pattern = null)
+    public CueSheet CopyFiles(string destination, string? pattern = null)
     {
-        CueSheet oldSheet = Sheet.Clone(); // Keep a copy of the original
-
         // Combine Destination with whatever results from parsing (which may contain more directories)
         string destinationWithPattern = Path.Combine(destination, ParseTreeFormat(pattern));
         //If we can't create the directory, IOException happens and we stop without needing to reverse anything.
@@ -382,13 +396,12 @@ public partial class CueMover
                 item.Delete();
                 Logger.LogWarning("Removed copied file {File}", item);
             }
-            Sheet = oldSheet;// Replaced changed sheet with the original one.
             throw;
         }
         // Sheet of this cuepackage is already updated, no need to change anything
-        return true;
+        return Sheet;
     }
-    public bool MoveFiles(string destination, string? pattern = null)
+    public CueSheet MoveFiles(string destination, string? pattern = null)
     {
         CueSheet oldSheet = Sheet.Clone(); // Keep a copy of the original
 
@@ -433,7 +446,7 @@ public partial class CueMover
             throw;
         }
         // Sheet of this cuepackage is already updated, no need to change anything
-        return true;
+        return Sheet;
     }
 }
 public record class TransFile
@@ -467,7 +480,7 @@ public record class TransFile
         {
             if (newName == null)
                 return Path.GetFileName(SourceFile.Name);
-            return newName+Extension;
+            return newName + Extension;
         }
     }
     public TransFile(FileInfo source)
@@ -476,7 +489,7 @@ public record class TransFile
     }
     public FileInfo Copy(DirectoryInfo destination)
     {
-        string dest = Path.Combine(destination.FullName,NewNameWithExtension);
+        string dest = Path.Combine(destination.FullName, NewNameWithExtension);
         FileInfo res = SourceFile.CopyTo(dest);
         Logger.LogInformation("Copied file {File} from {Source}", res, SourceFile);
         return res;

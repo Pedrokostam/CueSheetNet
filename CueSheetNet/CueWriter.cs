@@ -287,7 +287,7 @@ public class CueWriter
         }
         catch (EncoderFallbackException x)
         {
-            var offendingChar = (int)x.CharUnknown;
+            int offendingChar = (int)x.CharUnknown;
             string offendingString = $"0x{offendingChar:X8} - {offendingChar}";
             Logger.LogWarning("Specified encoding {Encoding} cannot be used to encode contents if {CueSheet} (Offending character - {Byte}) . Falling back to {DefaultEncoding}", encoding, sheet, offendingString, CueWriterSettings.DefaultEncoding);
             encoding = CueWriterSettings.DefaultEncoding;
