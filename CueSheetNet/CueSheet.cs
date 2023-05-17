@@ -189,6 +189,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
     public CueSheet(string? cuePath) : this()
     {
         SetCuePath(cuePath);
+        Refresh();
     }
 
     public string? Catalog { get; set; }
