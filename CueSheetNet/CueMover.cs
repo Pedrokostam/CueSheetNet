@@ -10,6 +10,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Net.WebSockets;
+using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -39,27 +40,23 @@ public partial class CueMover
         {"CURRENT","old" },
     };
     public CueSheet Sheet { get; private set; }
-    private FileInfo[] _AdditionalFiles { get; set; }
-
     /// <summary>
     /// Finds all files related to the CueSheet
     /// </summary>
-    [MemberNotNull(nameof(_AdditionalFiles))]
-    public void RefreshFiles()
+    public static IEnumerable<FileInfo> GetAssociatedFiles(CueSheet sheet)
     {
         //If there are no files or directory of last file is null, return - no files
-        if (Sheet.LastFile is null || Sheet.LastFile?.FileInfo?.DirectoryName is null)
+        if (sheet.LastFile is null || sheet.LastFile?.FileInfo?.DirectoryName is null)
         {
-            _AdditionalFiles = Array.Empty<FileInfo>();
-            return;
+           return Enumerable.Empty<FileInfo>();
         }
         // All variations of base name of cuesheet
-        HashSet<string> matchStrings = GetMatchStringHashset();
+        HashSet<string> matchStrings = GetMatchStringHashset(sheet);
 
         //Where the sheet is located
-        DirectoryInfo? sheetDir = Sheet.SourceFile?.Directory;
+        DirectoryInfo? sheetDir = sheet.SourceFile?.Directory;
         //Where the last audio file is located
-        DirectoryInfo? audioDir = Sheet.LastFile.FileInfo.Directory;
+        DirectoryInfo? audioDir = sheet.LastFile.FileInfo.Directory;
         IEnumerable<FileInfo> siblingFiles = audioDir?.EnumerateFiles() ?? Enumerable.Empty<FileInfo>();
 
         // If audio dir and sheet dir are different, concatenate file sequences
@@ -80,13 +77,13 @@ public partial class CueMover
             {
                 //var ttyu = Sheet.Files.Select(x => x.FileInfo).ToArray();
                 //bool zzz=Comparer.Equals(ttyu[0], file);
-                bool isAudioFile = Sheet.Files.Select(x => x.FileInfo).Contains(file, PathComparer.Instance);
+                bool isAudioFile = sheet.Files.Select(x => x.FileInfo).Contains(file, PathComparer.Instance);
                 if (isAudioFile)
                     continue; //Audio files are already associated with the sheet
                 compareNames.Add(file);
             }
         }
-        _AdditionalFiles = compareNames.Cast<FileSystemInfo>().Order(PathComparer.Instance).Cast<FileInfo>().ToArray();//.Select((file, index) => new IndexedFile(FileType.Additional, index, (FileInfo)file)).ToArray();
+        return compareNames.Cast<FileSystemInfo>().Order(PathComparer.Instance).Cast<FileInfo>();//.Select((file, index) => new IndexedFile(FileType.Additional, index, (FileInfo)file)).ToArray();
     }
     /// <summary>
     /// Creates a mover for a clone of the <paramref name="sheet"/>.
@@ -96,15 +93,14 @@ public partial class CueMover
     public CueMover(CueSheet sheet)
     {
         Sheet = sheet.Clone();
-        RefreshFiles();
     }
     /// <summary>
     /// Gets collection of unique string matches for file searching
     /// </summary>
     /// <returns>Hashset with unique string matches, both normalized and raw. Hashset uses <see cref="StringComparer.InvariantCultureIgnoreCase"/></returns>
-    private HashSet<string> GetMatchStringHashset()
+    private static HashSet<string> GetMatchStringHashset(CueSheet sheet)
     {
-        string baseName = GetBaseNameForSearching();
+        string baseName = GetBaseNameForSearching(sheet);
         string noSpaceName = baseName.Replace(" ", "");
         string underscoreName = baseName.Replace(' ', '_');
         HashSet<string> hs = new(StringComparer.InvariantCultureIgnoreCase)
@@ -122,7 +118,7 @@ public partial class CueMover
     /// Gets the filename of source sheet file, or the filename of last audio file, or "{Performer} - {Title}". All without extension
     /// </summary>
     /// <returns></returns>
-    private string GetBaseNameForSearching()
+    private static string GetBaseNameForSearching(CueSheet Sheet)
     {
         string name;
         if (Sheet.SourceFile is null)
@@ -242,7 +238,7 @@ public partial class CueMover
             transFiles.Add(transAudio);
             fileIndex++;
         }
-        IEnumerable<TransFile> trandAdditionals = GetAdditionalTransFiles(_AdditionalFiles, filename);
+        IEnumerable<TransFile> trandAdditionals = GetAdditionalTransFiles(Sheet.AssociatedFiles, filename);
         transFiles.AddRange(trandAdditionals);
         return transFiles;
     }
@@ -339,7 +335,7 @@ public partial class CueMover
     public void DeleteFiles()
     {
         var audioFiles = Sheet.Files.Select(x => x.FileInfo);
-        var allFiles = audioFiles.Concat(_AdditionalFiles).Append(Sheet.SourceFile);
+        var allFiles = audioFiles.Concat(Sheet.AssociatedFiles).Append(Sheet.SourceFile);
         HashSet<string> h = new(StringComparer.InvariantCulture);
         foreach (var file in allFiles)
         {

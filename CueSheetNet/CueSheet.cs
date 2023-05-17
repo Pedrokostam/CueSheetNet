@@ -129,6 +129,9 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
     }
     public CueFile AddFile(string path, string type) => Container.AddFile(path, type);
     public CueFile? LastFile => Container.Files.LastOrDefault();
+
+    private List<FileInfo> _associatedFiles { get; } = new List<FileInfo>();
+    public ReadOnlyCollection<FileInfo> AssociatedFiles => _associatedFiles.AsReadOnly();
     #endregion
 
     #region Index
@@ -394,49 +397,10 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
         }
         CdTextFile?.Refresh();
 
-    }
-    private IEnumerable<FileInfo> GetAssociatedFiles()
-    {
-        throw new NotImplementedException();
-        //if (LastFile is null || LastFile.FileInfo?.DirectoryName is null)
-        //{
-        //    return Enumerable.Empty<FileInfo>();
-        //}
-        //// All variations of base name of cuesheet
-        //HashSet<string> matchStrings = GetMatchStringHashset();
-
-        ////Where the sheet is located
-        //DirectoryInfo? sheetDir = Sheet.SourceFile?.Directory;
-        ////Where the last audio file is located
-        //DirectoryInfo? audioDir = Sheet.LastFile.FileInfo.Directory;
-        //IEnumerable<FileInfo> siblingFiles = audioDir?.EnumerateFiles() ?? Enumerable.Empty<FileInfo>();
-
-        //// If audio dir and sheet dir are different, concatenate file sequences
-        //if (!PathComparer.Instance.Equals(sheetDir, audioDir)
-        //    && sheetDir?.EnumerateFiles() is IEnumerable<FileSystemInfo> audioSiblings)
-        //{
-        //    siblingFiles = siblingFiles.Concat(sheetDir.EnumerateFiles());
-        //}
-
-        //// Case-insensitive hashset to get only unique filepaths. Should work with case-sensitive filesystems,
-        //// since what is added is directly enumerated file.
-        //HashSet<FileInfo> compareNames = new(PathComparer.Instance);
-        //foreach (FileInfo file in siblingFiles)
-        //{
-        //    if (file.Extension.Equals(".cue", StringComparison.OrdinalIgnoreCase)) continue;
-        //    if (matchStrings.Contains(Path.GetFileNameWithoutExtension(file.Name)))
-        //    {
-        //        //var ttyu = Sheet.Files.Select(x => x.FileInfo).ToArray();
-        //        //bool zzz=Comparer.Equals(ttyu[0], file);
-        //        bool isAudioFile = Sheet.Files.Select(x => x.FileInfo).Contains(file, PathComparer.Instance);
-        //        if (!isAudioFile)
-        //            compareNames.Add(file);
-        //    }
-        //}
+        _associatedFiles.Clear();
+        _associatedFiles.AddRange(CueMover.GetAssociatedFiles(this));
 
     }
-
-
 
     public static bool operator ==(CueSheet? left, CueSheet? right)
     {
@@ -470,6 +434,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
         newCue.AddComment(RawComments);
         newCue.AddRemark(RawRems.Select(x => x with { }));// creates new remark
         newCue.SetCdTextFile(CdTextFile?.FullName);
+        newCue.Refresh();
         return newCue;
     }
     public override string ToString()
