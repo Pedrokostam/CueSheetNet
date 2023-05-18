@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace CueSheetNet.FileIO;
-internal class OggFormatDetector : IFileFormatReader
+internal class OggFormatReader : IFileFormatReader
 {
     private readonly string[] extensions = new string[] { ".OGG", ".OGX", ".SPX" };
     private readonly string formatName = "Ogg";

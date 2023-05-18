@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace CueSheetNet.FileIO;
-internal class Mp3FormatDetector : IFileFormatReader
+internal class Mp3FormatReader : IFileFormatReader
 {
     private readonly string formatName="MP3";
     private readonly string[] extensions = new string[] {".MP3" };

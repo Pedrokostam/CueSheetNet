@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace CueSheetNet.FileIO;
-internal class WaveFormatDetector : IFileFormatReader
+internal class WaveFormatReader : IFileFormatReader
 {
     private readonly string[] extensions = new string[] { ".WAV", ".WAVE" };
     private readonly string formatName = "Wave";

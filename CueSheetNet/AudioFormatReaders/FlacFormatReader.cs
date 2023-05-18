@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace CueSheetNet.FileIO;
-internal class FlacFormatDetector : IFileFormatReader
+internal class FlacFormatReader : IFileFormatReader
 {
     private readonly string[] extensions = new string[] { ".flac" };
     private readonly string formatName = "Flac";
