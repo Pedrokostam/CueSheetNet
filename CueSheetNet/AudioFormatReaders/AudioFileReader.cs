@@ -9,7 +9,6 @@ namespace CueSheetNET.FileIO
     {
         static AudioFileReader()
         {
-            Logger.Log(LogLevel.Debug, "AudioFileReader Static constructor called", nameof(AudioFileReader), "");
             var flac = new FlacFormatReader();
             var wave = new WaveFormatReader();
             FileReaders.Add(flac);

@@ -23,7 +23,7 @@ namespace CueSheetNet;
 /// <summary>
 /// Class which takes care of file operations related to the CueSheet passed to the constructor.
 /// </summary>
-public partial class CueMover
+public static partial class FileHandler
 {
     private static readonly Dictionary<string, string> CommonSynonyms = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -39,7 +39,6 @@ public partial class CueMover
         {"DISC ID","DiscID" },
         {"CURRENT","old" },
     };
-    public CueSheet Sheet { get; private set; }
     /// <summary>
     /// Finds all files related to the CueSheet
     /// </summary>
@@ -48,7 +47,7 @@ public partial class CueMover
         //If there are no files or directory of last file is null, return - no files
         if (sheet.LastFile is null || sheet.LastFile?.FileInfo?.DirectoryName is null)
         {
-           return Enumerable.Empty<FileInfo>();
+            return Enumerable.Empty<FileInfo>();
         }
         // All variations of base name of cuesheet
         HashSet<string> matchStrings = GetMatchStringHashset(sheet);
@@ -90,10 +89,6 @@ public partial class CueMover
     /// The original sheet will not be modified
     /// </summary>
     /// <param name="sheet"></param>
-    public CueMover(CueSheet sheet)
-    {
-        Sheet = sheet.Clone();
-    }
     /// <summary>
     /// Gets collection of unique string matches for file searching
     /// </summary>
@@ -141,14 +136,15 @@ public partial class CueMover
     /// All invalid characters are replaced with '_'.
     /// Property names do not need to match case.
     /// </summary>
+    /// <param name="sheet"></param>
+    /// <returns>Path stem made accoridng to the treeformat. All invalid path chars removed.</returns>
     /// <param name="treeFormat">Pattern which may contain reference to properies of CueSheet, case insensitive names. To get the original filename, specify %old%
     /// If parameter is null, the original filename will be used
     /// </param>
-    /// <returns>Path stem made accoridng to the treeformat. All invalid path chars removed.</returns>
-    private string ParseTreeFormat(string? treeFormat)
+    private static string ParseTreeFormat(CueSheet sheet, string? treeFormat)
     {
         if (treeFormat == null)
-            return Path.GetFileNameWithoutExtension(Sheet.SourceFile!.Name);
+            return Path.GetFileNameWithoutExtension(sheet.SourceFile!.Name);
         Regex formatter = PropertyParser();
         MatchCollection matches = formatter.Matches(treeFormat);
         foreach (Match match in matches.Cast<Match>())
@@ -162,13 +158,13 @@ public partial class CueMover
             if (groupVal.Equals("old", StringComparison.InvariantCultureIgnoreCase))
             {
                 // special tag "old" - reuse current name of the file
-                treeFormat = treeFormat.Replace(val, Path.GetFileNameWithoutExtension(Sheet.SourceFile!.Name));
+                treeFormat = treeFormat.Replace(val, Path.GetFileNameWithoutExtension(sheet.SourceFile!.Name));
                 continue;
             }
             // Flag for case ignoring is set
             var flags = System.Reflection.BindingFlags.IgnoreCase | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public;
-            System.Reflection.PropertyInfo? prop = Sheet.GetType().GetProperty(groupVal, flags);
-            object? value = prop?.GetValue(Sheet);
+            System.Reflection.PropertyInfo? prop = sheet.GetType().GetProperty(groupVal, flags);
+            object? value = prop?.GetValue(sheet);
             if (value is null)
             {
                 // Invalid tags will be left without changing, still in percent signs
@@ -197,12 +193,12 @@ public partial class CueMover
         immediateParentDir.Create(); //If we can't create the directory, IOException happens and we stop without needing to reverse anything.
         return immediateParentDir;
     }
-    private void SaveModifiedCueSheet(string filename, DirectoryInfo immediateParentDir)
+    private static void SaveModifiedCueSheet(CueSheet sheet, string filename, DirectoryInfo immediateParentDir)
     {
         string sheetPath = Path.Join(immediateParentDir.FullName, filename);
         sheetPath = Path.ChangeExtension(sheetPath, "cue");
-        Sheet.Save(sheetPath); //If we can't save the sheet there, IOException happens and we stop without needing to reverse anything.
-        Logger.LogInformation("Saved {CueSHeet} to {Destination}", Sheet, sheetPath);
+        sheet.Save(sheetPath); //If we can't save the sheet there, IOException happens and we stop without needing to reverse anything.
+        Logger.LogInformation("Saved {CueSHeet} to {Destination}", sheet, sheetPath);
     }
 
     /// <summary>
@@ -225,20 +221,21 @@ public partial class CueMover
     /// <summary>
     /// Find all audio files of the CueSheet and all additional files. Create new names for them to prevent name collision and returns a list with TransFiles
     /// </summary>
-    /// <param name="filename">Base anem given all related files, without any invalid characters</param>
+    /// <param name="sheet"></param>
     /// <returns></returns>
-    private List<TransFile> GetTransFiles(string filename)
+    /// <param name="filename">Base anem given all related files, without any invalid characters</param>
+    private static List<TransFile> GetTransFiles(CueSheet sheet, string filename)
     {
         List<TransFile> transFiles = new();
-        IEnumerable<TransFile> transAudios = GetAudioTransFiles(filename);
+        IEnumerable<TransFile> transAudios = GetAudioTransFiles(sheet,filename);
         int fileIndex = 0;
         foreach (TransFile transAudio in transAudios)
         {
-            Sheet.ChangeFile(fileIndex, transAudio.NewNameWithExtension);
+            sheet.ChangeFile(fileIndex, transAudio.NewNameWithExtension);
             transFiles.Add(transAudio);
             fileIndex++;
         }
-        IEnumerable<TransFile> trandAdditionals = GetAdditionalTransFiles(Sheet.AssociatedFiles, filename);
+        IEnumerable<TransFile> trandAdditionals = GetAdditionalTransFiles(sheet.AssociatedFiles, filename);
         transFiles.AddRange(trandAdditionals);
         return transFiles;
     }
@@ -290,22 +287,22 @@ public partial class CueMover
         return number.ToString($"d{digitCount}");
     }
 
-    private IEnumerable<TransFile> GetAudioTransFiles(string filename)
+    private static IEnumerable<TransFile> GetAudioTransFiles(CueSheet sheet,string filename)
     {
         // One audio file, no need to change the filename
-        if (Sheet.Files.Count == 0) { yield break; }
-        if (Sheet.Files.Count == 1)
+        if (sheet.Files.Count == 0) { yield break; }
+        if (sheet.Files.Count == 1)
         {
-            TransFile transFile = new TransFile(Sheet.Files[0].FileInfo) { NewName = filename };
+            TransFile transFile = new TransFile(sheet.Files[0].FileInfo) { NewName = filename };
             yield return transFile;
         }
         else
         {
-            int numOfDigits = GetNumberOfDigits(Sheet.Files.Count);
-            foreach (CueFile cueFile in Sheet.Files)
+            int numOfDigits = GetNumberOfDigits(sheet.Files.Count);
+            foreach (CueFile cueFile in sheet.Files)
             {
                 string audiofilename = $"{filename} - {GetPaddedNumber(cueFile.Index, numOfDigits)}";// add index if file to filename
-                var trackOfFile = Sheet.GetTracksOfFile(cueFile.Index);
+                var trackOfFile = sheet.GetTracksOfFile(cueFile.Index);
                 if (trackOfFile.Length == 1)// If the file has one song, add the song title to filename
                 {
                     audiofilename += $" - {trackOfFile[0].Title}";
@@ -330,12 +327,13 @@ public partial class CueMover
         return destination;
     }
 
-    [GeneratedRegex(@"%(?<property>\w+)%")]
+    [GeneratedRegex(@"%(?<property>[\w\s]+)%")]
     private static partial Regex PropertyParser();
-    public void DeleteFiles()
+    //private static  Regex PropertyParser()=> throw new NotImplementedException();
+    public static  void DeleteCueFiles(CueSheet sheet)
     {
-        var audioFiles = Sheet.Files.Select(x => x.FileInfo);
-        var allFiles = audioFiles.Concat(Sheet.AssociatedFiles).Append(Sheet.SourceFile);
+        var audioFiles = sheet.Files.Select(x => x.FileInfo);
+        var allFiles = audioFiles.Concat(sheet.AssociatedFiles).Append(sheet.SourceFile);
         HashSet<string> h = new(StringComparer.InvariantCulture);
         foreach (var file in allFiles)
         {
@@ -351,10 +349,21 @@ public partial class CueMover
             Logger.LogInformation("Removed file {File}", file);
         }
     }
-    public CueSheet CopyFiles(string destination, string? pattern = null)
+    /// <summary>
+    /// Finds all files associated with the sheet (including those not mention in the sheet proper, but sharing its name) and copies them to the new location. Modifies a clone of the CueSheet and returns it.
+    /// </summary>
+    /// <param name="destination">Path to destination folder</param>
+    /// <param name="pattern">Pattern to be added to <paramref name="destination"/>. Can contain tags (surrounded by '%') which will be expanded bases on the CueSheet.
+    ///     <para>E.G. %title% will be replaced by sheet's title. Speical tag %old'% is replaced by the current filename of the sheet.</para>
+    ///     <para>Any extension in the pattern will be ignored and replaced by ".cue"</para>
+    ///     <para>Pattern can be a directory structure (slashes are allowed), so this pattern is permitted: %artist%/%year%/%title%/%old%.cue</para>
+    /// </param>
+    /// <returns>Newly copied cuesheet</returns>
+    public static CueSheet CopyCueFiles(CueSheet sheet,string destination, string? pattern = null)
     {
+        sheet=sheet.Clone();
         // Combine Destination with whatever results from parsing (which may contain more directories)
-        string destinationWithPattern = Path.Combine(destination, ParseTreeFormat(pattern));
+        string destinationWithPattern = Path.Combine(destination, ParseTreeFormat(sheet, pattern));
         //If we can't create the directory, IOException happens and we stop without needing to reverse anything.
         DirectoryInfo immediateParentDir = GetImmediateParentDir(destinationWithPattern);
         // Now the destination is refreshed to the second to last element
@@ -362,11 +371,11 @@ public partial class CueMover
         string filename = GetNotNullName(destinationWithPattern);
         filename = StringNormalization.RemoveInvalidNameCharacters(filename);
 
-        List<TransFile> transFiles = GetTransFiles(filename);
+        List<TransFile> transFiles = GetTransFiles(sheet, filename);
 
         CheckForNameCollisions(immediateParentDir, transFiles);
 
-        SaveModifiedCueSheet(filename, immediateParentDir);
+        SaveModifiedCueSheet(sheet, filename, immediateParentDir);
         // At this point we saved a sheet referencing file that do not exist yet
 
         List<FileInfo> inProgressCopied = new List<FileInfo>();
@@ -395,14 +404,18 @@ public partial class CueMover
             throw;
         }
         // Sheet of this cuepackage is already updated, no need to change anything
-        return Sheet;
+        return sheet;
     }
-    public CueSheet MoveFiles(string destination, string? pattern = null)
+    /// <summary>
+    /// Finds all files associated with the sheet (including those not mentioned in the sheet proper, but sharing its name) and moves them to the new location. Modifies a clone of the CueSheet and returns it.
+    /// </summary>
+    /// <returns>Newly moved sheet</returns>
+    /// <inheritdoc cref="CopyCueFiles(CueSheet, string, string?)"/>
+    public static CueSheet MoveCueFiles(CueSheet sheet,string destination, string? pattern = null)
     {
-        CueSheet oldSheet = Sheet.Clone(); // Keep a copy of the original
-
+        sheet=sheet.Clone();
         // Combine Destination with whatever results from parsing (which may contain more directories)
-        string destinationWithPattern = Path.Combine(destination, ParseTreeFormat(pattern));
+        string destinationWithPattern = Path.Combine(destination, ParseTreeFormat(sheet, pattern));
         //If we can't create the directory, IOException happens and we stop without needing to reverse anything.
         DirectoryInfo immediateParentDir = GetImmediateParentDir(destinationWithPattern);
         // Now the destination is refreshed to the second to last element
@@ -410,12 +423,12 @@ public partial class CueMover
         string filename = GetNotNullName(destinationWithPattern);
         filename = StringNormalization.RemoveInvalidNameCharacters(filename);
 
-        List<TransFile> transFiles = GetTransFiles(filename);
+        List<TransFile> transFiles = GetTransFiles(sheet, filename);
 
         CheckForNameCollisions(immediateParentDir, transFiles);
 
-        SaveModifiedCueSheet(filename, immediateParentDir);
-        // At this point we saved a sheet referencing file that do not exist yet
+        SaveModifiedCueSheet(sheet, filename, immediateParentDir);
+        // At this point we saved a sheet referencing file that do not exist yetZ
 
         List<TransFile> movedFileArchive = new();
         try
@@ -438,11 +451,10 @@ public partial class CueMover
             {
                 item.Restore();
             }
-            Sheet = oldSheet;// Replaced changed sheet with the original one.
             throw;
         }
         // Sheet of this cuepackage is already updated, no need to change anything
-        return Sheet;
+        return sheet;
     }
 }
 public record class TransFile

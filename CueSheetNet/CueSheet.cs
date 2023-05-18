@@ -399,7 +399,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
         CdTextFile?.Refresh();
 
         _associatedFiles.Clear();
-        _associatedFiles.AddRange(CueMover.GetAssociatedFiles(this));
+        _associatedFiles.AddRange(FileHandler.GetAssociatedFiles(this));
 
     }
 
@@ -453,34 +453,18 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
     {
         return HashCode.Combine(Performer, Title, Date, Files.Count, Tracks.Count, Remarks.Count, Comments.Count);
     }
-    /// <summary>
-    /// Finds all files associated with the sheet (including those not mention in the sheet proper, but sharing its name) and copies them to the new location.
-    /// </summary>
-    /// <param name="destination">Path to destination folder</param>
-    /// <param name="pattern">Pattern to be added to <paramref name="destination"/>. Can contain tags (surrounded by '%') which will be expanded bases on the CueSheet.
-    ///     <para>E.G. %title% will be replaced by sheet's title. Speical tag %old'% is replaced by the current filename of the sheet.</para>
-    ///     <para>Any extension in the pattern will be ignored and replaced by ".cue"</para>
-    ///     <para>Pattern can be a directory structure (slashes are allowed), so this pattern is permitted: %artist%/%year%/%title%/%old%.cue</para>
-    /// </param>
-    /// <returns>Newly copied cuesheet</returns>
+    /// <inheritdoc cref="FileHandler.CopyCueFiles(CueSheet, string, string?)"/>
     public CueSheet CopyFiles(string destination, string? pattern)
     {
-        CueMover mover = new(this);
-        return mover.CopyFiles(destination, pattern);
+        return FileHandler.CopyCueFiles(this,destination, pattern);
     }
-    /// <summary>
-    /// Finds all files associated with the sheet (including those not mention in the sheet proper, but sharing its name) and moves them to the new location.
-    /// </summary>
-    /// <returns>Newly moved sheet</returns>
-    /// <inheritdoc cref="CopyFiles"/>
+    /// <inheritdoc cref="FileHandler.MoveCueFiles(CueSheet, string, string?)"/>
     public CueSheet MoveFiles(string destination, string? pattern)
     {
-        CueMover mover = new(this);
-        return mover.MoveFiles(destination, pattern);
+        return FileHandler.MoveCueFiles(this,destination, pattern);
     }
     public void DeleteFiles()
     {
-        CueMover mover = new(this);
-        mover.DeleteFiles();
+        FileHandler.DeleteCueFiles(this);
     }
 }
