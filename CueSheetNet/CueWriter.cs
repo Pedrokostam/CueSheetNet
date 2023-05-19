@@ -37,18 +37,18 @@ public sealed record CueWriterSettings
 
     public int IndentationDepth { get; set; } = 2;
 
-    private char indentationCharacter = ' ';
+    private char _indentationCharacter = ' ';
 
     public RedundantFieldBehaviors RedundantFieldsBehavior { get; set; } = RedundantFieldBehaviors.KeepAsIs;
 
     public char IndentationCharacter
     {
-        get => indentationCharacter;
+        get => _indentationCharacter;
         set
         {
             if (!char.IsWhiteSpace(value))
                 throw new ArgumentException($"Indentation character must be whitespace (is: '{value}')");
-            indentationCharacter = value;
+            _indentationCharacter = value;
         }
     }
 }
@@ -87,11 +87,11 @@ public class CueWriter
         Builder.AppendLine(Stringify(header, value, quoteAllowed));
         return true;
     }
-    [return: NotNullIfNotNull("str")]
+    [return: NotNullIfNotNull(nameof(str))]
     private string? Replace(string? str) => Settings.InnerQuotationReplacement.ReplaceQuotes(str);
     private bool AppendRemark(Remark rem, int depth) => AppendStringify("REM " + rem.Field, Replace(rem.Value), depth, true);
     private bool AppendIndex(CueIndexImpl cim) => AppendStringify("INDEX " + cim.Number.ToString("D2"), cim.Time.ToString(), 2, false);
-    [return: NotNullIfNotNull("s")]
+    [return: NotNullIfNotNull(nameof(s))]
     private static string? Enquote(string? s)
     {
         if (s == null) return null;

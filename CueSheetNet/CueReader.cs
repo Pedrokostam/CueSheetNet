@@ -63,7 +63,7 @@ public partial class CueReader
 
     public CueSource Source { get; private set; }
 
-    public string? CurrentLine { get; private set; } = "No line read";
+    public string? CurrentLine { get; private set; } = "No line read yet";
 
     CueSheet? Sheet { get; set; }
 
@@ -204,7 +204,7 @@ public partial class CueReader
 
     private void ParseTitle(string line)
     {
-        string? title = GetValue(line, 5);
+        string? title = GetValue(line, 5);// TITLE_
         if (title == null)
         {
             Logger.LogWarning("Invalid TITLE at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
@@ -222,23 +222,23 @@ public partial class CueReader
     }
     private void ParseFile(string line)
     {
-        (string path, string type) = GetFile(line, 5);
+        (string path, string type) = GetFile(line, 5);// FILE_
         _ = Sheet!.AddFile(path, type);
     }
     private void ParseTrack(string line)
     {
-        string num = GetKeyword(line, 6);
+        string num = GetKeyword(line, 6);// TRACK_
         if (!int.TryParse(num, out int number))
         {
             number = Sheet!.LastTrack?.Number + 1 ?? 1;
             Logger.LogWarning("Invalid TRACK number at line {Line number}: \\\"{Line}\\\"\". Substituting {Substitute number:d2}", CurrentLineIndex, CurrentLine, number);
         }
-        CueTrack tr = Sheet!.AddTrack(number);
+        _ = Sheet!.AddTrack(number);
 
     }
     private void ParsePerformer(string line)
     {
-        string? performer = GetValue(line, 10);
+        string? performer = GetValue(line, 10);// PERFORMER_
         if (performer == null)
         {
             Logger.LogWarning("Invalid PERFORMER at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
@@ -256,7 +256,7 @@ public partial class CueReader
     }
     private void ParseCdTextFile(string line)
     {
-        string? cdt = GetValue(line, 11);
+        string? cdt = GetValue(line, 11); // CDTEXTFILE_
         if (cdt == null)
         {
             Logger.LogWarning("Invalid CDTEXT at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
@@ -272,7 +272,10 @@ public partial class CueReader
             return;
         }
         TrackFlags flags = TrackFlags.None;
-        var parts = line[6..].Replace("\"", "").Replace("'", "").Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        string[] parts = line[6..] // FLAGS_
+            .Replace("\"", "")
+            .Replace("'", "")
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries);
         foreach (var part in parts)
         {
             char trim = part[0];
@@ -290,7 +293,7 @@ public partial class CueReader
     private void ParseISRC(string line)
     {
         if (Sheet!.LastTrack is not CueTrack track) return;
-        string? isrc = GetValue(line, 5);
+        string? isrc = GetValue(line, 5);// ISRC_
         if (isrc == null)
         {
             Logger.LogWarning("Invalid ISRC at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
@@ -301,7 +304,7 @@ public partial class CueReader
     }
     private void ParseCatalog(string line)
     {
-        string? cata = GetValue(line, 8);
+        string? cata = GetValue(line, 8);// CATALOG_
         if (cata == null)
         {
             Logger.LogWarning("Invalid CATALOG at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
@@ -316,7 +319,7 @@ public partial class CueReader
             Logger.LogWarning("INDEX line present before any track at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
             return;
         }
-        string number = GetKeyword(line, 6);
+        string number = GetKeyword(line, 6);// INDEX_
         if (!int.TryParse(number, out int num))
         {
             //Logger.LogError("Incorrect Index number format at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);

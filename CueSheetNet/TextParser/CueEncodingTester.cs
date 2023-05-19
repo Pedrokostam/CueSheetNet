@@ -111,7 +111,6 @@ internal class CueEncodingTester
         Logger.LogDebug("Heuristic encoding detection started. Source: {Source}", Source);
         int length = s.Length - 4;
         bool utf8 = false;
-        bool abnormalBytes = false;
         for (int i = 0; i < length; i++)
         {
             // One byte
@@ -164,7 +163,6 @@ internal class CueEncodingTester
                 Logger.LogInformation("Non-UTF-8 bytes detected. Last 4 bytes: 0x{Byte1:X2}, 0x{Byte2:X2}, 0x{Byte3:X2}, 0x{Byte4:X2}", s[i], s[i + 1], s[i + 2], s[i + 3]);
                 // most propably something from 0x7F up - some regional codepage
                 utf8 = false;
-                abnormalBytes = true;
                 break;
             }
         }
