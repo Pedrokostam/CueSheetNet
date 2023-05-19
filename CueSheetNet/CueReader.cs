@@ -17,11 +17,12 @@ public enum SourceType
     File,
     Stream,
     Bytes,
+    String,
 }
 public readonly record struct CueSource
 {
-    public SourceType Type { get; }
-    public object? Data { get; }
+    public SourceType Type { get; private init; }
+    public object? Data { get; private init; }
     public Type? Datatype => Data?.GetType();
     public CueSource(object? data)
     {
@@ -39,6 +40,10 @@ public readonly record struct CueSource
             _ => data,
         };
     }
+    internal static CueSource FromStringContent(string content)
+    {
+        return new CueSource() { Type=SourceType.String, Data=content};
+    }
     public override string ToString()
     {
         return Type switch
@@ -47,13 +52,13 @@ public readonly record struct CueSource
             SourceType.File => "File \"" + Data + "\"",
             SourceType.Stream => $"Stream of length {((Stream)Data!).Length}",
             SourceType.Bytes => $"Byte array of length {((Stream)Data!).Length}",
+            SourceType.String => $"String content of length {((String)Data!).Length}",
             _ => Type.ToString(),
         };
     }
 }
-public class CueReader
+public partial class CueReader
 {
-    static private readonly Lazy<Regex> EmergencyFile = new(() => new(@"(?<PATH>.*\..+) (?<TYPE>\w*)", RegexOptions.Compiled));
     public int CurrentLineIndex { get; private set; } = -1;
 
     public CueSource Source { get; private set; }
@@ -62,6 +67,9 @@ public class CueReader
 
     CueSheet? Sheet { get; set; }
 
+    /// <summary>
+    /// Character used to enclose text when it contains whitespace
+    /// </summary>
     public char Quotation { get; set; } = '"';
     public Encoding? Encoding { get; set; }
 
@@ -70,7 +78,6 @@ public class CueReader
     {
         Sheet = null;
         CurrentLineIndex = -1;
-        Source = new CueSource();
         CurrentLine = "No line read";
         TrackHasZerothIndex.Clear();
     }
@@ -86,7 +93,7 @@ public class CueReader
             throw new FileNotFoundException($"{cuePath} does not exist");
         }
         Source = new CueSource(cuePath);
-        Logger.LogDebug("Parsing CueSheet from {Source}", Source);
+        LogParseSource();
         if (!File.Exists(cuePath)) throw new FileNotFoundException($"{cuePath} does not exist");
         byte[] cueFileBytes = File.ReadAllBytes(cuePath);
         using MemoryStream fs = new(cueFileBytes, false);
@@ -94,22 +101,28 @@ public class CueReader
         cue.SetCuePath(cuePath);
         return cue;
     }
+
+    private void LogParseSource() => Logger.LogDebug("Parsing CueSheet from {Source}", Source);; 
     public CueSheet ParseCueSheet(byte[] cueFileBytes)
     {
         Reset();
         Source = new CueSource(cueFileBytes);
-        Logger.LogDebug("Parsing CueSheet from {Source}", Source);
+        LogParseSource();
         using MemoryStream fs = new(cueFileBytes, false);
         return ParseCueSheet_Impl(fs);
     }
-
-    public CueSheet ParseCueSheet(char[] cueFileChars)
+    public CueSheet ParseCueSheetFromStringContent(string cueContent)
     {
         Reset();
-        Source = new CueSource(cueFileChars);
-        Logger.LogDebug("Parsing CueSheet from {Source}", Source);
-        using MemoryStream fs = new(Encoding.UTF8.GetBytes(cueFileChars), false);
-        return ParseCueSheet_Impl(fs);
+        Source = CueSource.FromStringContent(cueContent);
+        LogParseSource();
+        Logger.LogDebug("Parsing started");
+        using TextReader txt = new StringReader(cueContent);
+        return ReadImpl(txt);
+    }
+    public CueSheet ParseCueSheet(ReadOnlySpan<char> cueContentChars)
+    {
+      return  ParseCueSheetFromStringContent(new string(cueContentChars));
     }
 
     private CueSheet ParseCueSheet_Impl(Stream fs)
@@ -417,14 +430,16 @@ public class CueReader
                 return (path, type);
             }
         }
+        // Line does not have Quotation, need to use regex
         string emer = spanny.ToString();
-        Match m = EmergencyFile.Value.Match(emer);
+        Match m = NonQuotedFileRegex().Match(emer);
         if (m.Success)
         {
             path = m.Groups["PATH"].Value;
             type = m.Groups["TYPE"].Value;
             return (path, type);
         }
+        // COuld not properly parse Path Type. Return Line as path, no type
         return (emer, "");
     }
     /// <summary>
@@ -437,7 +452,9 @@ public class CueReader
     private string? GetValue(string s, int start, int end = 0)
     {
         ReadOnlySpan<char> spanny = s.AsSpan(start, s.Length - start - end).Trim();
-        if (spanny.Length == 0 || spanny.SequenceEqual("\"\""))
+        if (spanny.Length == 0)
+            return null;
+        if (spanny.Length == 2 && spanny[0] == spanny[1] && spanny[0] ==Quotation)
             return null;
         if (spanny[^1] == Quotation && spanny[0] == Quotation)
             return spanny[1..^1].ToString();
@@ -478,4 +495,7 @@ public class CueReader
         }
         return string.Empty;
     }
+
+    [GeneratedRegex(@"(?<PATH>.*\.\S+)\s+(?<TYPE>\w*)", RegexOptions.Compiled)]
+    private static partial Regex NonQuotedFileRegex();
 }
