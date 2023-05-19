@@ -52,7 +52,7 @@ public readonly record struct CueSource
             SourceType.File => "File \"" + Data + "\"",
             SourceType.Stream => $"Stream of length {((Stream)Data!).Length}",
             SourceType.Bytes => $"Byte array of length {((Stream)Data!).Length}",
-            SourceType.String => $"String content of length {((String)Data!).Length}",
+            SourceType.String => $"String content of length {((string)Data!).Length}",
             _ => Type.ToString(),
         };
     }
@@ -101,8 +101,10 @@ public partial class CueReader
         cue.SetCuePath(cuePath);
         return cue;
     }
-
-    private void LogParseSource() => Logger.LogDebug("Parsing CueSheet from {Source}", Source);; 
+    /// <summary>Parsing CueSheet from: {Source}</summary>
+    private void LogParseSource() => Logger.LogDebug("Parsing CueSheet from: {Source}", Source);
+    /// <summary>Parsing started</summary>
+    private static void LogParseStart()=> Logger.LogDebug("Parsing started");
     public CueSheet ParseCueSheet(byte[] cueFileBytes)
     {
         Reset();
@@ -116,7 +118,7 @@ public partial class CueReader
         Reset();
         Source = CueSource.FromStringContent(cueContent);
         LogParseSource();
-        Logger.LogDebug("Parsing started");
+        LogParseStart();
         using TextReader txt = new StringReader(cueContent);
         return ReadImpl(txt);
     }
@@ -127,7 +129,7 @@ public partial class CueReader
 
     private CueSheet ParseCueSheet_Impl(Stream fs)
     {
-        Logger.LogDebug("Parsing started");
+        LogParseStart();
         Sheet = new();
         if (Encoding is null)
         {
