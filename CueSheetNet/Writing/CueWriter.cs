@@ -7,45 +7,7 @@ using CueSheetNet.Logging;
 using CueSheetNet.Syntax;
 using CueSheetNet.TextParser;
 
-namespace CueSheetNet;
-
-public sealed record CueWriterSettings
-{
-    public static readonly Encoding DefaultEncoding = new UTF8Encoding(false, true);
-    public enum RedundantFieldBehaviors
-    {
-        KeepAsIs,
-        RemoveRedundant,
-        AlwaysWrite,
-    }
-
-    /// <summary>
-    /// If true, Every suitable field will be enclosed in quotes, even if it does not contain whitespace
-    /// </summary>
-    public bool ForceQuoting { get; set; } = true;
-
-    public InnerQuotation InnerQuotationReplacement { get; set; } = InnerQuotation.CurvedDoubleTopQuotation;
-
-    public Encoding? Encoding { get; set; }
-
-    public string Newline { get; set; } = Environment.NewLine;
-
-    public int IndentationDepth { get; set; } = 2;
-
-    public RedundantFieldBehaviors RedundantFieldsBehavior { get; set; } = RedundantFieldBehaviors.KeepAsIs;
-
-    private char _indentationCharacter = ' ';
-    public char IndentationCharacter
-    {
-        get => _indentationCharacter;
-        set
-        {
-            if (!char.IsWhiteSpace(value))
-                throw new ArgumentException($"Indentation character must not be whitespace (is: '{value}')");
-            _indentationCharacter = value;
-        }
-    }
-}
+namespace CueSheetNet.Writing;
 
 public sealed class CueWriter
 {
@@ -137,7 +99,7 @@ public sealed class CueWriter
         {
             CueWriterSettings.RedundantFieldBehaviors.KeepAsIs => isSet,
             CueWriterSettings.RedundantFieldBehaviors.RemoveRedundant => isSet && !isSame,
-            CueWriterSettings.RedundantFieldBehaviors.AlwaysWrite => (key == FieldSetFlags.Title && isSet) || key != FieldSetFlags.Title,
+            CueWriterSettings.RedundantFieldBehaviors.AlwaysWrite => key == FieldSetFlags.Title && isSet || key != FieldSetFlags.Title,
             _ => throw new NotImplementedException(),
         };
 
@@ -283,7 +245,7 @@ public sealed class CueWriter
         }
         catch (EncoderFallbackException x)
         {
-            int offendingChar = (int)x.CharUnknown;
+            int offendingChar = x.CharUnknown;
             string offendingString = $"0x{offendingChar:X8} - {offendingChar}";
             Logger.LogWarning("Specified encoding {Encoding} cannot be used to encode contents if {CueSheet} (Offending character - {Byte}) . Falling back to {DefaultEncoding}", encoding, sheet, offendingString, CueWriterSettings.DefaultEncoding);
             encoding = CueWriterSettings.DefaultEncoding;

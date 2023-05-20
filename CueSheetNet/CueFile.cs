@@ -17,7 +17,6 @@ public class CueFile : CueItemBase, IEquatable<CueFile>
     public int Index { get; internal set; }
     public CueFile(CueSheet parent, string filePath, string type) : base(parent)
     {
-
         SetFile(filePath);
         Type = type;
     }
