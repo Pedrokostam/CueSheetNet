@@ -11,7 +11,7 @@ namespace CueSheetNet;
 
 public sealed record CueWriterSettings
 {
-    public static readonly Encoding DefaultEncoding = new UTF8Encoding(false,true);
+    public static readonly Encoding DefaultEncoding = new UTF8Encoding(false, true);
     public enum RedundantFieldBehaviors
     {
         KeepAsIs,
@@ -22,14 +22,9 @@ public sealed record CueWriterSettings
     /// <summary>
     /// If true, Every suitable field will be enclosed in quotes, even if it does not contain whitespace
     /// </summary>
-    public bool ForceQuoting { get; set; } = false;
+    public bool ForceQuoting { get; set; } = true;
 
     public InnerQuotation InnerQuotationReplacement { get; set; } = InnerQuotation.CurvedDoubleTopQuotation;
-
-    /// <summary>
-    /// If true, Byte order mark will not be included in the text file, even if encoding specifies it.
-    /// </summary>
-    public bool SkipBOM { get; set; } = false;
 
     public Encoding? Encoding { get; set; }
 
@@ -37,23 +32,22 @@ public sealed record CueWriterSettings
 
     public int IndentationDepth { get; set; } = 2;
 
-    private char _indentationCharacter = ' ';
-
     public RedundantFieldBehaviors RedundantFieldsBehavior { get; set; } = RedundantFieldBehaviors.KeepAsIs;
 
+    private char _indentationCharacter = ' ';
     public char IndentationCharacter
     {
         get => _indentationCharacter;
         set
         {
             if (!char.IsWhiteSpace(value))
-                throw new ArgumentException($"Indentation character must be whitespace (is: '{value}')");
+                throw new ArgumentException($"Indentation character must not be whitespace (is: '{value}')");
             _indentationCharacter = value;
         }
     }
 }
 
-public class CueWriter
+public sealed class CueWriter
 {
     readonly StringBuilder Builder = new();
     public CueWriterSettings Settings { get; set; } = new CueWriterSettings();
@@ -87,6 +81,8 @@ public class CueWriter
         Builder.AppendLine(Stringify(header, value, quoteAllowed));
         return true;
     }
+    /// <inheritdoc cref="InnerQuotation.ReplaceQuotes(string?)"/>
+    /// <remarks>Also performs other string replacements, if specified in settings</remarks>
     [return: NotNullIfNotNull(nameof(str))]
     private string? Replace(string? str) => Settings.InnerQuotationReplacement.ReplaceQuotes(str);
     private bool AppendRemark(Remark rem, int depth) => AppendStringify("REM " + rem.Field, Replace(rem.Value), depth, true);
