@@ -7,6 +7,7 @@ using CueSheetNet.Internal;
 using CueSheetNet.Logging;
 using CueSheetNet.Syntax;
 using CueSheetNet.TextParser;
+using CueSheetNet.Writing;
 
 namespace CueSheetNet;
 
