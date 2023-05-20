@@ -42,26 +42,16 @@ internal class CueEncodingTester
         EncodingUTF32BE
     };
 
-
     /// <summary>
-    /// "REM COMMENT " without first letter
+    /// Checks if the <paramref name="input"/> is larger or equal to <paramref name="minInclusive"/> and smaller or equal than <paramref name="maxInclusive"/>
     /// </summary>
-    static readonly byte[] RemCommentUppercase = Encoding.UTF8.GetBytes("EM COMMENT ");
-    /// <summary>
-    /// "PERFORMER " without first letter
-    /// </summary>
-    static readonly byte[] PerformerUppercase = Encoding.UTF8.GetBytes("ERFORMER ");
-    /// <summary>
-    /// "TITLE " without first letter
-    /// </summary>
-    static readonly byte[] TitleUppercase = Encoding.UTF8.GetBytes("ITLE ");
-    /// <summary>
-    /// "FILE " without first letter
-    /// </summary>
-    static readonly byte[] FileUppercase = Encoding.UTF8.GetBytes("ILE ");
-    private static bool CheckRange(byte b, byte min, byte max)
+    /// <param name="input">Value to check</param>
+    /// <param name="minInclusive">Inclusive minimum</param>
+    /// <param name="maxInclusive">Inclusive maximum</param>
+    /// <returns></returns>
+    private static bool CheckRange(byte input, byte minInclusive, byte maxInclusive)
     {
-        return b >= min && b < max;
+        return input >= minInclusive && input <= maxInclusive;
     }
     private static void AddUntilNewLine(Stream fs, List<byte> bytes)
     {
@@ -76,7 +66,7 @@ internal class CueEncodingTester
     }
     public static bool CompareBytes(ReadOnlySpan<byte> input, Encoding encoding)
     {
-        var preamble = encoding.Preamble;
+        ReadOnlySpan<byte> preamble = encoding.Preamble;
         if (input.Length < preamble.Length)
             return false;
         for (int i = 0; i < preamble.Length; i++)
@@ -107,6 +97,7 @@ internal class CueEncodingTester
     }
     private Encoding DetectUtf8Heuristically(List<byte> bajtos)
     {
+        // The list will not be modified so it is safe to access it as span
         Span<byte> s = CollectionsMarshal.AsSpan(bajtos);
         Logger.LogDebug("Heuristic encoding detection started. Source: {Source}", Source);
         int length = s.Length - 4;
@@ -114,53 +105,56 @@ internal class CueEncodingTester
         for (int i = 0; i < length; i++)
         {
             // One byte
-            // U+0000..U+007F     00..7F
+            // U+0000..U+007F      00..7F
             if (s[i] <= 0x7F)
             {
                 continue;
                 // not setting utf8 to true, because ASCII also meets this criterion, and if you can work in ASCII, why not?
             }
             // Two bytes
-            // U+0080..U+07FF     C2..DF     80..BF
+            // U+0080..U+07FF       C2..DF     80..BF
+            // Range                C2..DF     80..BF
             // skipping C0, C1 - non-minimal
-            else if (CheckRange(s[i], 0xC2, 0xE0)
-               && CheckRange(s[i + 1], 0x80, 0xC0))
+            else if (CheckRange(s[i], 0xC2, 0xDF)
+              && CheckRange(s[i + 1], 0x80, 0xBF))
             {
                 utf8 = true;
                 i += 1; // skip next character
             }
             // Three bytes
-            // U+0800..U+0FFF     E0         A0..BF      80..BF
-            // U+1000..U+CFFF     E1..EC     80..BF      80..BF
-            // U+D000..U+D7FF     ED         80..9F      80..BF
-            // U+E000..U+FFFF     EE..EF     80..BF      80..BF
+            // U+0800..U+0FFF       E0         A0..BF      80..BF
+            // U+1000..U+CFFF       E1..EC     80..BF      80..BF
+            // U+D000..U+D7FF       ED         80..9F      80..BF
+            // U+E000..U+FFFF       EE..EF     80..BF      80..BF
+            // Range                E0..EF     80..BF      80..BF
             // skipping U+D800..U+DBFF - not valid UTF8
             // slightly simplified, as with first byte equal to E0 second has to be greater than A0, not 80...
             // but the third byte is consistent
-            else if (CheckRange(s[i], 0xE0, 0xF0)
-                && CheckRange(s[i + 1], 0x80, 0xC0)
-                && CheckRange(s[i + 2], 0x80, 0xC0))
+            else if (CheckRange(s[i], 0xE0, 0xEF)
+              && CheckRange(s[i + 1], 0x80, 0xBF)
+              && CheckRange(s[i + 2], 0x80, 0xBF))
             {
                 utf8 = true;
                 i += 2;// skip next 2 characters
             }
             // Four bytes
-            // U+10000..U+3FFFF   F0         90..BF      80..BF     80..BF
-            // U+40000..U+FFFFF   F1..F3     80..BF      80..BF     80..BF
-            // U+100000..U+10FFFF F4         80..8F      80..BF     80..BF
+            // U+10000..U+3FFFF     F0         90..BF      80..BF     80..BF
+            // U+40000..U+FFFFF     F1..F3     80..BF      80..BF     80..BF
+            // U+100000..U+10FFFF   F4         80..8F      80..BF     80..BF
+            // Range                F0..F4     80..BF      80..BF     80..BF
             // slightly simplified, as with first byte equal to F0 second has to be greater than 90, not 80...
             // but the third and forth bytes are consistent
-            else if (CheckRange(s[i], 0xF0, 0xF5)
-                && CheckRange(s[i + 1], 0x80, 0xC0)
-                && CheckRange(s[i + 2], 0x80, 0xC0)
-                && CheckRange(s[i + 3], 0x80, 0xC0))
+            else if (CheckRange(s[i], 0xF0, 0xF4)
+              && CheckRange(s[i + 1], 0x80, 0xBF)
+              && CheckRange(s[i + 2], 0x80, 0xBF)
+              && CheckRange(s[i + 3], 0x80, 0xBF))
             {
                 utf8 = true;
                 i += 3; //skip next 3 characters
             }
             else
             {
-                Logger.LogInformation("Non-UTF-8 bytes detected. Last 4 bytes: 0x{Byte1:X2}, 0x{Byte2:X2}, 0x{Byte3:X2}, 0x{Byte4:X2}", s[i], s[i + 1], s[i + 2], s[i + 3]);
+                Logger.LogInformation("Non-UTF8 bytes detected. Last 4 bytes: 0x{Byte1:X2}, 0x{Byte2:X2}, 0x{Byte3:X2}, 0x{Byte4:X2}", s[i], s[i + 1], s[i + 2], s[i + 3]);
                 // most propably something from 0x7F up - some regional codepage
                 utf8 = false;
                 break;
@@ -172,7 +166,9 @@ internal class CueEncodingTester
         }
         else
         {
-            Encoding enc = Encoding.GetEncoding("windows-1252");
+            // Quite difficult if not impossible to guess which regional encoding is being used.
+            // We're assuming it codepage 1252, as it is quite common for english text
+            Encoding enc = Encoding.GetEncoding(1252);
             return enc;
         }
     }
@@ -182,10 +178,17 @@ internal class CueEncodingTester
         ByteInvariantComparer bytey = new();
         fs.Seek(0, SeekOrigin.Begin);
         List<byte> bytes = new(512);
-        Span<byte> remComment = stackalloc byte[RemCommentUppercase.Length];
-        Span<byte> performer = stackalloc byte[PerformerUppercase.Length];
-        Span<byte> title = stackalloc byte[TitleUppercase.Length];
-        Span<byte> file = stackalloc byte[FileUppercase.Length];
+        // Get byte forms of common keywords, without the first character and with trailing space
+        ReadOnlySpan<byte> RemCommentUppercase = "EM COMMENT "u8;
+        ReadOnlySpan<byte> PerformerUppercase = "ERFORMER "u8;
+        ReadOnlySpan<byte> TitleUppercase = "ITLE "u8;
+        ReadOnlySpan<byte> FileUppercase = "ILE "u8;
+        // The keywords are REM COMMENT, PERFORMER, TITLE, FILE. Those have higher chances of having values with non-English characters.
+        // Additionaly, they all have different first character, making it easy to switch
+        Span<byte> remCommentBuff = stackalloc byte[RemCommentUppercase.Length];
+        Span<byte> performerBuff = stackalloc byte[PerformerUppercase.Length];
+        Span<byte> titleBuff = stackalloc byte[TitleUppercase.Length];
+        Span<byte> fileBuff = stackalloc byte[FileUppercase.Length];
         while (true)
         {
             int bb = fs.ReadByte();
@@ -194,26 +197,26 @@ internal class CueEncodingTester
             char r = (char)reading;
             if (bytey.Equals(reading, (byte)'R'))//last letter R or r =>? Performer
             {
-                fs.Read(remComment);
-                if (remComment.SequenceEqual(RemCommentUppercase, bytey))
+                fs.Read(remCommentBuff);
+                if (remCommentBuff.SequenceEqual(RemCommentUppercase, bytey))
                     AddUntilNewLine(fs, bytes);
             }
             else if (bytey.Equals(reading, (byte)'P'))//last letter T or T =>? Rem Comment
             {
-                fs.Read(performer);
-                if (performer.SequenceEqual(PerformerUppercase, bytey))
+                fs.Read(performerBuff);
+                if (performerBuff.SequenceEqual(PerformerUppercase, bytey))
                     AddUntilNewLine(fs, bytes);
             }
-            else if (bytey.Equals(reading, (byte)'F'))//last letter E or e =>? title or file
+            else if (bytey.Equals(reading, (byte)'F'))//last letter E or e =>? file
             {
-                fs.Read(file);
-                if (file.SequenceEqual(FileUppercase, bytey))
+                fs.Read(fileBuff);
+                if (fileBuff.SequenceEqual(FileUppercase, bytey))
                     AddUntilNewLine(fs, bytes);
             }
-            else if (bytey.Equals(reading, (byte)'T'))//last letter E or e =>? title or file
+            else if (bytey.Equals(reading, (byte)'T'))//last letter T or t =>? title
             {
-                fs.Read(title);
-                if (title.SequenceEqual(TitleUppercase, bytey))
+                fs.Read(titleBuff);
+                if (titleBuff.SequenceEqual(TitleUppercase, bytey))
                     AddUntilNewLine(fs, bytes);
             }
         }
