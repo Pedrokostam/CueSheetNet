@@ -30,7 +30,7 @@ internal class CueEncodingTester
 
     public CueSource Source { get; }
     public Stream Stream { get; }
-
+    private static readonly Encoding EncodingUTF32BE = Encoding.GetEncoding("utf-32BE");
     /// <summary>
     /// Common encodings which are identified by a preamble
     /// </summary>
@@ -39,7 +39,7 @@ internal class CueEncodingTester
         Encoding.UTF8,
         Encoding.BigEndianUnicode,
         Encoding.UTF32,
-        Encoding.GetEncoding("utf-32BE"),
+        EncodingUTF32BE
     };
 
 
@@ -97,7 +97,7 @@ internal class CueEncodingTester
         Logger.LogDebug("Encoding detection started. Source: {Source}", Source);
         if (DetectEncodingFromBOM(Stream) is Encoding encodingBom)
             return encodingBom;
-        if (DetectFixedWidthEncoding(Stream) is Encoding encodingFixed)
+        if (DetectFixedWidthEncoding_Naive(Stream) is Encoding encodingFixed)
             return encodingFixed;
         // at this point the file is most likely ASCII, UTF8 or some local codepage
         // all of those should have cue keywords (standard English) written with 1-byte characters
@@ -238,6 +238,35 @@ internal class CueEncodingTester
         }
         return null;
     }
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="fs"></param>
+    /// <returns></returns>
+    /// <exception cref="InvalidDataException">When the data is too short, or has 4 nulls at the start</exception>
+    public Encoding? DetectFixedWidthEncoding_Naive(Stream fs)
+    {
+        //16 bytes which will be enough to store 4 characters of largest encoding - UTF32
+        Span<byte> bomArea = stackalloc byte[16];
+        fs.Seek(0, SeekOrigin.Begin);
+        long length = fs.Read(bomArea);
+        if (length < 16)
+            throw new InvalidDataException($"Input data has fewer than 16 bytes {Source}");
+        /**/
+        // There is a small possibility, that the text is a constant-width multi-byte encoding, but the BOM is missing
+        // First letter of a cuesheet should be a standard ASCII letter (one byte of data and whatever padding)
+        Encoding? naiveApproach = bomArea switch
+        {
+            [0, 0, 0, > 1/**/, 0, 0, 0, > 1/**/, 0, 0, 0, > 1/**/, 0, 0, 0, > 1/**/] => EncodingUTF32BE, // 3 nulls, followed by a non-zero bytes
+            [> 1, 0, 0, 0/**/, > 1, 0, 0, 0/**/, > 1, 0, 0, 0/**/, > 1, 0, 0, 0/**/] => Encoding.UTF32,// non-zero bytes followed by 3 nulls
+            [> 1, 0/**/, > 1, 0/**/, > 1, 0/**/, > 1, 0/**/, ..] => Encoding.Unicode, // non-zero bytes, null, ignore everything past 12 byte
+            [0, > 1/**/, 0, > 1/**/, 0, > 1/**/, 0, > 1/**/, ..] => Encoding.BigEndianUnicode,// null, non-zero byte, ignore everything past 12 byte
+            [0, 0, 0, 0, ..] => throw new InvalidDataException($"Four consecutive null bytes at the beginning of {Source}"),
+            _ => null,
+        };
+        return naiveApproach;
+    }
+    [Obsolete("Method gives too much leeway for mixed encoding (UTF16 followed by UTF32, etc.). Also is complicated for its own good.")]
     public Encoding? DetectFixedWidthEncoding(Stream fs)
     {
         Logger.LogDebug("UTF16/32 encoding detection started. Source: {Source}", Source);
