@@ -37,7 +37,7 @@ namespace CueSheetNET.FileIO
                     {
                         if (reader.ReadMetadata(fs, out meta))
                         {
-                            Logger.Log(LogLevel.Debug, "Detected encoding", filePath, reader.FormatName);
+                            Logger.Log(LogLevel.Debug, "Read metadata on {File} using {Reader.FormatName} reader", filePath, reader);
                             return meta;
                         }
                     }
