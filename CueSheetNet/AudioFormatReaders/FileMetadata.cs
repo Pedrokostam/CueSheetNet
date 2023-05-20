@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CueSheetNet.FileIO;
+namespace CueSheetNet.AudioFormatReaders;
 
 public readonly record struct FileMetadata
     (long Size, TimeSpan Duration, int SampleRate, int Channels, int BitDepth, bool Lossy, string FormatName)

@@ -1,7 +1,7 @@
 ﻿using System.Text;
 using CueSheetNet.TextParser;
 
-namespace CueSheetNet.Writing;
+namespace CueSheetNet;
 
 public sealed record CueWriterSettings
 {

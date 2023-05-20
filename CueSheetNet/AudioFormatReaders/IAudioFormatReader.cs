@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CueSheetNet.FileIO;
+namespace CueSheetNet.AudioFormatReaders;
 public interface IFileFormatReader
 {
     string FormatName { get; }

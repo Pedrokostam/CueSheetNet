@@ -1,4 +1,5 @@
 ﻿using CueSheetNet.Logging;
+using CueSheetNet.Reading;
 using Microsoft.VisualBasic;
 using System;
 using System.Collections.Generic;

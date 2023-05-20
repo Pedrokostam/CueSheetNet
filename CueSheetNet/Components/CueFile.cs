@@ -1,6 +1,7 @@
-﻿using CueSheetNet.FileIO;
+﻿using CueSheetNet.AudioFormatReaders;
+using CueSheetNet.FileHandling;
+using CueSheetNet.Internal;
 using CueSheetNet.Logging;
-using CueSheetNET.FileIO;
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;

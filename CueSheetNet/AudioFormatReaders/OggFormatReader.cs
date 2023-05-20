@@ -1,12 +1,11 @@
-﻿using CueSheetNET.FileIO;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CueSheetNet.FileIO;
+namespace CueSheetNet.AudioFormatReaders;
 internal class OggFormatReader : IFileFormatReader
 {
     private readonly string[] extensions = new string[] { ".OGG", ".OGX", ".SPX" };

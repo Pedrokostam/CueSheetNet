@@ -1,4 +1,5 @@
-﻿namespace CueSheetNet;
+﻿
+namespace CueSheetNet.Reading;
 
 public enum SourceType
 {
