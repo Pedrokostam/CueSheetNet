@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-namespace CueSheetNet;
+namespace CueSheetNet.Internal;
 
 [DebuggerDisplay("Files: {Files.Count}, Track: {Tracks.Count}, Indexes: {Indexes.Count}")]
 internal class CueContainer
@@ -108,7 +108,7 @@ internal class CueContainer
         //No indices at all
         if (Indexes.Count == 0)
         {
-            CueIndexImpl pioneer = new CueIndexImpl(track, file) { Time = time, Number = 1 };
+            CueIndexImpl pioneer = new(track, file) { Time = time, Number = 1 };
             Indexes.Add(pioneer);
             return pioneer;
         }

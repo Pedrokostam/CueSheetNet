@@ -1,4 +1,5 @@
 ﻿using System.Security.Cryptography;
+using CueSheetNet.Internal;
 
 namespace CueSheetNet;
 

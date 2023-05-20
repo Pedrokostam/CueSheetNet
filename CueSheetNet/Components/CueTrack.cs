@@ -1,4 +1,5 @@
-﻿using CueSheetNet.Syntax;
+﻿using CueSheetNet.Internal;
+using CueSheetNet.Syntax;
 using System.Collections.ObjectModel;
 using System.Xml.Linq;
 
@@ -6,7 +7,7 @@ namespace CueSheetNet;
 
 public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemarkableCommentable
 {
-    public FieldSetFlags CommonFieldsSet { get; private set; }
+    internal FieldSetFlags CommonFieldsSet { get; private set; }
     /// <summary>
     /// Absolute index for the whole CueSheet
     /// </summary>
@@ -100,15 +101,15 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemarkableCommentabl
         return "Track " + Number.ToString("D2") + ": " + Title;
     }
     #region Rem
-    public readonly List<Remark> RawRems = new();
-    public ReadOnlyCollection<Remark> Remarks => RawRems.AsReadOnly();
+    public readonly List<CueRemark> RawRems = new();
+    public ReadOnlyCollection<CueRemark> Remarks => RawRems.AsReadOnly();
     public void ClearRemarks() => RawRems.Clear();
 
-    public void AddRemark(string type, string value) => AddRemark(new Remark(type, value));
-    public void AddRemark(Remark entry) => RawRems.Add(entry);
-    public void AddRemark(IEnumerable<Remark> entries)
+    public void AddRemark(string type, string value) => AddRemark(new CueRemark(type, value));
+    public void AddRemark(CueRemark entry) => RawRems.Add(entry);
+    public void AddRemark(IEnumerable<CueRemark> entries)
     {
-        foreach (Remark remark in entries)
+        foreach (CueRemark remark in entries)
         {
             AddRemark(remark);
         }
@@ -141,8 +142,8 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemarkableCommentabl
         newTrack.AddComment(RawComments);
         return newTrack;
     }
-    public void RemoveRemark(string field, string value, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase) => RemoveRemark(new Remark(field, value), comparisonType);
-    public void RemoveRemark(Remark entry, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase)
+    public void RemoveRemark(string field, string value, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase) => RemoveRemark(new CueRemark(field, value), comparisonType);
+    public void RemoveRemark(CueRemark entry, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase)
     {
         int ind = RawRems.FindIndex(x => x.Equals(entry, comparisonType));
         if (ind >= 0)

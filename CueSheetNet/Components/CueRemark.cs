@@ -2,7 +2,7 @@
 
 namespace CueSheetNet
 {
-    public sealed record Remark : IEquatable<Remark>
+    public sealed record CueRemark : IEquatable<CueRemark>
     {
         private string field;
 
@@ -13,16 +13,16 @@ namespace CueSheetNet
             set => field = value.ToUpperInvariant();
         }
         public string Value { get; set; }
-        public Remark(string field, string value)
+        public CueRemark(string field, string value)
             => (Field, Value) = (field, value);
-        public bool Equals(Remark? other, StringComparison valueComparisonType)
+        public bool Equals(CueRemark? other, StringComparison valueComparisonType)
         {
             if (ReferenceEquals(other, this)) return true;
             if (other == null) return false;
             if (Field != other.Field) return false;
             return Value.Equals(other.Value, valueComparisonType);
         }
-        public bool Equals(Remark? other)
+        public bool Equals(CueRemark? other)
         {
             return Equals(other, StringComparison.CurrentCulture);
         }
@@ -32,19 +32,5 @@ namespace CueSheetNet
             return $"REM {Field} {Value}";
         }
 
-    }
-    internal interface IRemarkableCommentable
-    {
-        void ClearComments();
-        void AddComment(string comment);
-        void RemoveComment(int index);
-        void RemoveComment(string comment, StringComparison comparisonType);
-
-        void ClearRemarks();
-        void AddRemark(string type, string value);
-        void AddRemark(Remark entry);
-        void RemoveRemark(int index);
-        void RemoveRemark(string type, string value, StringComparison comparisonType);
-        void RemoveRemark(Remark entry, StringComparison comparisonType);
     }
 }

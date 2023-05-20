@@ -1,12 +1,11 @@
-﻿using CueSheetNET.FileIO;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CueSheetNet.FileIO;
+namespace CueSheetNet.AudioFormatReaders;
 internal class FlacFormatReader : IFileFormatReader
 {
     private readonly string[] extensions = new string[] { ".flac" };

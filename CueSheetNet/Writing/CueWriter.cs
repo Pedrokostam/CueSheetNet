@@ -3,11 +3,13 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using CueSheetNet.Internal;
 using CueSheetNet.Logging;
 using CueSheetNet.Syntax;
 using CueSheetNet.TextParser;
+using CueSheetNet.Writing;
 
-namespace CueSheetNet.Writing;
+namespace CueSheetNet;
 
 public sealed class CueWriter
 {
@@ -47,7 +49,7 @@ public sealed class CueWriter
     /// <remarks>Also performs other string replacements, if specified in settings</remarks>
     [return: NotNullIfNotNull(nameof(str))]
     private string? Replace(string? str) => Settings.InnerQuotationReplacement.ReplaceQuotes(str);
-    private bool AppendRemark(Remark rem, int depth) => AppendStringify("REM " + rem.Field, Replace(rem.Value), depth, true);
+    private bool AppendRemark(CueRemark rem, int depth) => AppendStringify("REM " + rem.Field, Replace(rem.Value), depth, true);
     private bool AppendIndex(CueIndexImpl cim) => AppendStringify("INDEX " + cim.Number.ToString("D2"), cim.Time.ToString(), 2, false);
     [return: NotNullIfNotNull(nameof(s))]
     private static string? Enquote(string? s)
@@ -64,7 +66,7 @@ public sealed class CueWriter
     }
 
     private void AppendTrackRems(CueTrack track) => AppendRems(track.RawRems, 2);
-    private void AppendRems(IEnumerable<Remark> rems, int depth = 0)
+    private void AppendRems(IEnumerable<CueRemark> rems, int depth = 0)
     {
         foreach (var item in rems)
             AppendRemark(item, depth);

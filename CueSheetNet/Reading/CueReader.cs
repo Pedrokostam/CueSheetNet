@@ -1,5 +1,7 @@
-﻿using CueSheetNet.FileIO;
+﻿using CueSheetNet.AudioFormatReaders;
+using CueSheetNet.Internal;
 using CueSheetNet.Logging;
+using CueSheetNet.Reading;
 using CueSheetNet.Syntax;
 using CueSheetNet.TextParser;
 using System.Diagnostics;
@@ -7,7 +9,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Text;
 using System.Text.RegularExpressions;
-
 namespace CueSheetNet;
 public partial class CueReader
 {
@@ -56,7 +57,7 @@ public partial class CueReader
     /// <summary>Parsing CueSheet from: {Source}</summary>
     private void LogParseSource() => Logger.LogDebug("Parsing CueSheet from: {Source}", Source);
     /// <summary>Parsing started</summary>
-    private static void LogParseStart()=> Logger.LogDebug("Parsing started");
+    private static void LogParseStart() => Logger.LogDebug("Parsing started");
     public CueSheet ParseCueSheet(byte[] cueFileBytes)
     {
         Reset();
@@ -76,7 +77,7 @@ public partial class CueReader
     }
     public CueSheet ParseCueSheet(ReadOnlySpan<char> cueContentChars)
     {
-      return  ParseCueSheetFromStringContent(new string(cueContentChars));
+        return ParseCueSheetFromStringContent(new string(cueContentChars));
     }
 
     private CueSheet ParseCueSheet_Impl(Stream fs)
@@ -411,7 +412,7 @@ public partial class CueReader
         ReadOnlySpan<char> spanny = s.AsSpan(start, s.Length - start - end).Trim();
         if (spanny.Length == 0)
             return null;
-        if (spanny.Length == 2 && spanny[0] == spanny[1] && spanny[0] ==Quotation)
+        if (spanny.Length == 2 && spanny[0] == spanny[1] && spanny[0] == Quotation)
             return null;
         if (spanny[^1] == Quotation && spanny[0] == Quotation)
             return spanny[1..^1].ToString();

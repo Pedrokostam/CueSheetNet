@@ -1,6 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 
-namespace CueSheetNet
+namespace CueSheetNet.Internal
 {
     public abstract class CueItemBase
     {

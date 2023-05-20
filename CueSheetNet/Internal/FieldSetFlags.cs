@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CueSheetNet;
+namespace CueSheetNet.Internal;
 [Flags]
-public enum FieldSetFlags
+internal enum FieldSetFlags
 {
     None = 0,
     Title = 1,

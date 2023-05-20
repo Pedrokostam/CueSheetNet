@@ -1,6 +1,8 @@
 ﻿using System.Collections.ObjectModel;
 using System.Runtime.CompilerServices;
 using System.Text;
+using CueSheetNet.FileHandling;
+using CueSheetNet.Internal;
 using CueSheetNet.Writing;
 
 namespace CueSheetNet;
@@ -41,17 +43,17 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
 {
     #region Rem
 
-    internal readonly List<Remark> RawRems = new();
+    internal readonly List<CueRemark> RawRems = new();
 
-    public ReadOnlyCollection<Remark> Remarks => RawRems.AsReadOnly();
+    public ReadOnlyCollection<CueRemark> Remarks => RawRems.AsReadOnly();
 
-    public void AddRemark(string type, string value) => AddRemark(new Remark(type, value));
+    public void AddRemark(string type, string value) => AddRemark(new CueRemark(type, value));
 
-    public void AddRemark(Remark entry) => RawRems.Add(entry);
+    public void AddRemark(CueRemark entry) => RawRems.Add(entry);
 
-    public void AddRemark(IEnumerable<Remark> entries)
+    public void AddRemark(IEnumerable<CueRemark> entries)
     {
-        foreach (Remark remark in entries)
+        foreach (CueRemark remark in entries)
         {
             RawRems.Add(remark);
         }
@@ -65,9 +67,9 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
             RawRems.RemoveAt(index);
     }
 
-    public void RemoveRemark(string field, string value, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase) => RemoveRemark(new Remark(field, value), comparisonType);
+    public void RemoveRemark(string field, string value, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase) => RemoveRemark(new CueRemark(field, value), comparisonType);
 
-    public void RemoveRemark(Remark entry, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase)
+    public void RemoveRemark(CueRemark entry, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase)
     {
         int ind = RawRems.FindIndex(x => x.Equals(entry, comparisonType));
         if (ind >= 0)
@@ -149,7 +151,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
         return AddIndex(time, file.Index, track.Index);
     }
 
-    public CueIndex AddIndex(CueTime time, int fileIndex = -1, int trackIndex = -1) => new CueIndex(AddIndexInternal(time, fileIndex, trackIndex));
+    public CueIndex AddIndex(CueTime time, int fileIndex = -1, int trackIndex = -1) => new(AddIndexInternal(time, fileIndex, trackIndex));
 
     #endregion
 
@@ -400,7 +402,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
         CdTextFile?.Refresh();
 
         _associatedFiles.Clear();
-        _associatedFiles.AddRange(FileHandler.GetAssociatedFiles(this));
+        _associatedFiles.AddRange(CueFileHandler.GetAssociatedFiles(this));
 
     }
 
@@ -454,18 +456,18 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
     {
         return HashCode.Combine(Performer, Title, Date, Files.Count, Tracks.Count, Remarks.Count, Comments.Count);
     }
-    /// <inheritdoc cref="FileHandler.CopyCueFiles(CueSheet, string, string?)"/>
+    /// <inheritdoc cref="CueFileHandler.CopyCueFiles(CueSheet, string, string?)"/>
     public CueSheet CopyFiles(string destination, string? pattern)
     {
-        return FileHandler.CopyCueFiles(this,destination, pattern);
+        return CueFileHandler.CopyCueFiles(this,destination, pattern);
     }
-    /// <inheritdoc cref="FileHandler.MoveCueFiles(CueSheet, string, string?)"/>
+    /// <inheritdoc cref="CueFileHandler.MoveCueFiles(CueSheet, string, string?)"/>
     public CueSheet MoveFiles(string destination, string? pattern)
     {
-        return FileHandler.MoveCueFiles(this,destination, pattern);
+        return CueFileHandler.MoveCueFiles(this,destination, pattern);
     }
     public void DeleteFiles()
     {
-        FileHandler.DeleteCueFiles(this);
+        CueFileHandler.DeleteCueFiles(this);
     }
 }

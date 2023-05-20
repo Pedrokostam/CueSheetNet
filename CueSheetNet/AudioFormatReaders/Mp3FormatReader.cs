@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CueSheetNet.FileIO;
+namespace CueSheetNet.AudioFormatReaders;
 internal class Mp3FormatReader : IFileFormatReader
 {
     private readonly string formatName="MP3";

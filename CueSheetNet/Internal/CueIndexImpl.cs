@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Xml.Schema;
 
-namespace CueSheetNet;
+namespace CueSheetNet.Internal;
 
 [DebuggerDisplay("CIImpl- Num: {Number}, Abs: {Index} - File {File.Index}, Track {Track.Index}")]
 internal class CueIndexImpl : CueItemBase
@@ -20,10 +20,10 @@ internal class CueIndexImpl : CueItemBase
     {
         return new(newOwnerTrack, newOwnerFile)
         {
-            Index= Index,
-            Time= Time,
-            Orphaned=Orphaned,
-            Number=Number,
+            Index = Index,
+            Time = Time,
+            Orphaned = Orphaned,
+            Number = Number,
         };
     }
 
@@ -34,7 +34,7 @@ internal class CueIndexImpl : CueItemBase
     public CueTime Time { get; set; }
     public override string ToString()
     {
-        return "CueIndexImpl "+Index.ToString("D2")+", " + Number.ToString("D2") + ", " + File.Index.ToString("D2") + ", " + Track.Index.ToString("D2");
+        return "CueIndexImpl " + Index.ToString("D2") + ", " + Number.ToString("D2") + ", " + File.Index.ToString("D2") + ", " + Track.Index.ToString("D2");
     }
     public override int GetHashCode()
     {

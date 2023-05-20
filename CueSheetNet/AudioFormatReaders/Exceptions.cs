@@ -1,19 +1,18 @@
-﻿namespace CueSheetNET.FileIO
+﻿
+namespace CueSheetNet.AudioFormatReaders;
+
+class UnsupportedFileFormatException : Exception
 {
-   
-    class UnsupportedFileFormatException : Exception
-    {
-        public UnsupportedFileFormatException(string msg) : base(msg)
-        { }
-    }
-    class FileFormatRecognitionException : Exception
-    {
-        public FileFormatRecognitionException(string msg) : base(msg)
-        { }
-    }
-    class InvalidFileFormatException : Exception
-    {
-        public InvalidFileFormatException(string msg) : base(msg)
-        { }
-    }
+    public UnsupportedFileFormatException(string msg) : base(msg)
+    { }
+}
+class FileFormatRecognitionException : Exception
+{
+    public FileFormatRecognitionException(string msg) : base(msg)
+    { }
+}
+class InvalidFileFormatException : Exception
+{
+    public InvalidFileFormatException(string msg) : base(msg)
+    { }
 }

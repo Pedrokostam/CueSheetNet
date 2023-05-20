@@ -1,12 +1,10 @@
-﻿using CueSheetNet;
-using CueSheetNet.Logging;
+﻿using CueSheetNet.Logging;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Net.WebSockets;
@@ -18,12 +16,12 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-namespace CueSheetNet;
+namespace CueSheetNet.FileHandling;
 
 /// <summary>
 /// Class which takes care of file operations related to the CueSheet passed to the constructor.
 /// </summary>
-public static partial class FileHandler
+public static partial class CueFileHandler
 {
     private static readonly Dictionary<string, string> CommonSynonyms = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -101,11 +99,11 @@ public static partial class FileHandler
         HashSet<string> hs = new(StringComparer.InvariantCultureIgnoreCase)
         {
             baseName,
-            StringNormalization.NormalizeString( baseName),
+            PathStringNormalization.NormalizeString( baseName),
             noSpaceName,
-            StringNormalization.NormalizeString(noSpaceName),
+            PathStringNormalization.NormalizeString(noSpaceName),
             underscoreName,
-            StringNormalization.NormalizeString(underscoreName)
+            PathStringNormalization.NormalizeString(underscoreName)
         };
         return hs;
     }
@@ -162,8 +160,8 @@ public static partial class FileHandler
                 continue;
             }
             // Flag for case ignoring is set
-            var flags = System.Reflection.BindingFlags.IgnoreCase | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public;
-            System.Reflection.PropertyInfo? prop = sheet.GetType().GetProperty(groupVal, flags);
+            var flags = BindingFlags.IgnoreCase | BindingFlags.Instance | BindingFlags.Public;
+            PropertyInfo? prop = sheet.GetType().GetProperty(groupVal, flags);
             object? value = prop?.GetValue(sheet);
             if (value is null)
             {
@@ -174,7 +172,7 @@ public static partial class FileHandler
             treeFormat = treeFormat.Replace(val, value.ToString());
         }
         //replace all invalid patrh chars with underscore
-        return StringNormalization.RemoveInvalidPathCharacters(treeFormat);
+        return PathStringNormalization.RemoveInvalidPathCharacters(treeFormat);
     }
     //public CueSheet MoveFiles(string destination, string? name = null) => CopyFiles(true, destination, name);
     //public CueSheet CopyFiles(string destination, string? name = null) => CopyFiles(false, destination, name);
@@ -227,7 +225,7 @@ public static partial class FileHandler
     private static List<TransFile> GetTransFiles(CueSheet sheet, string filename)
     {
         List<TransFile> transFiles = new();
-        IEnumerable<TransFile> transAudios = GetAudioTransFiles(sheet,filename);
+        IEnumerable<TransFile> transAudios = GetAudioTransFiles(sheet, filename);
         int fileIndex = 0;
         foreach (TransFile transAudio in transAudios)
         {
@@ -287,13 +285,13 @@ public static partial class FileHandler
         return number.ToString($"d{digitCount}");
     }
 
-    private static IEnumerable<TransFile> GetAudioTransFiles(CueSheet sheet,string filename)
+    private static IEnumerable<TransFile> GetAudioTransFiles(CueSheet sheet, string filename)
     {
         // One audio file, no need to change the filename
         if (sheet.Files.Count == 0) { yield break; }
         if (sheet.Files.Count == 1)
         {
-            TransFile transFile = new TransFile(sheet.Files[0].FileInfo) { NewName = filename };
+            TransFile transFile = new(sheet.Files[0].FileInfo) { NewName = filename };
             yield return transFile;
         }
         else
@@ -330,7 +328,7 @@ public static partial class FileHandler
     [GeneratedRegex(@"%(?<property>[\w\s]+)%")]
     private static partial Regex PropertyParser();
     //private static  Regex PropertyParser()=> throw new NotImplementedException();
-    public static  void DeleteCueFiles(CueSheet sheet)
+    public static void DeleteCueFiles(CueSheet sheet)
     {
         var audioFiles = sheet.Files.Select(x => x.FileInfo);
         var allFiles = audioFiles.Concat(sheet.AssociatedFiles).Append(sheet.SourceFile);
@@ -359,9 +357,9 @@ public static partial class FileHandler
     ///     <para>Pattern can be a directory structure (slashes are allowed), so this pattern is permitted: %artist%/%year%/%title%/%old%.cue</para>
     /// </param>
     /// <returns>Newly copied cuesheet</returns>
-    public static CueSheet CopyCueFiles(CueSheet sheet,string destination, string? pattern = null)
+    public static CueSheet CopyCueFiles(CueSheet sheet, string destination, string? pattern = null)
     {
-        sheet=sheet.Clone();
+        sheet = sheet.Clone();
         // Combine Destination with whatever results from parsing (which may contain more directories)
         string destinationWithPattern = Path.Combine(destination, ParseTreeFormat(sheet, pattern));
         //If we can't create the directory, IOException happens and we stop without needing to reverse anything.
@@ -369,7 +367,7 @@ public static partial class FileHandler
         // Now the destination is refreshed to the second to last element
         // Even if user specified some extension in the name, it's discarded here.
         string filename = GetNotNullName(destinationWithPattern);
-        filename = StringNormalization.RemoveInvalidNameCharacters(filename);
+        filename = PathStringNormalization.RemoveInvalidNameCharacters(filename);
 
         List<TransFile> transFiles = GetTransFiles(sheet, filename);
 
@@ -378,7 +376,7 @@ public static partial class FileHandler
         SaveModifiedCueSheet(sheet, filename, immediateParentDir);
         // At this point we saved a sheet referencing file that do not exist yet
 
-        List<FileInfo> inProgressCopied = new List<FileInfo>();
+        List<FileInfo> inProgressCopied = new();
         try
         {
             foreach (var item in transFiles)
@@ -411,9 +409,9 @@ public static partial class FileHandler
     /// </summary>
     /// <returns>Newly moved sheet</returns>
     /// <inheritdoc cref="CopyCueFiles(CueSheet, string, string?)"/>
-    public static CueSheet MoveCueFiles(CueSheet sheet,string destination, string? pattern = null)
+    public static CueSheet MoveCueFiles(CueSheet sheet, string destination, string? pattern = null)
     {
-        sheet=sheet.Clone();
+        sheet = sheet.Clone();
         // Combine Destination with whatever results from parsing (which may contain more directories)
         string destinationWithPattern = Path.Combine(destination, ParseTreeFormat(sheet, pattern));
         //If we can't create the directory, IOException happens and we stop without needing to reverse anything.
@@ -421,7 +419,7 @@ public static partial class FileHandler
         // Now the destination is refreshed to the second to last element
         // Even if user specified some extension in the name, it's discarded here.
         string filename = GetNotNullName(destinationWithPattern);
-        filename = StringNormalization.RemoveInvalidNameCharacters(filename);
+        filename = PathStringNormalization.RemoveInvalidNameCharacters(filename);
 
         List<TransFile> transFiles = GetTransFiles(sheet, filename);
 
@@ -455,97 +453,5 @@ public static partial class FileHandler
         }
         // Sheet of this cuepackage is already updated, no need to change anything
         return sheet;
-    }
-}
-public record class TransFile
-{
-    private string? newName;
-
-    public byte[]? Backup { get; private set; }
-    public FileInfo SourceFile { get; }
-
-    public string Extension => SourceFile.Extension;
-    /// <summary>
-    /// NewName of the file. No extension. If set to null, the old name will be used
-    /// </summary>
-    [AllowNull]
-    public string NewName
-    {
-        get
-        {
-            if (newName == null)
-                return Path.GetFileNameWithoutExtension(SourceFile.Name);
-            return newName;
-        }
-        set
-        {
-            newName = value;
-        }
-    }
-    public string NewNameWithExtension
-    {
-        get
-        {
-            if (newName == null)
-                return Path.GetFileName(SourceFile.Name);
-            return newName + Extension;
-        }
-    }
-    public TransFile(FileInfo source)
-    {
-        SourceFile = source;
-    }
-    public FileInfo Copy(DirectoryInfo destination)
-    {
-        string dest = Path.Combine(destination.FullName, NewNameWithExtension);
-        FileInfo res = SourceFile.CopyTo(dest);
-        Logger.LogInformation("Copied file {File} from {Source}", res, SourceFile);
-        return res;
-    }
-    public FileInfo Move(DirectoryInfo destination)
-    {
-        Backup = File.ReadAllBytes(SourceFile.FullName);
-        string dest = Path.Combine(destination.FullName, NewNameWithExtension);
-        SourceFile.MoveTo(dest);
-        FileInfo res = new(dest);
-        Logger.LogInformation("Moved file {File} from {Source}", res, SourceFile);
-        return res;
-    }
-    //public FileInfo Rename()
-    //{
-    //    if (newName == Path.GetFileNameWithoutExtension(SourceFile.Name))
-    //    {
-    //        return SourceFile;
-    //    }
-    //    string dest = Path.Combine(SourceFile.DirectoryName!, $"{NewName}{Extension}");
-    //    SourceFile.MoveTo(dest);
-    //    Logger.LogInformation("Moved file {File} from {Source}", res, SourceFile);
-    //    return SourceFile;
-    //}
-
-
-    /// <summary>
-    /// Check if the file with NewName exists in a given folder
-    /// </summary>
-    /// <param name="directory"></param>
-    /// <returns>True if such file exists, False if not</returns>
-    public bool CheckNewNameExists(DirectoryInfo directory)
-    {
-        string checker = Path.Join(directory.FullName, NewNameWithExtension);
-        return Path.Exists(checker);
-    }
-    internal void DeleteSource()
-    {
-        SourceFile.Delete();
-        Logger.LogInformation("Deleted file {File}", SourceFile);
-    }
-
-    public bool Restore()
-    {
-        if (Backup is null) return false;
-        if (SourceFile.Exists) return false;
-        File.WriteAllBytes(SourceFile.FullName, Backup);
-        Logger.LogInformation("Restored moved file {File}", SourceFile);
-        return true;
     }
 }
