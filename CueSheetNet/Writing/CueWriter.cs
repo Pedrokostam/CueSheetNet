@@ -217,12 +217,12 @@ public sealed class CueWriter
     /// <item><see cref="CueWriterSettings.DefaultEncoding"/> </item>
     /// </list>
     /// First non-null object will be used.
-    /// The <see cref="Encoding"/> will be modified to include <see cref="EncoderFallback.ExceptionFallback"/>.
-    /// If <see cref="Encoding"/><see cref="Encoding"/> cannot write the contents of the sheet, it will be replaced with <see cref="CueWriterSettings.DefaultEncoding"/>
+    /// <para/>The <see cref="Encoding"/> will be modified to include <see cref="EncoderFallback.ExceptionFallback"/>.
+    /// <para/>If <see cref="Encoding"/><see cref="Encoding"/> cannot write the contents of the sheet, it will be replaced with <see cref="CueWriterSettings.DefaultEncoding"/>
     /// </summary>
     /// <param name="sheet">Sheet which may containt source <see cref="Encoding"/></param>
     /// <returns></returns>
-    private Encoding GetEncodingWithExceptionFallback(CueSheet? sheet)
+    private Encoding GetProperEncoding(CueSheet? sheet)
     {
         Encoding baza = Settings.Encoding ?? sheet?.SourceEncoding ?? CueWriterSettings.DefaultEncoding;
         if (baza.EncoderFallback != EncoderFallback.ExceptionFallback)
@@ -231,6 +231,10 @@ public sealed class CueWriter
             baza = (Encoding)baza.Clone();
             baza.EncoderFallback = EncoderFallback.ExceptionFallback;
         }
+        if(baza.Preamble.Length==0 && (baza is UTF32Encoding || baza is UnicodeEncoding))
+        {
+            Logger.LogWarning("Using non-standard encoding multi-byte encoding without byte order mark: {Encoding.BodyName}", baza);
+        }
         return baza;
     }
     public void SaveCueSheet(CueSheet sheet)
@@ -238,7 +242,7 @@ public sealed class CueWriter
         ArgumentNullException.ThrowIfNull(sheet.SourceFile);
         string textData = WriteToString(sheet);
         sheet.SourceFile.Directory!.Create();
-        Encoding encoding = GetEncodingWithExceptionFallback(sheet);
+        Encoding encoding = GetProperEncoding(sheet);
         try
         {
             File.WriteAllText(sheet.SourceFile.FullName, textData, encoding);

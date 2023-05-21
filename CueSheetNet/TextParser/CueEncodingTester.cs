@@ -280,10 +280,10 @@ internal class CueEncodingTester
         // First letter of a cuesheet should be a standard ASCII letter (one byte of data and whatever padding)
         Encoding? naiveApproach = bomArea switch
         {
-            [0, 0, 0, > 1/**/, 0, 0, 0, > 1/**/, 0, 0, 0, > 1/**/, 0, 0, 0, > 1/**/] => EncodingUTF32BE, // 3 nulls, followed by a non-zero bytes
-            [> 1, 0, 0, 0/**/, > 1, 0, 0, 0/**/, > 1, 0, 0, 0/**/, > 1, 0, 0, 0/**/] => Encoding.UTF32,// non-zero bytes followed by 3 nulls
-            [> 1, 0/**/, > 1, 0/**/, > 1, 0/**/, > 1, 0/**/, ..] => Encoding.Unicode, // non-zero bytes, null, ignore everything past 12 byte
-            [0, > 1/**/, 0, > 1/**/, 0, > 1/**/, 0, > 1/**/, ..] => Encoding.BigEndianUnicode,// null, non-zero byte, ignore everything past 12 byte
+            [0, 0, 0, > 1/**/, 0, 0, 0, > 1/**/, 0, 0, 0, > 1/**/, 0, 0, 0, > 1/**/] => new UTF32Encoding(bigEndian:true,byteOrderMark:false), // 3 nulls, followed by a non-zero bytes
+            [> 1, 0, 0, 0/**/, > 1, 0, 0, 0/**/, > 1, 0, 0, 0/**/, > 1, 0, 0, 0/**/] => new UTF32Encoding(bigEndian: false, byteOrderMark: false),// non-zero bytes followed by 3 nulls
+            [> 1, 0/**/, > 1, 0/**/, > 1, 0/**/, > 1, 0/**/, ..] => new UnicodeEncoding(bigEndian:false,byteOrderMark:false), // non-zero bytes, null, ignore everything past 12 byte
+            [0, > 1/**/, 0, > 1/**/, 0, > 1/**/, 0, > 1/**/, ..] => new UnicodeEncoding(bigEndian: true, byteOrderMark: false),// null, non-zero byte, ignore everything past 12 byte
             [0, 0, 0, 0, ..] => throw new InvalidDataException($"Four consecutive null bytes at the beginning of {Source}"),
             _ => null,
         };
