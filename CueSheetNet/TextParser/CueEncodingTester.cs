@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -13,19 +14,26 @@ namespace CueSheetNet.TextParser;
 internal class CueEncodingTester
 {
     /// <summary>
-    /// Compares bytes in a case-insensitive way
+    /// Compares bytes in a case-insensitive way. Case is changed by changing the sixth bit. Works for standard ASCII letters. 
     /// </summary>
     class ByteInvariantComparer : EqualityComparer<byte>
     {
+        private static int ChangeCase(byte b)
+        {
+            //XOR with 32, since this is the bit that differentiates upper and lowercase. At least for letters...
+            return b ^ 0b00100000;
+        }
         public override bool Equals(byte x, byte y)
         {
             //XOR with 32, since this is the bit that differentiates upper and lowercase. At least for letters...
-            return x == y || x == (y ^ 0b00100000);
+            return x == y || x == ChangeCase(y);
         }
-
+        /// <summary>
+        /// Combines hashcode of the input byte and the input byte with its sixth bit negated (so both uppercase and lowercase)
+        /// </summary>
         public override int GetHashCode([DisallowNull] byte obj)
         {
-            throw new NotImplementedException();
+            return HashCode.Combine(obj,ChangeCase(obj));
         }
     }
 
@@ -59,11 +67,12 @@ internal class CueEncodingTester
         int last = fs.ReadByte();
         do
         {
+            // get either of newline signs; does not matter if we leave something - it'll be ignored later
             if (last == '\n' || last == '\r')
                 break;
             bytes.Add((byte)last);
             last = fs.ReadByte();
-        } while (last > 0);
+        } while (last >= 0);
     }
     public static bool CompareBytes(ReadOnlySpan<byte> input, Encoding encoding)
     {
@@ -173,10 +182,23 @@ internal class CueEncodingTester
             return enc;
         }
     }
+    /// <summary>
+    /// Scans stream looking for certain cue keywords. When found, takes everything after the keyword until newline. Repeats until end of stream.
+    /// <para/>Keywords:
+    /// <list>
+    /// <item>REM COMMENT</item>
+    /// <item>PERFORMER</item>
+    /// <item>TITLE</item>
+    /// <item>FILE</item>
+    /// </list>
+    /// Those are the only fields that can contain non-ASCII characters.
+    /// </summary>
+    /// <param name="fs"></param>
+    /// <returns></returns>
     private List<byte> GetPotentialDiacritizedLines(Stream fs)
     {
         Logger.LogDebug("Keyword line selection started. Source: {Source}", Source);
-        ByteInvariantComparer bytey = new();
+        ByteInvariantComparer byteCaseComparer = new();
         fs.Seek(0, SeekOrigin.Begin);
         List<byte> bytes = new(512);
         // Get byte forms of common keywords, without the first character and with trailing space
@@ -190,41 +212,38 @@ internal class CueEncodingTester
         Span<byte> performerBuff = stackalloc byte[PerformerUppercase.Length];
         Span<byte> titleBuff = stackalloc byte[TitleUppercase.Length];
         Span<byte> fileBuff = stackalloc byte[FileUppercase.Length];
-        while (true)
+        int intReading;
+        while ((intReading = fs.ReadByte())>=0)// -1 means end of stream
         {
-            int bb = fs.ReadByte();
-            if (bb < 0) break;
-            byte reading = (byte)bb;
-            char r = (char)reading;
-            if (bytey.Equals(reading, (byte)'R'))//last letter R or r =>? Performer
+            byte readByte = (byte)intReading;
+            if (byteCaseComparer.Equals(readByte, (byte)'R'))// last letter R or r =>? Rem Comment
             {
                 fs.Read(remCommentBuff);
-                if (remCommentBuff.SequenceEqual(RemCommentUppercase, bytey))
+                if (remCommentBuff.SequenceEqual(RemCommentUppercase, byteCaseComparer))
                     AddUntilNewLine(fs, bytes);
             }
-            else if (bytey.Equals(reading, (byte)'P'))//last letter T or T =>? Rem Comment
+            else if (byteCaseComparer.Equals(readByte, (byte)'P'))// last letter P or p =>? Performer
             {
                 fs.Read(performerBuff);
-                if (performerBuff.SequenceEqual(PerformerUppercase, bytey))
+                if (performerBuff.SequenceEqual(PerformerUppercase, byteCaseComparer))
                     AddUntilNewLine(fs, bytes);
             }
-            else if (bytey.Equals(reading, (byte)'F'))//last letter E or e =>? file
+            else if (byteCaseComparer.Equals(readByte, (byte)'F'))// last letter F or f =>? file
             {
                 fs.Read(fileBuff);
-                if (fileBuff.SequenceEqual(FileUppercase, bytey))
+                if (fileBuff.SequenceEqual(FileUppercase, byteCaseComparer))
                     AddUntilNewLine(fs, bytes);
             }
-            else if (bytey.Equals(reading, (byte)'T'))//last letter T or t =>? title
+            else if (byteCaseComparer.Equals(readByte, (byte)'T'))// last letter T or t =>? title
             {
                 fs.Read(titleBuff);
-                if (titleBuff.SequenceEqual(TitleUppercase, bytey))
+                if (titleBuff.SequenceEqual(TitleUppercase, byteCaseComparer))
                     AddUntilNewLine(fs, bytes);
             }
         }
         Logger.LogDebug("Found {Keyword count} bytes of keyword lines. Source: {Source}", bytes.Count, Source);
         return bytes;
     }
-
     public Encoding? DetectEncodingFromBOM(Stream fs)
     {
         Logger.LogDebug("Preamble encoding detection started. Source: {Source}", Source);
