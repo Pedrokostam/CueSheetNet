@@ -27,14 +27,10 @@ public static partial class CueFileHandler
     {
         {"ARTIST","Performer" },
         {"ALBUMARTIST","Performer" },
-        {"ALBUM ARTIST","Performer" },
         {"YEAR","Date" },
         {"ALBUM","Title" },
         {"ALBUMTITLE","Title" },
-        {"ALBUM TITLE","Title" },
         {"ALBUMNAME","Title" },
-        {"ALBUM NAME","Title" },
-        {"DISC ID","DiscID" },
         {"CURRENT","old" },
     };
     /// <summary>
@@ -148,7 +144,7 @@ public static partial class CueFileHandler
         foreach (Match match in matches.Cast<Match>())
         {
             string val = match.Value;
-            string groupVal = match.Groups["property"].Value;
+            string groupVal = match.Groups["property"].Value.Replace(" ","");// No properties contain space in the name, so we remove them
             if (CommonSynonyms.TryGetValue(groupVal, out string? syn))
             {
                 groupVal = syn;
@@ -196,7 +192,7 @@ public static partial class CueFileHandler
         string sheetPath = Path.Join(immediateParentDir.FullName, filename);
         sheetPath = Path.ChangeExtension(sheetPath, "cue");
         sheet.Save(sheetPath); //If we can't save the sheet there, IOException happens and we stop without needing to reverse anything.
-        Logger.LogInformation("Saved {CueSHeet} to {Destination}", sheet, sheetPath);
+        Logger.LogInformation("Saved {CueSheet} to {Destination}", sheet, sheetPath);
     }
 
     /// <summary>
