@@ -24,22 +24,33 @@ public partial class CueReader
     /// Character used to enclose text when it contains whitespace
     /// </summary>
     public char Quotation { get; set; } = '"';
-    public Encoding? Encoding { get; set; }
+    private Encoding? Encoding { get; set; }
 
     readonly List<bool> TrackHasZerothIndex = new();
-    private void Reset()
+    private void Reset(Encoding? encoding = null)
     {
         Sheet = null;
         CurrentLineIndex = -1;
         CurrentLine = "No line read";
         TrackHasZerothIndex.Clear();
+        Encoding = encoding;
     }
     public CueReader()
     {
     }
-    public CueSheet ParseCueSheet(string cuePath)
+    /// <remarks></remarks>
+    /// <inheritdoc cref="ParseCueSheet(string, Encoding?)"/>
+    public CueSheet ParseCueSheet(string cuePath)=>ParseCueSheet(cuePath, null);
+    /// <summary>
+    /// Loads specified text file and parses it as CueSheet.
+    /// </summary>
+    /// <remarks>Can detect encoding if not specified.</remarks>
+    /// <param name="cuePath">Filepath to be loaded and parsed</param>
+    /// <param name="encoding">Encoding to be used when decoding bytes to text. If null, encoding detection will be perfomed/></param>
+    /// <returns>Parsed <see cref="CueSheet"/></returns>
+    public CueSheet ParseCueSheet(string cuePath,Encoding? encoding)
     {
-        Reset();
+        Reset(encoding);
         if (!File.Exists(cuePath))
         {
             //Logger.LogError("Specified file does not exist ({File})", cuePath);
@@ -58,14 +69,29 @@ public partial class CueReader
     private void LogParseSource() => Logger.LogDebug("Parsing CueSheet from: {Source}", Source);
     /// <summary>Parsing started</summary>
     private static void LogParseStart() => Logger.LogDebug("Parsing started");
-    public CueSheet ParseCueSheet(byte[] cueFileBytes)
+    /// <remarks></remarks>
+    /// <inheritdoc cref="ParseCueSheet(byte[], Encoding?)"/>
+    public CueSheet ParseCueSheet(byte[] cueFileBytes)=>ParseCueSheet(cueFileBytes,null);
+    /// <summary>
+    /// Parses byte array as CueSheet. 
+    /// </summary>
+    /// <remarks>Can detect encoding if not specified.</remarks>
+    /// <param name="cueFileBytes">Byte source to be decoded to text and parsed</param>
+    /// <param name="encoding">Encoding to be used when decoding bytes to text. If null, encoding detection will be perfomed/></param>
+    /// <returns>Parsed <see cref="CueSheet"/></returns>
+    public CueSheet ParseCueSheet(byte[] cueFileBytes, Encoding? encoding)
     {
-        Reset();
+        Reset(encoding);
         Source = new CueSource(cueFileBytes);
         LogParseSource();
         using MemoryStream fs = new(cueFileBytes, false);
         return ParseCueSheet_Impl(fs);
     }
+    /// <summary>
+    /// Parses string as CueSheet. 
+    /// </summary>
+    /// <param name="cueContent">String to be parsed</param>
+    /// <returns>Parsed <see cref="CueSheet"/></returns>
     public CueSheet ParseCueSheetFromStringContent(string cueContent)
     {
         Reset();
@@ -75,6 +101,11 @@ public partial class CueReader
         using TextReader txt = new StringReader(cueContent);
         return ReadImpl(txt);
     }
+    /// <summary>
+    /// Parses char span as CueSheet. 
+    /// </summary>
+    /// <param name="cueContentChars">Span to be converted into string and parsed</param>
+    /// <returns>Parsed <see cref="CueSheet"/></returns>
     public CueSheet ParseCueSheet(ReadOnlySpan<char> cueContentChars)
     {
         return ParseCueSheetFromStringContent(new string(cueContentChars));

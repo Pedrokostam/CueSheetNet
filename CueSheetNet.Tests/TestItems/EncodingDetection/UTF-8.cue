@@ -1,0 +1,50 @@
+REM DATE 1971
+REM DISCID 970A2F0B
+REM COMMENT ExactAudioCopy v1.6
+PERFORMER "Jethro Tull"
+TITLE "Aqualung"
+FILE "Jethro Tull - Aqualung.wav" WAVE
+  TRACK 01 AUDIO
+    TITLE "Aqualung"
+    INDEX 00 00:00:00
+    INDEX 01 00:00:33
+  TRACK 02 AUDIO
+    TITLE "Cross-Eyed Mary"
+    INDEX 00 06:32:18
+    INDEX 01 06:33:43
+  TRACK 03 AUDIO
+    TITLE "Cheap Day Return"
+    INDEX 00 10:41:68
+    INDEX 01 10:43:28
+  TRACK 04 AUDIO
+    TITLE "Mother Goose"
+    INDEX 00 12:05:15
+    INDEX 01 12:06:43
+  TRACK 05 AUDIO
+    TITLE "Wond’ring Aloud"
+    INDEX 00 15:58:10
+    INDEX 01 16:00:25
+  TRACK 06 AUDIO
+    TITLE "Up to Me"
+    INDEX 00 17:53:55
+    INDEX 01 17:55:00
+  TRACK 07 AUDIO
+    TITLE "My God"
+    INDEX 00 21:08:65
+    INDEX 01 21:10:63
+  TRACK 08 AUDIO
+    TITLE "Hymn 43"
+    INDEX 00 28:20:50
+    INDEX 01 28:22:28
+  TRACK 09 AUDIO
+    TITLE "Slipstream"
+    INDEX 00 31:38:50
+    INDEX 01 31:40:38
+  TRACK 10 AUDIO
+    TITLE "Locomotive Breath"
+    INDEX 00 32:51:25
+    INDEX 01 32:53:73
+  TRACK 11 AUDIO
+    TITLE "Wind-Up"
+    INDEX 00 37:18:58
+    INDEX 01 37:20:28

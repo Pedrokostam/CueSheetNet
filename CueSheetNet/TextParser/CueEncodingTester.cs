@@ -33,7 +33,7 @@ internal class CueEncodingTester
         /// </summary>
         public override int GetHashCode([DisallowNull] byte obj)
         {
-            return HashCode.Combine(obj,ChangeCase(obj));
+            return HashCode.Combine(obj, ChangeCase(obj));
         }
     }
 
@@ -44,11 +44,11 @@ internal class CueEncodingTester
     /// Common encodings which are identified by a preamble
     /// </summary>
     static readonly Encoding[] PreambledEncodings = new Encoding[] {
-        Encoding.Unicode,
         Encoding.UTF8,
+        Encoding.UTF32,// Even though
+        EncodingUTF32BE,
+        Encoding.Unicode,
         Encoding.BigEndianUnicode,
-        Encoding.UTF32,
-        EncodingUTF32BE
     };
 
     /// <summary>
@@ -213,7 +213,7 @@ internal class CueEncodingTester
         Span<byte> titleBuff = stackalloc byte[TitleUppercase.Length];
         Span<byte> fileBuff = stackalloc byte[FileUppercase.Length];
         int intReading;
-        while ((intReading = fs.ReadByte())>=0)// -1 means end of stream
+        while ((intReading = fs.ReadByte()) >= 0)// -1 means end of stream
         {
             byte readByte = (byte)intReading;
             if (byteCaseComparer.Equals(readByte, (byte)'R'))// last letter R or r =>? Rem Comment
@@ -251,15 +251,18 @@ internal class CueEncodingTester
         fs.Seek(0, SeekOrigin.Begin);
         fs.Read(bomArea);
         //test for encoding with BOM
-        foreach (var encoding in PreambledEncodings)
+        Encoding? encoding = bomArea switch
         {
-            if (CompareBytes(bomArea, encoding))
-            {
-                Logger.LogInformation("Encoding {Encoding.EncodingName} detected from preamble. Source: {Source}", encoding, Source);
-                return encoding;
-            }
-        }
-        return null;
+            [0xEF, 0xBB, 0xBF, > 00] => Encoding.UTF8,
+            [0xFF, 0xFE, 0x00, 0x00] => Encoding.UTF32,
+            [0x00, 0x00, 0xFE, 0xFF] => EncodingUTF32BE,
+            [0xFF, 0xFE, ..] => Encoding.Unicode,
+            [0xFE, 0xFF, ..] => Encoding.BigEndianUnicode,
+            _ => null,
+        };
+        if (encoding is not null)
+            Logger.LogInformation("Encoding {Encoding.EncodingName} detected from preamble. Source: {Source}", encoding, Source);
+        return encoding;
     }
     /// <summary>
     /// 
@@ -280,9 +283,9 @@ internal class CueEncodingTester
         // First letter of a cuesheet should be a standard ASCII letter (one byte of data and whatever padding)
         Encoding? naiveApproach = bomArea switch
         {
-            [0, 0, 0, > 1/**/, 0, 0, 0, > 1/**/, 0, 0, 0, > 1/**/, 0, 0, 0, > 1/**/] => new UTF32Encoding(bigEndian:true,byteOrderMark:false), // 3 nulls, followed by a non-zero bytes
+            [0, 0, 0, > 1/**/, 0, 0, 0, > 1/**/, 0, 0, 0, > 1/**/, 0, 0, 0, > 1/**/] => new UTF32Encoding(bigEndian: true, byteOrderMark: false), // 3 nulls, followed by a non-zero bytes
             [> 1, 0, 0, 0/**/, > 1, 0, 0, 0/**/, > 1, 0, 0, 0/**/, > 1, 0, 0, 0/**/] => new UTF32Encoding(bigEndian: false, byteOrderMark: false),// non-zero bytes followed by 3 nulls
-            [> 1, 0/**/, > 1, 0/**/, > 1, 0/**/, > 1, 0/**/, ..] => new UnicodeEncoding(bigEndian:false,byteOrderMark:false), // non-zero bytes, null, ignore everything past 12 byte
+            [> 1, 0/**/, > 1, 0/**/, > 1, 0/**/, > 1, 0/**/, ..] => new UnicodeEncoding(bigEndian: false, byteOrderMark: false), // non-zero bytes, null, ignore everything past 12 byte
             [0, > 1/**/, 0, > 1/**/, 0, > 1/**/, 0, > 1/**/, ..] => new UnicodeEncoding(bigEndian: true, byteOrderMark: false),// null, non-zero byte, ignore everything past 12 byte
             [0, 0, 0, 0, ..] => throw new InvalidDataException($"Four consecutive null bytes at the beginning of {Source}"),
             _ => null,
