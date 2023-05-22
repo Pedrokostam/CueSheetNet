@@ -40,7 +40,10 @@ public readonly record struct InnerQuotation
     private readonly char openingQuote;
     private readonly char closingQuote;
     private readonly bool Symmetrical => closingQuote == openingQuote;
-    private readonly bool Redundant => closingQuote == DoubleQuote && Symmetrical;
+    /// <summary>
+    /// Return whether this quotation replacement is redundant, i.e. replaces '"' with '"'
+    /// </summary>
+    private readonly bool Redundant => closingQuote == DoubleQuote && openingQuote == DoubleQuote;
 
     public char OpeningQuote
     {
