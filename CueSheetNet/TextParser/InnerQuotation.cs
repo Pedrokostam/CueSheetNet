@@ -21,19 +21,19 @@ public readonly record struct InnerQuotation
     /// </summary>
     public static readonly InnerQuotation Apostrophes = new('\'', '\'');
     /// <summary>
-    /// Quotation marks consisting of two asymmentrical double quotes, both at the top. Commonly used in English. “Example”.
+    /// Quotation marks consisting of two asymmetrical double quotes, both at the top. Commonly used in English. “Example”.
     /// </summary>
     public static readonly InnerQuotation CurvedDoubleTopQuotation = new(DefaultOpening, DefaultClosing);
     /// <summary>
-    /// Quotation marks consisting of two asymmentrical double quotes, both comma like, opening one at the bottom , closing one at the top. „Example”.
+    /// Quotation marks consisting of two asymmetrical double quotes, both comma like, opening one at the bottom, closing one at the top. „Example”.
     /// </summary>
     public static readonly InnerQuotation CommaLikeBottomTopQuotation = new('„', '”');
     /// <summary>
-    /// Quotation marks consisting of two asymmentrical double angle marks. Also known as guillemets. «Example».
+    /// Quotation marks consisting of two asymmetrical double angle marks. Also known as guillemets. «Example».
     /// </summary>
     public static readonly InnerQuotation DoubleAngleQuotation = new('«', '»');
     /// <summary>
-    /// Quotation marks consisting of two asymmentrical double angle marks. «Example»
+    /// Quotation marks consisting of two asymmetrical double angle marks. «Example»
     /// </summary>
     public static readonly InnerQuotation Guillemets = DoubleAngleQuotation;
 
