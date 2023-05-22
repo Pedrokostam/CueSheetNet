@@ -3,6 +3,9 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace CueSheetNet.FileHandling;
 
+/// <summary>
+/// Class which store information about original file, can backup its content to memory, delete the file, copy/move it to new location under a new name.
+/// </summary>
 public record class TransFile
 {
     private string? newName;
@@ -28,6 +31,7 @@ public record class TransFile
             newName = value;
         }
     }
+    
     public string NewNameWithExtension
     {
         get
@@ -37,10 +41,12 @@ public record class TransFile
             return newName + Extension;
         }
     }
+    
     public TransFile(FileInfo source)
     {
         SourceFile = source;
     }
+    
     public FileInfo Copy(DirectoryInfo destination)
     {
         string dest = Path.Combine(destination.FullName, NewNameWithExtension);
@@ -48,6 +54,7 @@ public record class TransFile
         Logger.LogInformation("Copied file {File} from {Source}", res, SourceFile);
         return res;
     }
+    
     public FileInfo Move(DirectoryInfo destination)
     {
         Backup = File.ReadAllBytes(SourceFile.FullName);
@@ -57,18 +64,6 @@ public record class TransFile
         Logger.LogInformation("Moved file {File} from {Source}", res, SourceFile);
         return res;
     }
-    //public FileInfo Rename()
-    //{
-    //    if (newName == Path.GetFileNameWithoutExtension(SourceFile.Name))
-    //    {
-    //        return SourceFile;
-    //    }
-    //    string dest = Path.Combine(SourceFile.DirectoryName!, $"{NewName}{Extension}");
-    //    SourceFile.MoveTo(dest);
-    //    Logger.LogInformation("Moved file {File} from {Source}", res, SourceFile);
-    //    return SourceFile;
-    //}
-
 
     /// <summary>
     /// Check if the file with NewName exists in a given folder
@@ -80,12 +75,21 @@ public record class TransFile
         string checker = Path.Join(directory.FullName, NewNameWithExtension);
         return Path.Exists(checker);
     }
+    
+    /// <summary>
+    /// Deletes file under <see cref="SourceFile"/>, copying to <see cref="Backup"/> first.
+    /// </summary>
     internal void DeleteSource()
     {
+        Backup = File.ReadAllBytes(SourceFile.FullName);
         SourceFile.Delete();
         Logger.LogInformation("Deleted file {File}", SourceFile);
     }
-
+    
+    /// <summary>
+    /// Recreates a moved/deleted file from the <see cref="Backup"/>. The restored file will have the path of <see cref="SourceFile"/>
+    /// </summary>
+    /// <returns>True if file was restored; false if <see cref="Backup"/> was missing or file under the same name already existed</returns>
     public bool Restore()
     {
         if (Backup is null) return false;
