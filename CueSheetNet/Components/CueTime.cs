@@ -229,6 +229,7 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable
     /// <summary>
     /// Tries to parse string (±mm:ss:ff). The parsed time is negative, only if the minute part is negative.
     /// The frame and seconds parts do not affect the negativity.
+    /// Only the last parts (frames) is required. Other parts are assumed to be zero, if missing.
     /// </summary>
     /// <param name="span">Text to be parsed. Whether the time is positive or negative depends only on the minutes part</param>
     /// <param name="cueTime"></param>
@@ -238,13 +239,13 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable
         cueTime = default;
         ReadOnlySpan<char> spanTrimmed = span.Trim();
         List<int> inds = SeekSeparator(spanTrimmed);
-        if (inds.Count < 4) return false;
-        Span<int> nums = stackalloc int[3];
+        if (inds.Count <= 1) return false;
+        Span<int> nums = stackalloc int[Math.Min(3, inds.Count - 1)];
         int numCount = 0;
         for (int i = 1; i < inds.Count; i++)
         {
             int rangeStart = inds[i - 1] + 1;//plus one, because it was included in previous range
-            //That';'s why the SeekSeparator add -1 as the first element
+            //That's why the SeekSeparator add -1 as the first element
             //so that the first rangeStart will be equal to 0
             int rangeEnd = inds[i];
             if (!int.TryParse(spanTrimmed[rangeStart..rangeEnd], NumberStyles.Integer, CultureInfo.InvariantCulture, out int x))
@@ -254,9 +255,9 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable
                 break;
         }
         int multiplier = nums[0] >= 0 ? 1 : -1;
-        int _minutes = Math.Abs(nums[0]);
-        int _seconds = Math.Abs(nums[1]);
-        int _frames = Math.Abs(nums[2]);
+        int _minutes = nums.Length == 3 ? Math.Abs(nums[^3]) : 0;// If there are 3 elements, take the third from the end (i.e the zeroth)
+        int _seconds = nums.Length >= 2 ? Math.Abs(nums[^2]) : 0;// If there are 2 or 3 elements, take the second from the end (i.e the zeroth or the first)
+        int _frames = Math.Abs(nums[^1]);// take last element
         try
         {
             int totalFrames = CalculateTotalFrames(_minutes, _seconds, _frames) * multiplier;

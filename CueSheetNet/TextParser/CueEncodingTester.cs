@@ -1,9 +1,11 @@
 ﻿using CueSheetNet.Logging;
 using CueSheetNet.Reading;
+using CueSheetNet.Syntax;
 using Microsoft.VisualBasic;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Drawing;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -94,6 +96,8 @@ internal class CueEncodingTester
     /// <returns>Detected encoding. If method could exactly tell the encoding the Default encoding for the system is returned</returns>
     public Encoding DetectCueEncoding()
     {
+        if (Stream.Length < 35)//Byte length of minimal cuesheet accepteb by Foobar2000
+            throw new InvalidDataException($"Cue stream is too short, has only {Stream.Length} bytes");
         Logger.LogDebug("Encoding detection started. Source: {Source}", Source);
         if (DetectEncodingFromBOM(Stream) is Encoding encodingBom)
             return encodingBom;
@@ -247,17 +251,19 @@ internal class CueEncodingTester
     public Encoding? DetectEncodingFromBOM(Stream fs)
     {
         Logger.LogDebug("Preamble encoding detection started. Source: {Source}", Source);
-        Span<byte> bomArea = stackalloc byte[4];
+        Span<byte> bomArea = stackalloc byte[5];
         fs.Seek(0, SeekOrigin.Begin);
         fs.Read(bomArea);
         //test for encoding with BOM
         Encoding? encoding = bomArea switch
         {
-            [0xEF, 0xBB, 0xBF, > 00] => Encoding.UTF8,
-            [0xFF, 0xFE, 0x00, 0x00] => Encoding.UTF32,
-            [0x00, 0x00, 0xFE, 0xFF] => EncodingUTF32BE,
-            [0xFF, 0xFE, ..] => Encoding.Unicode,
-            [0xFE, 0xFF, ..] => Encoding.BigEndianUnicode,
+            // Theoretically we need to check only 4 bytes for utf32, 3 for utf8 and 2 for utf16.
+            // But we know that the first characters of the sheet should be standard ASCII characters
+            [0xEF, 0xBB, 0xBF, > 00, > 00] => Encoding.UTF8,// the last 2 bytes have to be anything but null
+            [0xFF, 0xFE, 0x00, 0x00, > 00] => Encoding.UTF32,// the first byte of second character will be larger than zero since it is its start (little-end)
+            [0x00, 0x00, 0xFE, 0xFF, 0x00] => EncodingUTF32BE, // the first byte of second character will be be zero since it is its start (big-end)
+            [0xFF, 0xFE, > 00, 0x00, > 00] => Encoding.Unicode, // We get 1.5 characters, so bytes 3 and 5 will have to be larger than zero (little-end)
+            [0xFE, 0xFF, 0x00, > 00, 0x00] => Encoding.BigEndianUnicode,// We get 1.5 characters, so bytes 3 and 5 will have to be zero (big-end)
             _ => null,
         };
         if (encoding is not null)

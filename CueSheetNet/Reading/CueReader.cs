@@ -485,6 +485,6 @@ public partial class CueReader
         return string.Empty;
     }
 
-    [GeneratedRegex(@"(?<PATH>.*\.\S+)\s+(?<TYPE>\w*)", RegexOptions.Compiled)]
+    [GeneratedRegex(@"(?<PATH>\w+)\s+(?<TYPE>\w*)", RegexOptions.Compiled)]
     private static partial Regex NonQuotedFileRegex();
 }

@@ -28,8 +28,8 @@ public class CueTimeTests
         FailTexts = new string[]
         {
             "",
-            "10",
-            "101010",
+            //"10",// Is now valid, to comply with Foobar2000 standard
+            //"101010",// Is now valid, to comply with Foobar2000 standard - it's just the number of frames
             "477219:0:0",
             "477217:9999:9999"
         };

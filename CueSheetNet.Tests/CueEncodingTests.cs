@@ -55,7 +55,7 @@ public partial class CueEncodingTests
     }
     
     [TestMethod]
-    public void TestParsing()
+    public void TestEncodingDetection()
     {
         string encodingsPath=Path.Join(Directory.GetCurrentDirectory(), "TestItems", "EncodingDetection");
         var files = Directory.EnumerateFiles(encodingsPath,"*.cue");
@@ -63,5 +63,14 @@ public partial class CueEncodingTests
         {
             TestParsing(file);
         }
+    }
+    [TestMethod]
+    public void TestParsingMinimum()
+    {
+        string minimalPath = Path.Join(Directory.GetCurrentDirectory(), "TestItems", "Parsing", "MinimalFoobarCue.cue");
+        var cue = reader.ParseCueSheet(minimalPath);
+        Assert.AreEqual(cue.Files[0].FileInfo.Name, "A");
+        Assert.AreEqual(cue.Tracks[0].Title, "A");
+        Assert.AreEqual(cue.Tracks[0].Indexes[0].Time, new CueTime(99));
     }
 }

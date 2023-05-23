@@ -51,6 +51,9 @@
     <None Update="TestItems\EncodingDetection\UTF-8 BOM.cue">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="TestItems\Parsing\MinimalFoobarCue.cue">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>
