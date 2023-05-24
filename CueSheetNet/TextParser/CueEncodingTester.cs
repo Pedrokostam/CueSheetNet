@@ -96,7 +96,7 @@ internal class CueEncodingTester
     /// <returns>Detected encoding. If method could exactly tell the encoding the Default encoding for the system is returned</returns>
     public Encoding DetectCueEncoding()
     {
-        if (Stream.Length < 35)//Byte length of minimal cuesheet accepteb by Foobar2000
+        if (Stream.Length < 35)//Byte length of minimal cuesheet accepted by Foobar2000
             throw new InvalidDataException($"Cue stream is too short, has only {Stream.Length} bytes");
         Logger.LogDebug("Encoding detection started. Source: {Source}", Source);
         if (DetectEncodingFromBOM(Stream) is Encoding encodingBom)
@@ -169,7 +169,7 @@ internal class CueEncodingTester
             else
             {
                 Logger.LogInformation("Non-UTF8 bytes detected. Last 4 bytes: 0x{Byte1:X2}, 0x{Byte2:X2}, 0x{Byte3:X2}, 0x{Byte4:X2}", s[i], s[i + 1], s[i + 2], s[i + 3]);
-                // most propably something from 0x7F up - some regional codepage
+                // most probably something from 0x7F up - some regional codepage.
                 utf8 = false;
                 break;
             }
@@ -181,7 +181,7 @@ internal class CueEncodingTester
         else
         {
             // Quite difficult if not impossible to guess which regional encoding is being used.
-            // We're assuming it codepage 1252, as it is quite common for english text
+            // We're assuming it codepage 1252, as it is quite common for english text. It's actually the most common encoding in the net, safe for utf
             Encoding enc = Encoding.GetEncoding(1252);
             return enc;
         }
@@ -298,7 +298,7 @@ internal class CueEncodingTester
         };
         return naiveApproach;
     }
-    [Obsolete("Method gives too much leeway for mixed encoding (UTF16 followed by UTF32, etc.). Also is complicated for its own good.")]
+    [Obsolete("Method gives too much leeway for mixed encoding (UTF16 followed by UTF32, etc.). Also is too complicated for its own good.")]
     public Encoding? DetectFixedWidthEncoding(Stream fs)
     {
         Logger.LogDebug("UTF16/32 encoding detection started. Source: {Source}", Source);

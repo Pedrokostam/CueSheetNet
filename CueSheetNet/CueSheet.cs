@@ -157,17 +157,56 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
 
     #region Fileops
     /// <summary>
-    /// Save the CueSheet to the location specified by its fileinfo. If <paramref name="path"/> is not null, it is set as cue path of this instance.
-    /// After changing, path is not reverted if saving was unsuccessful.
-    /// Does not do anything with <see cref="CueFile" />s of the Cuesheet, or other associated files.
+    /// Save the CueSheet to the location specified by its <see cref="SourceFile"/>.
+    /// After changing, directory is not reverted if saving was unsuccessful.
+    /// <para/>Does not do anything with <see cref="CueFile" />s of the Cuesheet, or other associated files (use <see cref="CopyFiles(string, string?)"/> or <see cref="MoveFiles(string, string?)"/> for that).
     /// </summary>
-    /// <param name="path"></param>
     /// <param name="encoding">Optional encoding. If not specified the source encoding of the Cusheet will be used, or <see cref="CueWriterSettings.DefaultEncoding"/></param>
+    public void Save(Encoding? encoding = null)
+    {
+        //if (directory is not null)
+        ArgumentNullException.ThrowIfNull(SourceFile);
+        CueWriter writer = new();
+        if (encoding is not null)
+        {
+            CueWriterSettings settings = new() { Encoding = encoding };
+            writer.Settings = settings;
+        }
+        writer.SaveCueSheet(this);
+    }
+    /// <summary>
+    /// Save the CueSheet under the specified path.
+    /// <para/>Does not do anything with <see cref="CueFile" />s of the Cuesheet, or other associated files (use <see cref="CopyFiles(string, string?)"/> or <see cref="MoveFiles(string, string?)"/> for that).
+    /// </summary>
+    /// <param name="path">File path to save under</param>
+    /// <inheritdoc cref="Save(Encoding?)"/>
     public void Save(string path, Encoding? encoding = null)
     {
-        //if (path is not null)
+        //if (directory is not null)
         ArgumentException.ThrowIfNullOrEmpty(path);
         SetCuePath(path);
+        CueWriter writer = new();
+        if (encoding is not null)
+        {
+            CueWriterSettings settings = new() { Encoding = encoding };
+            writer.Settings = settings;
+        }
+        writer.SaveCueSheet(this);
+    }
+    /// <summary>
+    /// Save the CueSheet under the path created by using <see cref="Path.Combine(string, string)"/> on <paramref name="directory"/> and <paramref name="pattern"/>.
+    /// <para/>Does not do anything with <see cref="CueFile" />s of the Cuesheet, or other associated files (use <see cref="CopyFiles(string, string?)"/> or <see cref="MoveFiles(string, string?)"/> for that).
+    /// </summary>
+    /// <inheritdoc cref="Save(string, Encoding?)"/>
+    /// <inheritdoc cref="CopyFiles(string, string?)" path='/remarks'/>
+    /// <inheritdoc cref="CopyFiles(string, string?)" path='/param[@name="pattern"]'/>
+    public void Save(string directory, string? pattern, Encoding? encoding = null)
+    {
+        //if (directory is not null)
+        ArgumentException.ThrowIfNullOrEmpty(directory);
+        string patternPart = CueFileHandler.ParseTreeFormat(this, pattern);
+        string combined = Path.Combine(directory, patternPart);
+        SetCuePath(Path.ChangeExtension(combined,".cue"));
         CueWriter writer = new();
         if (encoding is not null)
         {
@@ -237,7 +276,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
     //    Files[index].SetFile(newPath);
     //}
     /// <summary>
-    /// Change path of the given file (zero-based index)
+    /// Change directory of the given file (zero-based index)
     /// </summary>
     /// <param name="index">Zero-based index</param>
     /// <param name="newPath"></param>
@@ -458,15 +497,19 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
     /// <inheritdoc cref="CueFileHandler.CopyCueFiles(CueSheet, string, string?)"/>
     public CueSheet CopyFiles(string destination, string? pattern)
     {
-        return CueFileHandler.CopyCueFiles(this,destination, pattern);
+        return CueFileHandler.CopyCueFiles(this, destination, pattern);
     }
     /// <inheritdoc cref="CueFileHandler.MoveCueFiles(CueSheet, string, string?)"/>
     public CueSheet MoveFiles(string destination, string? pattern)
     {
-        return CueFileHandler.MoveCueFiles(this,destination, pattern);
+        return CueFileHandler.MoveCueFiles(this, destination, pattern);
     }
     public void DeleteFiles()
     {
         CueFileHandler.DeleteCueFiles(this);
+    }
+    internal string DefaultFilename
+    {
+        get => $"{Performer ?? "No Artist"} - {Title ?? "No Title"}";
     }
 }

@@ -5,6 +5,7 @@ using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Net.WebSockets;
@@ -133,18 +134,19 @@ public static partial class CueFileHandler
     /// <param name="sheet"></param>
     /// <returns>Path stem made accoridng to the treeformat. All invalid path chars removed.</returns>
     /// <param name="treeFormat">Pattern which may contain reference to properies of CueSheet, case insensitive names. To get the original filename, specify %old%
-    /// If parameter is null, the original filename will be used
+    /// <para/>If parameter is null, the original filename will be used
+    /// <para/>If parameter is null and the sheet has not filename yet, the following pattern will be used: "{Performer} - {Title}"
     /// </param>
-    private static string ParseTreeFormat(CueSheet sheet, string? treeFormat)
+    public static string ParseTreeFormat(CueSheet sheet, string? treeFormat)
     {
         if (treeFormat == null)
-            return Path.GetFileNameWithoutExtension(sheet.SourceFile!.Name);
+            return Path.GetFileNameWithoutExtension(sheet.SourceFile?.Name) ?? sheet.DefaultFilename;
         Regex formatter = PropertyParser();
         MatchCollection matches = formatter.Matches(treeFormat);
         foreach (Match match in matches.Cast<Match>())
         {
             string val = match.Value;
-            string groupVal = match.Groups["property"].Value.Replace(" ","");// No properties contain space in the name, so we remove them
+            string groupVal = match.Groups["property"].Value.Replace(" ", "");// No properties contain space in the name, so we remove them
             if (CommonSynonyms.TryGetValue(groupVal, out string? syn))
             {
                 groupVal = syn;
@@ -170,8 +172,8 @@ public static partial class CueFileHandler
         //replace all invalid patrh chars with underscore
         return PathStringNormalization.RemoveInvalidPathCharacters(treeFormat);
     }
-    //public CueSheet MoveFiles(string destination, string? name = null) => CopyFiles(true, destination, name);
-    //public CueSheet CopyFiles(string destination, string? name = null) => CopyFiles(false, destination, name);
+    //public CueSheet MoveFiles(string destinationDirectory, string? name = null) => CopyFiles(true, destinationDirectory, name);
+    //public CueSheet CopyFiles(string destinationDirectory, string? name = null) => CopyFiles(false, destinationDirectory, name);
 
 
     /// <summary>
@@ -306,8 +308,7 @@ public static partial class CueFileHandler
             }
         }
     }
-
-    private static string GetNotNullName(string path)
+    private static string GetNotNullName(string? path)
     {
         string? name = Path.GetFileNameWithoutExtension(path);
         ArgumentException.ThrowIfNullOrEmpty(name);
@@ -345,22 +346,25 @@ public static partial class CueFileHandler
     }
     /// <summary>
     /// Finds all files associated with the sheet (including those not mention in the sheet proper, but sharing its name) and copies them to the new location. Modifies a clone of the CueSheet and returns it.
+    /// <para/>The final path is created by using <see cref="Path.Combine"/> on both the parameters
     /// </summary>
-    /// <param name="destination">Path to destination folder</param>
-    /// <param name="pattern">Pattern to be added to <paramref name="destination"/>. Can contain tags (surrounded by '%') which will be expanded bases on the CueSheet.
+    /// <remarks>If the pattern is rooted (e.g. C:\Music\%artist%\%current%) any previous parts will be ignored</remarks>
+    /// <param name="sheet">CueSheet to processed</param>
+    /// <param name="destinationDirectory">Path to destinationDirectory folder</param>
+    /// <param name="pattern">Pattern to be added to <paramref name="destinationDirectory"/>. Can contain tags (surrounded by '%') which will be expanded bases on the CueSheet.
     ///     <para>E.G. %title% will be replaced by sheet's title. Speical tag %old'% is replaced by the current filename of the sheet.</para>
     ///     <para>Any extension in the pattern will be ignored and replaced by ".cue"</para>
     ///     <para>Pattern can be a directory structure (slashes are allowed), so this pattern is permitted: %artist%/%year%/%title%/%old%.cue</para>
     /// </param>
     /// <returns>Newly copied cuesheet</returns>
-    public static CueSheet CopyCueFiles(CueSheet sheet, string destination, string? pattern = null)
+    public static CueSheet CopyCueFiles(CueSheet sheet, string destinationDirectory, string? pattern = null)
     {
         sheet = sheet.Clone();
         // Combine Destination with whatever results from parsing (which may contain more directories)
-        string destinationWithPattern = Path.Combine(destination, ParseTreeFormat(sheet, pattern));
+        string destinationWithPattern = Path.Combine(destinationDirectory, ParseTreeFormat(sheet, pattern));
         //If we can't create the directory, IOException happens and we stop without needing to reverse anything.
         DirectoryInfo immediateParentDir = GetImmediateParentDir(destinationWithPattern);
-        // Now the destination is refreshed to the second to last element
+        // Now the destinationDirectory is refreshed to the second to last element
         // Even if user specified some extension in the name, it's discarded here.
         string filename = GetNotNullName(destinationWithPattern);
         filename = PathStringNormalization.RemoveInvalidNameCharacters(filename);
@@ -407,21 +411,21 @@ public static partial class CueFileHandler
     /// <inheritdoc cref="CopyCueFiles(CueSheet, string, string?)"/>
     public static CueSheet MoveCueFiles(CueSheet sheet, string destination, string? pattern = null)
     {
-        sheet = sheet.Clone();
+        CueSheet activeSheet = sheet.Clone();
         // Combine Destination with whatever results from parsing (which may contain more directories)
-        string destinationWithPattern = Path.Combine(destination, ParseTreeFormat(sheet, pattern));
+        string destinationWithPattern = Path.Combine(destination, ParseTreeFormat(activeSheet, pattern));
         //If we can't create the directory, IOException happens and we stop without needing to reverse anything.
         DirectoryInfo immediateParentDir = GetImmediateParentDir(destinationWithPattern);
-        // Now the destination is refreshed to the second to last element
+        // Now the destinationDirectory is refreshed to the second to last element
         // Even if user specified some extension in the name, it's discarded here.
         string filename = GetNotNullName(destinationWithPattern);
         filename = PathStringNormalization.RemoveInvalidNameCharacters(filename);
 
-        List<TransFile> transFiles = GetTransFiles(sheet, filename);
+        List<TransFile> transFiles = GetTransFiles(activeSheet, filename);
 
         CheckForNameCollisions(immediateParentDir, transFiles);
 
-        SaveModifiedCueSheet(sheet, filename, immediateParentDir);
+        SaveModifiedCueSheet(activeSheet, filename, immediateParentDir);
         // At this point we saved a sheet referencing file that do not exist yetZ
 
         List<TransFile> movedFileArchive = new();
@@ -447,7 +451,12 @@ public static partial class CueFileHandler
             }
             throw;
         }
+        if (sheet.SourceFile is FileInfo x)
+        {
+            x.Delete();
+            Logger.LogInformation("Deleted original file of {File}",x);
+        }
         // Sheet of this cuepackage is already updated, no need to change anything
-        return sheet;
+        return activeSheet;
     }
 }
