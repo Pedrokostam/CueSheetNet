@@ -135,7 +135,7 @@ public sealed class CueWriter
         AppendStringify("REM COMPOSER", Replace(sheet.Composer), 0, true);
         AppendStringify("TITLE", Replace(sheet.Title), 0, true);
         CueTrack? track = null;
-        CueFile? file = null;
+        CueAudioFile? file = null;
         foreach (CueIndexImpl ind in sheet.IndexesImpl)
         {
             if (file != ind.File)
@@ -168,7 +168,7 @@ public sealed class CueWriter
         }
     }
 
-    private void AppendFileHeader(CueFile file)
+    private void AppendFileHeader(CueAudioFile file)
     {
         Builder.Append("FILE ");
         AppendFilepath(file);
@@ -176,9 +176,9 @@ public sealed class CueWriter
         Builder.AppendLine(file.Type);
     }
 
-    private void AppendFilepath(CueFile file)
+    private void AppendFilepath(CueAudioFile file)
     {
-        string filename = file.FileInfo.Name;
+        string filename = file.SourceFile.Name;
         string path = HasWhitespace(filename) ? Enquote(filename) : filename;
         Builder.Append(path);
     }
@@ -231,7 +231,7 @@ public sealed class CueWriter
             baza = (Encoding)baza.Clone();
             baza.EncoderFallback = EncoderFallback.ExceptionFallback;
         }
-        if(baza.Preamble.Length==0 && (baza is UTF32Encoding || baza is UnicodeEncoding))
+        if (baza.Preamble.Length == 0 && (baza is UTF32Encoding || baza is UnicodeEncoding))
         {
             Logger.LogWarning("Using non-standard encoding multi-byte encoding without byte order mark: {Encoding.BodyName}", baza);
         }
@@ -257,5 +257,10 @@ public sealed class CueWriter
             File.WriteAllText(sheet.SourceFile.FullName, textData, CueWriterSettings.DefaultEncoding);
         }
         sheet.SourceEncoding = encoding;
+    }
+    public void SaveCueSheet(CueSheet sheet, string newDestination)
+    {
+        sheet.SetCuePath(newDestination);
+        SaveCueSheet(sheet);
     }
 }

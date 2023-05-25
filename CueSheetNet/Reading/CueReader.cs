@@ -314,7 +314,7 @@ public partial class CueReader
             //Logger.LogError("Incorrect Index format at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
             throw new FormatException($"Incorrect Index format at line {CurrentLineIndex}: {line}");
         }
-        if (Sheet.LastTrack is CueTrack ctr && Sheet.LastFile is CueFile cfl)
+        if (Sheet.LastTrack is CueTrack ctr && Sheet.LastFile is CueAudioFile cfl)
         {
             ctr.ParentFile = cfl;
         }

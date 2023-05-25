@@ -22,7 +22,7 @@ namespace CueSheetNet.FileHandling;
 /// <summary>
 /// Class which takes care of file operations related to the CueSheet passed to the constructor.
 /// </summary>
-public static partial class CueFileHandler
+public static partial class CuePackage
 {
     private static readonly Dictionary<string, string> CommonSynonyms = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -37,12 +37,12 @@ public static partial class CueFileHandler
     /// <summary>
     /// Finds all files related to the CueSheet
     /// </summary>
-    public static IEnumerable<FileInfo> GetAssociatedFiles(CueSheet sheet)
+    public static IEnumerable<ICueFile> GetAssociatedFiles(CueSheet sheet)
     {
         //If there are no files or directory of last file is null, return - no files
-        if (sheet.LastFile is null || sheet.LastFile?.FileInfo?.DirectoryName is null)
+        if (sheet.LastFile is null || sheet.LastFile?.SourceFile?.DirectoryName is null)
         {
-            return Enumerable.Empty<FileInfo>();
+            return Enumerable.Empty<ICueFile>();
         }
         // All variations of base name of cuesheet
         HashSet<string> matchStrings = GetMatchStringHashset(sheet);
@@ -50,7 +50,7 @@ public static partial class CueFileHandler
         //Where the sheet is located
         DirectoryInfo? sheetDir = sheet.SourceFile?.Directory;
         //Where the last audio file is located
-        DirectoryInfo? audioDir = sheet.LastFile.FileInfo.Directory;
+        DirectoryInfo? audioDir = sheet.LastFile.SourceFile.Directory;
         IEnumerable<FileInfo> siblingFiles = audioDir?.EnumerateFiles() ?? Enumerable.Empty<FileInfo>();
 
         // If audio dir and sheet dir are different, concatenate file sequences
@@ -62,7 +62,7 @@ public static partial class CueFileHandler
 
         // Case-insensitive hashset to get only unique filepaths. Should work with case-sensitive filesystems,
         // since what is added is directly enumerated file.
-        HashSet<FileInfo> compareNames = new(PathComparer.Instance);
+        HashSet<CueExtraFile> compareNames = new(PathComparer.Instance);
         foreach (FileInfo file in siblingFiles)
         {
             if (file.Extension.Equals(".cue", StringComparison.OrdinalIgnoreCase)) continue;
@@ -71,13 +71,13 @@ public static partial class CueFileHandler
             {
                 //var ttyu = Sheet.Files.Select(x => x.FileInfo).ToArray();
                 //bool zzz=Comparer.Equals(ttyu[0], file);
-                bool isAudioFile = sheet.Files.Select(x => x.FileInfo).Contains(file, PathComparer.Instance);
+                bool isAudioFile = sheet.Files.Select(x => x.SourceFile).Contains(file, PathComparer.Instance);
                 if (isAudioFile)
                     continue; //Audio files are already associated with the sheet
-                compareNames.Add(file);
+                compareNames.Add(new(file));
             }
         }
-        return compareNames.Cast<FileSystemInfo>().Order(PathComparer.Instance).Cast<FileInfo>();//.Select((file, index) => new IndexedFile(FileType.Additional, index, (FileInfo)file)).ToArray();
+        return compareNames.Order(PathComparer.Instance);//.Select((file, index) => new IndexedFile(FileType.Additional, index, (FileInfo)file)).ToArray();
     }
     /// <summary>
     /// Creates a mover for a clone of the <paramref name="sheet"/>.
@@ -114,7 +114,7 @@ public static partial class CueFileHandler
         if (Sheet.SourceFile is null)
         {
             if (Sheet.LastFile is not null)
-                name = Path.GetFileNameWithoutExtension(Sheet.LastFile.FileInfo.Name);
+                name = Path.GetFileNameWithoutExtension(Sheet.LastFile.SourceFile.Name);
             else
                 name = $"{Sheet.Performer} - {Sheet.Title}";
         }
@@ -189,11 +189,12 @@ public static partial class CueFileHandler
         immediateParentDir.Create(); //If we can't create the directory, IOException happens and we stop without needing to reverse anything.
         return immediateParentDir;
     }
-    private static void SaveModifiedCueSheet(CueSheet sheet, string filename, DirectoryInfo immediateParentDir)
+    private static void SaveModifiedCueSheet(CueSheet sheet, string filename, DirectoryInfo immediateParentDir, CueWriter writer)
     {
         string sheetPath = Path.Join(immediateParentDir.FullName, filename);
         sheetPath = Path.ChangeExtension(sheetPath, "cue");
-        sheet.Save(sheetPath); //If we can't save the sheet there, IOException happens and we stop without needing to reverse anything.
+        writer.SaveCueSheet(sheet, sheetPath);
+        //sheet.Save(sheetPath); //If we can't save the sheet there, IOException happens and we stop without needing to reverse anything.
         Logger.LogInformation("Saved {CueSheet} to {Destination}", sheet, sheetPath);
     }
 
@@ -236,19 +237,19 @@ public static partial class CueFileHandler
         return transFiles;
     }
 
-    private static IEnumerable<TransFile> GetAdditionalTransFiles(IEnumerable<FileInfo> files, string baseFilename)
+    private static IEnumerable<TransFile> GetAdditionalTransFiles(IEnumerable<ICueFile> files, string baseFilename)
     {
         SortedDictionary<string, List<TransFile>> ExtGroups = new(StringComparer.OrdinalIgnoreCase);
-        foreach (FileInfo file in files)
+        foreach (ICueFile file in files)
         {
             TransFile transFile = new(file);
-            if (ExtGroups.TryGetValue(file.Extension, out List<TransFile>? extFiles))
+            if (ExtGroups.TryGetValue(file.SourceFile.Extension, out List<TransFile>? extFiles))
             {
                 extFiles.Add(transFile);
             }
             else
             {
-                ExtGroups[file.Extension] = new List<TransFile> { transFile };
+                ExtGroups[file.SourceFile.Extension] = new List<TransFile> { transFile };
             }
         }
         foreach (var ext in ExtGroups.Keys)
@@ -289,13 +290,13 @@ public static partial class CueFileHandler
         if (sheet.Files.Count == 0) { yield break; }
         if (sheet.Files.Count == 1)
         {
-            TransFile transFile = new(sheet.Files[0].FileInfo) { NewName = filename };
+            TransFile transFile = new(sheet.Files[0]) { NewName = filename };
             yield return transFile;
         }
         else
         {
             int numOfDigits = GetNumberOfDigits(sheet.Files.Count);
-            foreach (CueFile cueFile in sheet.Files)
+            foreach (CueAudioFile cueFile in sheet.Files)
             {
                 string audiofilename = $"{filename} - {GetPaddedNumber(cueFile.Index, numOfDigits)}";// add index if file to filename
                 var trackOfFile = sheet.GetTracksOfFile(cueFile.Index);
@@ -303,7 +304,7 @@ public static partial class CueFileHandler
                 {
                     audiofilename += $" - {trackOfFile[0].Title}";
                 }
-                TransFile currAudio = new(cueFile.FileInfo) { NewName = audiofilename };
+                TransFile currAudio = new(cueFile) { NewName = audiofilename };
                 yield return currAudio;
             }
         }
@@ -327,8 +328,12 @@ public static partial class CueFileHandler
     //private static  Regex PropertyParser()=> throw new NotImplementedException();
     public static void DeleteCueFiles(CueSheet sheet)
     {
-        var audioFiles = sheet.Files.Select(x => x.FileInfo);
-        var allFiles = audioFiles.Concat(sheet.AssociatedFiles).Append(sheet.SourceFile);
+        IEnumerable<ICueFile> audioFiles = sheet.Files.Select(x => x);
+        var allFiles = audioFiles.Concat(sheet.AssociatedFiles).Select(x => x.SourceFile);
+        if (sheet.SourceFile is FileInfo main)
+        {
+            allFiles.Append(main);
+        };
         HashSet<string> h = new(StringComparer.InvariantCulture);
         foreach (var file in allFiles)
         {
@@ -357,7 +362,7 @@ public static partial class CueFileHandler
     ///     <para>Pattern can be a directory structure (slashes are allowed), so this pattern is permitted: %artist%/%year%/%title%/%old%.cue</para>
     /// </param>
     /// <returns>Newly copied cuesheet</returns>
-    public static CueSheet CopyCueFiles(CueSheet sheet, string destinationDirectory, string? pattern = null)
+    public static CueSheet CopyCueFiles(CueSheet sheet, string destinationDirectory, string? pattern = null, CueWriterSettings? settings = null)
     {
         sheet = sheet.Clone();
         // Combine Destination with whatever results from parsing (which may contain more directories)
@@ -372,8 +377,8 @@ public static partial class CueFileHandler
         List<TransFile> transFiles = GetTransFiles(sheet, filename);
 
         CheckForNameCollisions(immediateParentDir, transFiles);
-
-        SaveModifiedCueSheet(sheet, filename, immediateParentDir);
+        CueWriter writer = new(settings ?? new());
+        SaveModifiedCueSheet(sheet, filename, immediateParentDir, writer);
         // At this point we saved a sheet referencing file that do not exist yet
 
         List<FileInfo> inProgressCopied = new();
@@ -409,7 +414,7 @@ public static partial class CueFileHandler
     /// </summary>
     /// <returns>Newly moved sheet</returns>
     /// <inheritdoc cref="CopyCueFiles(CueSheet, string, string?)"/>
-    public static CueSheet MoveCueFiles(CueSheet sheet, string destination, string? pattern = null)
+    public static CueSheet MoveCueFiles(CueSheet sheet, string destination, string? pattern = null, CueWriterSettings? settings = null)
     {
         CueSheet activeSheet = sheet.Clone();
         // Combine Destination with whatever results from parsing (which may contain more directories)
@@ -425,7 +430,8 @@ public static partial class CueFileHandler
 
         CheckForNameCollisions(immediateParentDir, transFiles);
 
-        SaveModifiedCueSheet(activeSheet, filename, immediateParentDir);
+        CueWriter writer = new(settings ?? new());
+        SaveModifiedCueSheet(activeSheet, filename, immediateParentDir, writer);
         // At this point we saved a sheet referencing file that do not exist yetZ
 
         List<TransFile> movedFileArchive = new();
@@ -434,7 +440,7 @@ public static partial class CueFileHandler
             foreach (var item in transFiles)
             {
                 // Before moveing copy the contents of file into memory
-                movedFileArchive.Add(new(item.SourceFile));
+                movedFileArchive.Add(new(item.CueSource));
                 var copied = item.Move(immediateParentDir);
             }
             // All associated file moved
@@ -454,7 +460,7 @@ public static partial class CueFileHandler
         if (sheet.SourceFile is FileInfo x)
         {
             x.Delete();
-            Logger.LogInformation("Deleted original file of {File}",x);
+            Logger.LogInformation("Deleted original file of {File}", x);
         }
         // Sheet of this cuepackage is already updated, no need to change anything
         return activeSheet;

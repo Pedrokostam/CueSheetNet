@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 namespace CueSheetNet.FileHandling;
 
 
-internal partial class PathComparer : EqualityComparer<FileSystemInfo>, IComparer<FileSystemInfo>
+internal partial class PathComparer : EqualityComparer<FileSystemInfo>, IComparer<FileSystemInfo>, IComparer<FileInfo>, IComparer<ICueFile>,IEqualityComparer<ICueFile>
 {
     [GeneratedRegex(@"[\\/]")]
     private static partial Regex Morpher();
@@ -34,4 +34,8 @@ internal partial class PathComparer : EqualityComparer<FileSystemInfo>, ICompare
     public override bool Equals(FileSystemInfo? x, FileSystemInfo? y) => NormalizePath(x?.FullName) == NormalizePath(y?.FullName);
     public override int GetHashCode([DisallowNull] FileSystemInfo obj) => NormalizePath(obj.FullName).GetHashCode();
     public int Compare(FileSystemInfo? x, FileSystemInfo? y) => string.Compare(NormalizePath(x?.FullName), NormalizePath(y?.FullName));
+    public int Compare(FileInfo? x, FileInfo? y) => string.Compare(NormalizePath(x?.FullName), NormalizePath(y?.FullName));
+    public int Compare(ICueFile? x, ICueFile? y) => string.Compare(NormalizePath(x?.SourceFile.FullName), NormalizePath(y?.SourceFile.FullName));
+    public bool Equals(ICueFile? x, ICueFile? y) => NormalizePath(x?.SourceFile.FullName) == NormalizePath(y?.SourceFile.FullName);
+    public int GetHashCode([DisallowNull] ICueFile obj) => NormalizePath(obj.SourceFile.FullName).GetHashCode();
 }

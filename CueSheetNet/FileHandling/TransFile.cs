@@ -11,9 +11,9 @@ public record class TransFile
     private string? newName;
 
     public byte[]? Backup { get; private set; }
-    public FileInfo SourceFile { get; }
+    public ICueFile CueSource { get; }
 
-    public string Extension => SourceFile.Extension;
+    public string Extension => CueSource.SourceFile.Extension;
     /// <summary>
     /// NewName of the file. No extension. If set to null, the old name will be used
     /// </summary>
@@ -23,7 +23,7 @@ public record class TransFile
         get
         {
             if (newName == null)
-                return Path.GetFileNameWithoutExtension(SourceFile.Name);
+                return Path.GetFileNameWithoutExtension(CueSource.SourceFile.Name);
             return newName;
         }
         set
@@ -37,31 +37,31 @@ public record class TransFile
         get
         {
             if (newName == null)
-                return Path.GetFileName(SourceFile.Name);
+                return Path.GetFileName(CueSource.SourceFile.Name);
             return newName + Extension;
         }
     }
     
-    public TransFile(FileInfo source)
+    public TransFile(ICueFile source)
     {
-        SourceFile = source;
+        CueSource = source;
     }
     
     public FileInfo Copy(DirectoryInfo destination)
     {
         string dest = Path.Combine(destination.FullName, NewNameWithExtension);
-        FileInfo res = SourceFile.CopyTo(dest);
-        Logger.LogInformation("Copied file {File} from {Source}", res, SourceFile);
+        FileInfo res = CueSource.SourceFile.CopyTo(dest);
+        Logger.LogInformation("Copied file {File} from {Source}", res, CueSource);
         return res;
     }
     
     public FileInfo Move(DirectoryInfo destination)
     {
-        Backup = File.ReadAllBytes(SourceFile.FullName);
+        Backup = File.ReadAllBytes(CueSource.SourceFile.FullName);
         string dest = Path.Combine(destination.FullName, NewNameWithExtension);
-        SourceFile.MoveTo(dest);
+        CueSource.SourceFile.MoveTo(dest);
         FileInfo res = new(dest);
-        Logger.LogInformation("Moved file {File} from {Source}", res, SourceFile);
+        Logger.LogInformation("Moved file {File} from {Source}", res, CueSource);
         return res;
     }
 
@@ -77,25 +77,25 @@ public record class TransFile
     }
     
     /// <summary>
-    /// Deletes file under <see cref="SourceFile"/>, copying to <see cref="Backup"/> first.
+    /// Deletes file under <see cref="CueSource"/>, copying to <see cref="Backup"/> first.
     /// </summary>
     internal void DeleteSource()
     {
-        Backup = File.ReadAllBytes(SourceFile.FullName);
-        SourceFile.Delete();
-        Logger.LogInformation("Deleted file {File}", SourceFile);
+        Backup = File.ReadAllBytes(CueSource.SourceFile.FullName);
+        CueSource.SourceFile.Delete();
+        Logger.LogInformation("Deleted file {File}", CueSource);
     }
     
     /// <summary>
-    /// Recreates a moved/deleted file from the <see cref="Backup"/>. The restored file will have the path of <see cref="SourceFile"/>
+    /// Recreates a moved/deleted file from the <see cref="Backup"/>. The restored file will have the path of <see cref="CueSource"/>
     /// </summary>
     /// <returns>True if file was restored; false if <see cref="Backup"/> was missing or file under the same name already existed</returns>
     public bool Restore()
     {
         if (Backup is null) return false;
-        if (SourceFile.Exists) return false;
-        File.WriteAllBytes(SourceFile.FullName, Backup);
-        Logger.LogInformation("Restored moved file {File}", SourceFile);
+        if (CueSource.SourceFile.Exists) return false;
+        File.WriteAllBytes(CueSource.SourceFile.FullName, Backup);
+        Logger.LogInformation("Restored moved file {File}", CueSource);
         return true;
     }
 }

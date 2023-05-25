@@ -6,6 +6,9 @@ namespace CueSheetNet;
 public sealed record CueWriterSettings
 {
     public static readonly Encoding DefaultEncoding = new UTF8Encoding(false, true);
+    /// <summary>
+    /// 
+    /// </summary>
     public enum RedundantFieldBehaviors
     {
         KeepAsIs,
@@ -14,13 +17,13 @@ public sealed record CueWriterSettings
     }
 
     /// <summary>
-    /// If true, Every suitable field will be enclosed in quotes, even if it does not contain whitespace
+    /// If true, every suitable field will be enclosed in quotes, even if it does not contain whitespace
     /// </summary>
     public bool ForceQuoting { get; set; } = true;
 
     public InnerQuotation InnerQuotationReplacement { get; set; } = InnerQuotation.CurvedDoubleTopQuotation;
 
-    public Encoding? Encoding { get; set; }
+    public Encoding? Encoding { get; set; } = DefaultEncoding;
 
     public string Newline { get; set; } = Environment.NewLine;
 
@@ -35,7 +38,7 @@ public sealed record CueWriterSettings
         set
         {
             if (!char.IsWhiteSpace(value))
-                throw new ArgumentException($"Indentation character must not be whitespace (is: '{value}' - 0x{(int)value:X})");
+                throw new ArgumentException($"Indentation character must be whitespace (is: '{value}' - 0x{(int)value:X})");
             _indentationCharacter = value;
         }
     }

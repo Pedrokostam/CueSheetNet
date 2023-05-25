@@ -15,8 +15,8 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemarkableCommentabl
     public int Offset { get; internal set; }
     public CueTime PostGap { get; set; }
     public CueTime PreGap { get; set; }
-    private CueFile _ParentFile;
-    public CueFile ParentFile
+    private CueAudioFile _ParentFile;
+    public CueAudioFile ParentFile
     {
         get
         {
@@ -35,7 +35,7 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemarkableCommentabl
     private string? _Title;
     public string Title
     {
-        get => _Title ?? Path.ChangeExtension(ParentFile.FileInfo.Name, null);
+        get => _Title ?? Path.ChangeExtension(ParentFile.SourceFile.Name, null);
         set
         {
             if (string.IsNullOrEmpty(value))
@@ -92,7 +92,7 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemarkableCommentabl
     public CueIndex[] Indexes => ParentSheet.GetIndexesOfTrack(Index);
 
 
-    public CueTrack(CueFile parentFile) : base(parentFile.ParentSheet)
+    public CueTrack(CueAudioFile parentFile) : base(parentFile.ParentSheet)
     {
         _ParentFile = parentFile;
     }
@@ -121,7 +121,7 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemarkableCommentabl
             RawRems.RemoveAt(index);
     }
 
-    internal CueTrack ClonePartial(CueFile newOwner)
+    internal CueTrack ClonePartial(CueAudioFile newOwner)
     {
         CueTrack newTrack = new(newOwner)
         {

@@ -9,21 +9,41 @@ using System.Reflection;
 
 namespace CueSheetNet;
 
-public class CueFile : CueItemBase, IEquatable<CueFile>
+public interface ICueFile
+{
+    FileInfo SourceFile { get; }
+    bool ValidFile { get; }
+}
+public class CueExtraFile : ICueFile
+{
+    public FileInfo SourceFile { get; set; }
+    public bool ValidFile =>SourceFile.Exists;
+    public CueExtraFile(FileInfo source)
+    {
+        SourceFile = source;
+    }
+    public CueExtraFile(string path):this(new FileInfo(path))
+    {
+    }
+    public static implicit operator FileInfo(CueExtraFile file)=>file.SourceFile;
+    public static explicit operator CueExtraFile(FileInfo file)=>new CueExtraFile(file);
+}
+
+public class CueAudioFile : CueItemBase, ICueFile, IEquatable<CueAudioFile>
 {
     private FileSystemWatcher? watcher;
     public const int CdSamplingRate = 44_100;
     public const int CdNumberOfChannels = 2;
     public const int CdBitrate = CdSamplingRate * CdNumberOfChannels * 16;
     public int Index { get; internal set; }
-    public CueFile(CueSheet parent, string filePath, string type) : base(parent)
+    public CueAudioFile(CueSheet parent, string filePath, string type) : base(parent)
     {
         SetFile(filePath);
         Type = type;
     }
-    internal CueFile ClonePartial(CueSheet newOwner)
+    internal CueAudioFile ClonePartial(CueSheet newOwner)
     {
-        return new(newOwner, FileInfo.FullName, Type);
+        return new(newOwner, SourceFile.FullName, Type);
     }
     private string _Type;
     public string Type
@@ -51,6 +71,7 @@ public class CueFile : CueItemBase, IEquatable<CueFile>
         private set => validFile = value;
     }
     private bool NeedsRefresh { get; set; }
+    public long FileSize => SourceFile.Exists ? SourceFile.Length : -1;
 
     private FileInfo _file;
     private bool validFile;
@@ -73,8 +94,7 @@ public class CueFile : CueItemBase, IEquatable<CueFile>
         }
         NeedsRefresh = false;
     }
-    public FileInfo FileInfo => _file;
-    public long FileSize => FileInfo.Exists ? FileInfo.Length : -1;
+    public FileInfo SourceFile => _file;
 
 
     [MemberNotNull(nameof(_file))]
@@ -136,7 +156,7 @@ public class CueFile : CueItemBase, IEquatable<CueFile>
     private void Watcher_Renamed(object sender, RenamedEventArgs e)
     {
         //If new name is different, treat it as deletion
-        if (e.Name != FileInfo.Name)
+        if (e.Name != SourceFile.Name)
         {
             NeedsRefresh = true;
             Debug.WriteLine($"{e.OldName} renamed to {e.Name}");
@@ -160,16 +180,16 @@ public class CueFile : CueItemBase, IEquatable<CueFile>
 
     public override string ToString()
     {
-        return "File " + Index.ToString("D2") + " \"" + FileInfo.FullName + "\" " + Type;
+        return "File " + Index.ToString("D2") + " \"" + SourceFile.FullName + "\" " + Type;
     }
     public void RefreshFileInfo()
     {
-        string name = FileInfo.Name;
+        string name = SourceFile.Name;
         string absPath = Path.Combine(ParentSheet.SourceFile?.DirectoryName ?? ".", name);
         SetFile(absPath);
     }
 
-    public bool Equals(CueFile? other) => Equals(other, StringComparison.CurrentCulture);
+    public bool Equals(CueAudioFile? other) => Equals(other, StringComparison.CurrentCulture);
 
     public string NormalizedPath
     {
@@ -183,7 +203,7 @@ public class CueFile : CueItemBase, IEquatable<CueFile>
         }
     }
 
-    public bool Equals(CueFile? other, StringComparison stringComparison)
+    public bool Equals(CueAudioFile? other, StringComparison stringComparison)
     {
         if (ReferenceEquals(this, other)) return true;
         if (other == null) return false;
@@ -195,9 +215,9 @@ public class CueFile : CueItemBase, IEquatable<CueFile>
 
     public override bool Equals(object? obj)
     {
-        return Equals(obj as CueFile);
+        return Equals(obj as CueAudioFile);
     }
-
+    static public implicit operator FileInfo(CueAudioFile file) => file.SourceFile;
     public override int GetHashCode() => HashCode.Combine(NormalizedPath, Index);
 }
 
