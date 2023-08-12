@@ -3,6 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using CueSheetNet.FileHandling;
 using CueSheetNet.Internal;
 using CueSheetNet.Logging;
 using CueSheetNet.Syntax;
@@ -15,13 +16,13 @@ public sealed class CueWriter
     readonly StringBuilder Builder = new();
     public CueWriterSettings Settings { get; set; } = new CueWriterSettings();
 
-    public CueWriter()
+    public CueWriter() : this(null)
+    {
+    }
+    public CueWriter(CueWriterSettings? settings)
     {
         Logger.LogDebug("CueWriter created");
-    }
-    public CueWriter(CueWriterSettings settings)
-    {
-        Settings = settings;
+        Settings = settings ?? new();
     }
     private bool HasWhitespace(string? val)
     {
@@ -262,5 +263,11 @@ public sealed class CueWriter
     {
         sheet.SetCuePath(newDestination);
         SaveCueSheet(sheet);
+    }
+    public void SaveCueSheet(CueSheet sheet, string destination, string? pattern)
+    {
+        string patternParsed = CuePackage.ParseFormatPattern(sheet, pattern);
+        string destinationWithPattern = Path.Combine(destination, patternParsed);
+        SaveCueSheet(sheet, destinationWithPattern);
     }
 }

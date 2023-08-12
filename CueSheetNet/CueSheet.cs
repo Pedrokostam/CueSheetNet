@@ -134,7 +134,9 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
 
     private List<ICueFile> _associatedFiles { get; } = new ();
     public ReadOnlyCollection<ICueFile> AssociatedFiles => _associatedFiles.AsReadOnly();
+
     #endregion
+    
 
     #region Index
     internal ReadOnlyCollection<CueIndexImpl> IndexesImpl => Container.Indexes.AsReadOnly();
@@ -209,17 +211,23 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
     /// <para/>File is saved using default <see cref="CueWriterSettings"/>. To use different settings use <see cref="CueWriter"/>
     /// <para/>Does not do anything with <see cref="CueAudioFile" />s of the Cuesheet, or other associated files (use <see cref="CopyFiles(string, string?)"/> or <see cref="MoveFiles(string, string?)"/> for that).
     /// </summary>
-    public void Save()
+    public void Save()=>Save(null);
+    public void Save(CueWriterSettings? settings)
     {
+
         //if (directory is not null)
         ArgumentNullException.ThrowIfNull(SourceFile);
-        CueWriter writer = new();
+        CueWriter writer = new(settings);
         writer.SaveCueSheet(this);
     }
+    public CueSheet CopyPackage(string destination, string? pattern) => CopyPackage(destination, pattern, null);
+    public CueSheet CopyPackage(string destination, string? pattern, CueWriterSettings? settings) => CuePackage.CopyPackage(this, destination, pattern, settings);
+    public CueSheet MovePackage(string destination, string? pattern) => MovePackage(destination, pattern, null);
+    public CueSheet MovePackage(string destination, string? pattern, CueWriterSettings? settings) => CuePackage.MovePackage(this, destination, pattern, settings);
+    public void RemovePackage() => CuePackage.RemovePackage(this);
     #endregion
     private CueContainer Container { get; }
     private FileInfo? _CdTextFile;
-    private FileInfo? _sourceFile;
 
 
 
@@ -253,7 +261,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
         }
     }
 
-    public FileInfo? SourceFile => _sourceFile;
+    public FileInfo? SourceFile { get; private set; }
     public ReadOnlyCollection<CueAudioFile> Files => Container.Files.AsReadOnly();
     public string? Performer { get; set; }
     public CueType SheetType { get; internal set; }
@@ -362,13 +370,13 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
             _CdTextFile = new FileInfo(absPath);
         }
     }
-    public void SetCuePath(string? value)
+    internal void SetCuePath(string? value)
     {
         if (value == null)
-            _sourceFile = null;
+            SourceFile = null;
         else
         {
-            _sourceFile = new FileInfo(value);
+            SourceFile = new FileInfo(value);
         }
         RefreshFiles();
     }
@@ -498,16 +506,16 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
     /// <inheritdoc cref="CuePackage.CopyCueFiles(CueSheet, string, string?)"/>
     public CueSheet CopyFiles(string destination, string? pattern)
     {
-        return CuePackage.CopyCueFiles(this, destination, pattern);
+        return CuePackage.CopyPackage(this, destination, pattern);
     }
     /// <inheritdoc cref="CuePackage.MoveCueFiles(CueSheet, string, string?)"/>
     public CueSheet MoveFiles(string destination, string? pattern)
     {
-        return CuePackage.MoveCueFiles(this, destination, pattern);
+        return CuePackage.MovePackage(this, destination, pattern);
     }
     public void DeleteFiles()
     {
-        CuePackage.DeleteCueFiles(this);
+        CuePackage.RemovePackage(this);
     }
     internal string DefaultFilename
     {

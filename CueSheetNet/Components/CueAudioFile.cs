@@ -5,28 +5,41 @@ using CueSheetNet.Logging;
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Reflection;
+using static System.Net.WebRequestMethods;
 
 namespace CueSheetNet;
+
 
 public interface ICueFile
 {
     FileInfo SourceFile { get; }
     bool ValidFile { get; }
+    long Length();
+    bool Exists();
+    void Remove();
+    bool Copy(string destination);
+
 }
 public class CueExtraFile : ICueFile
 {
     public FileInfo SourceFile { get; set; }
-    public bool ValidFile =>SourceFile.Exists;
+    public bool ValidFile => SourceFile.Exists;
     public CueExtraFile(FileInfo source)
     {
         SourceFile = source;
     }
-    public CueExtraFile(string path):this(new FileInfo(path))
+    public CueExtraFile(string path) : this(new FileInfo(path))
     {
     }
-    public static implicit operator FileInfo(CueExtraFile file)=>file.SourceFile;
-    public static explicit operator CueExtraFile(FileInfo file)=>new CueExtraFile(file);
+    public static implicit operator FileInfo(CueExtraFile file) => file.SourceFile;
+    public static explicit operator CueExtraFile(FileInfo file) => new CueExtraFile(file);
+
+    public long Length() => throw new NotImplementedException();
+    public bool Exists() => throw new NotImplementedException();
+    public void Remove() => throw new NotImplementedException();
+    public bool Copy(string destination) => throw new NotImplementedException();
 }
 
 public class CueAudioFile : CueItemBase, ICueFile, IEquatable<CueAudioFile>
@@ -206,12 +219,13 @@ public class CueAudioFile : CueItemBase, ICueFile, IEquatable<CueAudioFile>
     public bool Equals(CueAudioFile? other, StringComparison stringComparison)
     {
         if (ReferenceEquals(this, other)) return true;
-        if (other == null) return false;
+        if (other is null) return false;
         if (NormalizedPath != other.NormalizedPath) return false;
         if (Type != other.Type) return false;
         if (Index != other.Index) return false;
         return true;
     }
+
 
     public override bool Equals(object? obj)
     {
@@ -219,5 +233,10 @@ public class CueAudioFile : CueItemBase, ICueFile, IEquatable<CueAudioFile>
     }
     static public implicit operator FileInfo(CueAudioFile file) => file.SourceFile;
     public override int GetHashCode() => HashCode.Combine(NormalizedPath, Index);
+    public long Length() => _file.Length;
+    public bool Exists() => _file.Exists;
+    public void Remove() => _file.Delete();
+
+    public bool Copy(string destination) => throw new NotImplementedException();
 }
 

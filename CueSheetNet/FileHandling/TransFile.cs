@@ -9,7 +9,7 @@ namespace CueSheetNet.FileHandling;
 public record class TransFile
 {
     private string? newName;
-
+    public string? Subfolder { get; init; }
     public byte[]? Backup { get; private set; }
     public ICueFile CueSource { get; }
 
@@ -31,7 +31,7 @@ public record class TransFile
             newName = value;
         }
     }
-    
+
     public string NewNameWithExtension
     {
         get
@@ -41,21 +41,21 @@ public record class TransFile
             return newName + Extension;
         }
     }
-    
+
     public TransFile(ICueFile source)
     {
         CueSource = source;
     }
-    
-    public FileInfo Copy(DirectoryInfo destination)
+
+    public virtual FileInfo Copy(DirectoryInfo destination)
     {
         string dest = Path.Combine(destination.FullName, NewNameWithExtension);
         FileInfo res = CueSource.SourceFile.CopyTo(dest);
         Logger.LogInformation("Copied file {File} from {Source}", res, CueSource);
         return res;
     }
-    
-    public FileInfo Move(DirectoryInfo destination)
+
+    public virtual FileInfo Move(DirectoryInfo destination)
     {
         Backup = File.ReadAllBytes(CueSource.SourceFile.FullName);
         string dest = Path.Combine(destination.FullName, NewNameWithExtension);
@@ -75,7 +75,7 @@ public record class TransFile
         string checker = Path.Join(directory.FullName, NewNameWithExtension);
         return Path.Exists(checker);
     }
-    
+
     /// <summary>
     /// Deletes file under <see cref="CueSource"/>, copying to <see cref="Backup"/> first.
     /// </summary>
@@ -85,17 +85,45 @@ public record class TransFile
         CueSource.SourceFile.Delete();
         Logger.LogInformation("Deleted file {File}", CueSource);
     }
-    
+
     /// <summary>
     /// Recreates a moved/deleted file from the <see cref="Backup"/>. The restored file will have the path of <see cref="CueSource"/>
     /// </summary>
     /// <returns>True if file was restored; false if <see cref="Backup"/> was missing or file under the same name already existed</returns>
-    public bool Restore()
+    public virtual bool Restore()
     {
         if (Backup is null) return false;
         if (CueSource.SourceFile.Exists) return false;
         File.WriteAllBytes(CueSource.SourceFile.FullName, Backup);
         Logger.LogInformation("Restored moved file {File}", CueSource);
         return true;
+    }
+}
+
+public record class TransAudioFile : TransFile
+{
+    public int FileIndex { get; }
+    public CueSheet ParentSheet { get; }
+    public TransAudioFile(CueSheet sheet, int index) : base(sheet.Files[index])
+    {
+        ParentSheet = sheet;
+        FileIndex = index;
+    }
+    public override FileInfo Copy(DirectoryInfo destination)
+    {
+        var f = base.Copy(destination);
+        ParentSheet.ChangeFile(FileIndex, NewNameWithExtension);
+        return f;
+    }
+    public override FileInfo Move(DirectoryInfo destination)
+    {
+        var f = base.Move(destination);
+        ParentSheet.ChangeFile(FileIndex, NewNameWithExtension);
+        return f;
+    }
+    public override bool Restore()
+    {
+        var b = base.Restore();
+        ParentSheet.ChangeFile(FileIndex,)
     }
 }

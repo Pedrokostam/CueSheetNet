@@ -125,6 +125,8 @@ public static partial class CuePackage
 
         return name;
     }
+    [GeneratedRegex(@"%(?<property>[\w\s]+)%")]
+    private static partial Regex PropertyParser();
     /// <summary>
     /// Parse the format for output filepath. E.g. %Artist%/%DATE%/%Album% can result in
     /// ./Artist/2001/Album.
@@ -137,7 +139,7 @@ public static partial class CuePackage
     /// <para/>If parameter is null, the original filename will be used
     /// <para/>If parameter is null and the sheet has not filename yet, the following pattern will be used: "{Performer} - {Title}"
     /// </param>
-    public static string ParseTreeFormat(CueSheet sheet, string? treeFormat)
+    public static string ParseFormatPattern(CueSheet sheet, string? treeFormat)
     {
         if (treeFormat == null)
             return Path.GetFileNameWithoutExtension(sheet.SourceFile?.Name) ?? sheet.DefaultFilename;
@@ -237,15 +239,18 @@ public static partial class CuePackage
         return transFiles;
     }
 
-    private static IEnumerable<TransFile> GetAdditionalTransFiles(IEnumerable<ICueFile> files, string baseFilename)
+    private static IEnumerable<TransFile> GetAdditionalTransFiles(IEnumerable<ICueFile> files, string baseFilename,string cueFolder)
     {
+
         SortedDictionary<string, List<TransFile>> ExtGroups = new(StringComparer.OrdinalIgnoreCase);
         foreach (ICueFile file in files)
         {
+            string subfolder = Path.GetRelativePath(cueFolder, file.SourceFile.FullName);
             TransFile transFile = new(file);
             if (ExtGroups.TryGetValue(file.SourceFile.Extension, out List<TransFile>? extFiles))
             {
                 extFiles.Add(transFile);
+
             }
             else
             {
@@ -323,10 +328,9 @@ public static partial class CuePackage
         return destination;
     }
 
-    [GeneratedRegex(@"%(?<property>[\w\s]+)%")]
-    private static partial Regex PropertyParser();
+    
     //private static  Regex PropertyParser()=> throw new NotImplementedException();
-    public static void DeleteCueFiles(CueSheet sheet)
+    public static void RemovePackage(CueSheet sheet)
     {
         IEnumerable<ICueFile> audioFiles = sheet.Files.Select(x => x);
         var allFiles = audioFiles.Concat(sheet.AssociatedFiles).Select(x => x.SourceFile);
@@ -362,11 +366,12 @@ public static partial class CuePackage
     ///     <para>Pattern can be a directory structure (slashes are allowed), so this pattern is permitted: %artist%/%year%/%title%/%old%.cue</para>
     /// </param>
     /// <returns>Newly copied cuesheet</returns>
-    public static CueSheet CopyCueFiles(CueSheet sheet, string destinationDirectory, string? pattern = null, CueWriterSettings? settings = null)
+    public static CueSheet CopyPackage(CueSheet sheet, string destinationDirectory, string? pattern = null, CueWriterSettings? settings = null)
     {
         sheet = sheet.Clone();
         // Combine Destination with whatever results from parsing (which may contain more directories)
-        string destinationWithPattern = Path.Combine(destinationDirectory, ParseTreeFormat(sheet, pattern));
+        string patternParsed = ParseFormatPattern(sheet, pattern);
+        string destinationWithPattern = Path.Combine(destinationDirectory, patternParsed);
         //If we can't create the directory, IOException happens and we stop without needing to reverse anything.
         DirectoryInfo immediateParentDir = GetImmediateParentDir(destinationWithPattern);
         // Now the destinationDirectory is refreshed to the second to last element
@@ -414,11 +419,11 @@ public static partial class CuePackage
     /// </summary>
     /// <returns>Newly moved sheet</returns>
     /// <inheritdoc cref="CopyCueFiles(CueSheet, string, string?)"/>
-    public static CueSheet MoveCueFiles(CueSheet sheet, string destination, string? pattern = null, CueWriterSettings? settings = null)
+    public static CueSheet MovePackage(CueSheet sheet, string destination, string? pattern = null, CueWriterSettings? settings = null)
     {
         CueSheet activeSheet = sheet.Clone();
         // Combine Destination with whatever results from parsing (which may contain more directories)
-        string destinationWithPattern = Path.Combine(destination, ParseTreeFormat(activeSheet, pattern));
+        string destinationWithPattern = Path.Combine(destination, ParseFormatPattern(activeSheet, pattern));
         //If we can't create the directory, IOException happens and we stop without needing to reverse anything.
         DirectoryInfo immediateParentDir = GetImmediateParentDir(destinationWithPattern);
         // Now the destinationDirectory is refreshed to the second to last element
@@ -464,5 +469,10 @@ public static partial class CuePackage
         }
         // Sheet of this cuepackage is already updated, no need to change anything
         return activeSheet;
+    }
+
+    public static CueSheet Convert(CueSheet cueSheet, IAudioConverter converter,string destination, string? pattern = null)
+    {
+        converter.Convert();
     }
 }
