@@ -24,6 +24,11 @@ namespace CueSheetNet.FileHandling;
 /// </summary>
 public static partial class CuePackage
 {
+    private const BindingFlags PropertyBindingFlags = BindingFlags.IgnoreCase | BindingFlags.Instance | BindingFlags.Public;
+
+    /// <summary>
+    /// Mapping of commonly used names for some of Cue properties to said properties. Case-insensitive Dictionary
+    /// </summary>
     private static readonly Dictionary<string, string> CommonSynonyms = new(StringComparer.OrdinalIgnoreCase)
     {
         {"ARTIST","Performer" },
@@ -148,7 +153,7 @@ public static partial class CuePackage
         foreach (Match match in matches.Cast<Match>())
         {
             string val = match.Value;
-            string groupVal = match.Groups["property"].Value.Replace(" ", "");// No properties contain space in the name, so we remove them
+            string groupVal = match.Groups["property"].Value.Replace(" ", ""); // No properties contain space in the name, so we remove them
             if (CommonSynonyms.TryGetValue(groupVal, out string? syn))
             {
                 groupVal = syn;
@@ -159,9 +164,7 @@ public static partial class CuePackage
                 treeFormat = treeFormat.Replace(val, Path.GetFileNameWithoutExtension(sheet.SourceFile!.Name));
                 continue;
             }
-            // Flag for case ignoring is set
-            var flags = BindingFlags.IgnoreCase | BindingFlags.Instance | BindingFlags.Public;
-            PropertyInfo? prop = sheet.GetType().GetProperty(groupVal, flags);
+            PropertyInfo? prop = sheet.GetType().GetProperty(groupVal, PropertyBindingFlags); // case-insensitive search
             object? value = prop?.GetValue(sheet);
             if (value is null)
             {
@@ -171,12 +174,9 @@ public static partial class CuePackage
             }
             treeFormat = treeFormat.Replace(val, value.ToString());
         }
-        //replace all invalid patrh chars with underscore
+        //replace all invalid path chars with underscore
         return PathStringNormalization.RemoveInvalidPathCharacters(treeFormat);
     }
-    //public CueSheet MoveFiles(string destinationDirectory, string? name = null) => CopyFiles(true, destinationDirectory, name);
-    //public CueSheet CopyFiles(string destinationDirectory, string? name = null) => CopyFiles(false, destinationDirectory, name);
-
 
     /// <summary>
     /// Gets parent directory path of <paramref name="destinationWithPattern"/>, creates the directory on the disk and return its <see cref="DirectoryInfo"/>
@@ -195,8 +195,7 @@ public static partial class CuePackage
     {
         string sheetPath = Path.Join(immediateParentDir.FullName, filename);
         sheetPath = Path.ChangeExtension(sheetPath, "cue");
-        writer.SaveCueSheet(sheet, sheetPath);
-        //sheet.Save(sheetPath); //If we can't save the sheet there, IOException happens and we stop without needing to reverse anything.
+        writer.SaveCueSheet(sheet, sheetPath);//If we can't save the sheet there, IOException happens and we stop without needing to reverse anything.
         Logger.LogInformation("Saved {CueSheet} to {Destination}", sheet, sheetPath);
     }
 
@@ -239,7 +238,7 @@ public static partial class CuePackage
         return transFiles;
     }
 
-    private static IEnumerable<TransFile> GetAdditionalTransFiles(IEnumerable<ICueFile> files, string baseFilename,string cueFolder)
+    private static IEnumerable<TransFile> GetAdditionalTransFiles(IEnumerable<ICueFile> files, string baseFilename, string cueFolder)
     {
 
         SortedDictionary<string, List<TransFile>> ExtGroups = new(StringComparer.OrdinalIgnoreCase);
@@ -282,11 +281,22 @@ public static partial class CuePackage
                                              select list;
         return additionals;
     }
-
+    /// <summary>
+    /// Gets the number of digits (in base 10) needed to represent the number
+    /// </summary>
+    /// <param name="maxCount"></param>
+    /// <returns>How many digits the number takes in base 10</returns>
     private static int GetNumberOfDigits(int maxCount) => (int)Math.Log10(maxCount) + 1;
+    /// <summary>
+    /// Converts number to string with the specified width
+    /// </summary>
+    /// <param name="number"></param>
+    /// <param name="digitCount"></param>
+    /// <returns></returns>
     private static string GetPaddedNumber(int number, int digitCount)
     {
-        return number.ToString($"d{digitCount}");
+        return number.ToString().PadRight(digitCount, '0');
+        // apparently fewer JIT instruction than creating dynamic formatting string -- x.ToString($"d{w}")
     }
 
     private static IEnumerable<TransFile> GetAudioTransFiles(CueSheet sheet, string filename)
@@ -314,21 +324,30 @@ public static partial class CuePackage
             }
         }
     }
+    /// <summary>
+    /// Returns the filename from the path, without the last extension. If the string is null, throws an exception.
+    /// </summary>
+    /// <param name="path"></param>
+    /// <returns>Non-null filename</returns>
     private static string GetNotNullName(string? path)
     {
         string? name = Path.GetFileNameWithoutExtension(path);
         ArgumentException.ThrowIfNullOrEmpty(name);
         return name;
     }
-
-    private static string GetNotNullDestination(string path)
+    /// <summary>
+    /// Returns the directory name of the parent of the path. If the string is null, throws an exception.
+    /// </summary>
+    /// <param name="path"></param>
+    /// <returns>Non-null directory name</returns>
+    private static string GetNotNullDestination(string? path)
     {
         string destination = Path.GetDirectoryName(path)!;
         ArgumentException.ThrowIfNullOrEmpty(destination);
         return destination;
     }
 
-    
+
     //private static  Regex PropertyParser()=> throw new NotImplementedException();
     public static void RemovePackage(CueSheet sheet)
     {
@@ -471,7 +490,7 @@ public static partial class CuePackage
         return activeSheet;
     }
 
-    public static CueSheet Convert(CueSheet cueSheet, IAudioConverter converter,string destination, string? pattern = null)
+    public static CueSheet Convert(CueSheet cueSheet, IAudioConverter converter, string destination, string? pattern = null)
     {
         converter.Convert();
     }
