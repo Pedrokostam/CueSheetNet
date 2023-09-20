@@ -50,6 +50,7 @@ public partial class CueReader
     /// <returns>Parsed <see cref="CueSheet"/></returns>
     public CueSheet ParseCueSheet(string cuePath,Encoding? encoding)
     {
+        var t = Path.GetFullPath(cuePath);
         Reset(encoding);
         if (!File.Exists(cuePath))
         {
@@ -61,8 +62,7 @@ public partial class CueReader
         if (!File.Exists(cuePath)) throw new FileNotFoundException($"{cuePath} does not exist");
         byte[] cueFileBytes = File.ReadAllBytes(cuePath);
         using MemoryStream fs = new(cueFileBytes, false);
-        CueSheet cue = ParseCueSheet_Impl(fs);
-        cue.SetCuePath(cuePath);
+        CueSheet cue = ParseCueSheet_Impl(fs,cuePath);
         return cue;
     }
     /// <summary>Parsing CueSheet from: {Source}</summary>
@@ -85,7 +85,7 @@ public partial class CueReader
         Source = new CueSource(cueFileBytes);
         LogParseSource();
         using MemoryStream fs = new(cueFileBytes, false);
-        return ParseCueSheet_Impl(fs);
+        return ParseCueSheet_Impl(fs,null);
     }
     /// <summary>
     /// Parses string as CueSheet. 
@@ -111,10 +111,10 @@ public partial class CueReader
         return ParseCueSheetFromStringContent(new string(cueContentChars));
     }
 
-    private CueSheet ParseCueSheet_Impl(Stream fs)
+    private CueSheet ParseCueSheet_Impl(Stream fs,string? path)
     {
         LogParseStart();
-        Sheet = new();
+        Sheet = new(path);
         if (Encoding is null)
         {
             Stopwatch st = Stopwatch.StartNew();

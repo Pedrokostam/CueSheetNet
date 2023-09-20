@@ -132,11 +132,11 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
     public CueAudioFile AddFile(string path, string type) => Container.AddFile(path, type);
     public CueAudioFile? LastFile => Container.Files.LastOrDefault();
 
-    private List<ICueFile> _associatedFiles { get; } = new ();
+    private List<ICueFile> _associatedFiles { get; } = new();
     public ReadOnlyCollection<ICueFile> AssociatedFiles => _associatedFiles.AsReadOnly();
 
     #endregion
-    
+
 
     #region Index
     internal ReadOnlyCollection<CueIndexImpl> IndexesImpl => Container.Indexes.AsReadOnly();
@@ -211,7 +211,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
     /// <para/>File is saved using default <see cref="CueWriterSettings"/>. To use different settings use <see cref="CueWriter"/>
     /// <para/>Does not do anything with <see cref="CueAudioFile" />s of the Cuesheet, or other associated files (use <see cref="CopyFiles(string, string?)"/> or <see cref="MoveFiles(string, string?)"/> for that).
     /// </summary>
-    public void Save()=>Save(null);
+    public void Save() => Save(null);
     public void Save(CueWriterSettings? settings)
     {
 

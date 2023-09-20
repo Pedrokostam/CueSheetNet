@@ -5,13 +5,13 @@ using System.Text.RegularExpressions;
 namespace CueSheetNet.FileHandling;
 
 
-internal partial class PathComparer : EqualityComparer<FileSystemInfo>, IComparer<FileSystemInfo>, IComparer<FileInfo>, IComparer<ICueFile>,IEqualityComparer<ICueFile>
+internal partial class PathComparer : EqualityComparer<FileSystemInfo>, IComparer<FileSystemInfo>, IComparer<FileInfo>, IComparer<ICueFile>, IEqualityComparer<ICueFile>
 {
     [GeneratedRegex(@"[\\/]")]
     private static partial Regex Morpher();
     [GeneratedRegex(@"[\\/]+$")]
     private static partial Regex Trimmer();
-    private static readonly string Separator = Path.DirectorySeparatorChar.ToString();
+    private static readonly string _separator = Path.DirectorySeparatorChar.ToString();
     static public readonly PathComparer Instance = new();
 
     [return: NotNullIfNotNull(nameof(file))]
@@ -27,15 +27,53 @@ internal partial class PathComparer : EqualityComparer<FileSystemInfo>, ICompare
     {
         if (path is null) return null;
         //path = PathStringNormalization.NormalizeString(path);
-        string norm = Morpher().Replace(path, Separator)
-            .ToUpperInvariant();
+        string norm = Morpher().Replace(path, _separator);
         return Trimmer().Replace(norm, string.Empty);
     }
-    public override bool Equals(FileSystemInfo? x, FileSystemInfo? y) => NormalizePath(x?.FullName) == NormalizePath(y?.FullName);
-    public override int GetHashCode([DisallowNull] FileSystemInfo obj) => NormalizePath(obj.FullName).GetHashCode();
-    public int Compare(FileSystemInfo? x, FileSystemInfo? y) => string.Compare(NormalizePath(x?.FullName), NormalizePath(y?.FullName));
-    public int Compare(FileInfo? x, FileInfo? y) => string.Compare(NormalizePath(x?.FullName), NormalizePath(y?.FullName));
-    public int Compare(ICueFile? x, ICueFile? y) => string.Compare(NormalizePath(x?.SourceFile.FullName), NormalizePath(y?.SourceFile.FullName));
-    public bool Equals(ICueFile? x, ICueFile? y) => NormalizePath(x?.SourceFile.FullName) == NormalizePath(y?.SourceFile.FullName);
-    public int GetHashCode([DisallowNull] ICueFile obj) => NormalizePath(obj.SourceFile.FullName).GetHashCode();
+    public override bool Equals(FileSystemInfo? x, FileSystemInfo? y)
+    {
+        return StringComparer.OrdinalIgnoreCase.Equals(
+            NormalizePath(x?.FullName),
+            NormalizePath(y?.FullName));
+    }
+
+    public override int GetHashCode([DisallowNull] FileSystemInfo obj)
+    {
+        return NormalizePath(obj.FullName)
+            .GetHashCode(StringComparison.OrdinalIgnoreCase);
+    }
+
+    public int Compare(FileSystemInfo? x, FileSystemInfo? y)
+    {
+        return StringComparer.OrdinalIgnoreCase.Compare(
+            NormalizePath(x?.FullName),
+            NormalizePath(y?.FullName));
+    }
+
+    public int Compare(FileInfo? x, FileInfo? y)
+    {
+        return StringComparer.OrdinalIgnoreCase.Compare(
+            NormalizePath(x?.FullName),
+            NormalizePath(y?.FullName));
+    }
+
+    public int Compare(ICueFile? x, ICueFile? y)
+    {
+        return StringComparer.OrdinalIgnoreCase.Compare(
+            NormalizePath(x?.SourceFile.FullName),
+            NormalizePath(y?.SourceFile.FullName));
+    }
+
+    public bool Equals(ICueFile? x, ICueFile? y)
+    {
+        return StringComparer.OrdinalIgnoreCase.Equals(
+            NormalizePath(x?.SourceFile.FullName),
+            NormalizePath(y?.SourceFile.FullName));
+    }
+
+    public int GetHashCode([DisallowNull] ICueFile obj)
+    {
+        return NormalizePath(obj.SourceFile.FullName)
+            .GetHashCode(StringComparison.OrdinalIgnoreCase);
+    }
 }

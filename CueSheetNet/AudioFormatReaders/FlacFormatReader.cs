@@ -52,15 +52,15 @@ internal class FlacFormatReader : IFileFormatReader
         stream.Seek(18, SeekOrigin.Begin);
         if (stream.Read(bytes) != 8)
             throw new InvalidFileFormatException("FLAC file cut short");
-
+        // SHIFT OPERATORS ARE DONE AFTER ADDING!!!
         // ________ ____0000 00001111 11112222
         int samples = (bytes[0] << 12)//12 insted of 16, because it spans only 2.5 bytes (20 bits)
                       + (bytes[1] << 4)
                       + (bytes[2] >> 4);
         // ________ ________ ____3333 44444444
         int numChannels = (bytes[2] & 0b00001110);
-        int bitsPerSample = (bytes[2] & 0b00000001) <<4 + (bytes[3] >> 4);
-        int totalSample_24 = (bytes[3] & 0x0F) << 16 + bytes[4];
+        int bitsPerSample = ((bytes[2] & 0b00000001) << 4) + (bytes[3] >> 4) + 1;
+        int totalSample_24 = ((bytes[3] & 0x0F) << 16) + bytes[4];
         // ________ 55555555 66666666 77777777
         int totalSample_0 = (bytes[5] << 16)
                            + (bytes[6] << 8)
@@ -69,7 +69,7 @@ internal class FlacFormatReader : IFileFormatReader
         var totalSamples = (ulong)totalSample_0 + ((ulong)totalSample_24 << 24);
         metadata = new()
         {
-            Size=stream.Length,
+            Size = stream.Length,
             Duration = TimeSpan.FromSeconds((double)totalSamples / samples),
             SampleRate = samples,
             Channels = numChannels,
