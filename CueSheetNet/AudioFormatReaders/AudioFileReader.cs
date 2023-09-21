@@ -9,12 +9,19 @@ static public class AudioFileReader
 {
     static AudioFileReader()
     {
-        var flac = new FlacFormatReader();
-        var wave = new WaveFormatReader();
-        FileReaders.Add(flac);
-        FileReaders.Add(wave);
+        BaseFileReaders = new IFileFormatReader[]
+        {
+            new FlacFormatReader(),
+            new WaveFormatReader(),
+            new Mp3FormatReader(),
+            new OggFormatReader(),
+            new WmaFormatReader()
+        };
+        FileReaders = new List<IFileFormatReader>(BaseFileReaders);
     }
-    static readonly List<IFileFormatReader> FileReaders = new();
+    static readonly IFileFormatReader[] BaseFileReaders; 
+    
+    static readonly List<IFileFormatReader> FileReaders;
     public static void AddFileReader(IFileFormatReader reader)
     {
         FileReaders.Add(reader);
@@ -24,6 +31,7 @@ static public class AudioFileReader
     {
         Logger.Log(LogLevel.Debug, $"Reset file readers list to base state", nameof(AudioFileReader), "");
         FileReaders.Clear();
+        FileReaders.AddRange(BaseFileReaders);
     }
     static public FileMetadata? ParseDuration(string filePath)
     {

@@ -28,7 +28,7 @@ public class DummyReader : IFileFormatReader
     public bool ExtensionMatches(string fileName) => true;
     public bool ReadMetadata(Stream stream, out FileMetadata metadata)
     {
-        metadata = new();
+        metadata =default;
         return false;
     }
 }

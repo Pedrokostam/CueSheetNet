@@ -1,4 +1,6 @@
-﻿using System;
+﻿using ATL;
+using ATL.AudioData;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
@@ -10,8 +12,7 @@ internal class OggFormatReader : IFileFormatReader
 {
     private readonly string[] extensions = new string[] { ".OGG", ".OGX", ".SPX" };
     private readonly string formatName = "Ogg";
-    private readonly byte[] OggS = new byte[] { 0x4f, 0x67, 0x67, 0x53 };
-    private readonly byte[] WAVE = new byte[] { 0x57, 0x41, 0x56, 0x45 };
+    //private readonly byte[] OggS = new byte[] { 0x4f, 0x67, 0x67, 0x53 };
     public string FormatName => formatName;
     public string[] Extensions => extensions;
     public bool ExtensionMatches(string fileName)
@@ -19,6 +20,26 @@ internal class OggFormatReader : IFileFormatReader
         string ext = Path.GetExtension(fileName);
         return extensions.Contains(ext, StringComparer.OrdinalIgnoreCase);
     }
-
-    public bool ReadMetadata(Stream stream, out FileMetadata metadata) => throw new NotImplementedException();
+    public bool ReadMetadata(Stream stream, out FileMetadata metadata)
+    {
+        try
+        {
+            var tr = new Track(stream, "audio/ogg");
+            metadata = new FileMetadata(
+                0,
+                TimeSpan.FromMilliseconds(tr.DurationMs),
+                (int)tr.SampleRate,
+                tr.ChannelsArrangement.NbChannels,
+                tr.BitDepth,
+                tr.CodecFamily == AudioDataIOFactory.CF_LOSSY,
+                FormatName
+                );
+            return true;
+        }
+        catch (Exception)
+        {
+            metadata = default;
+            return false;
+        }
+    }
 }
