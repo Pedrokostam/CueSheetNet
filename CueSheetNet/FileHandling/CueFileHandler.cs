@@ -1,5 +1,6 @@
 ﻿using CueSheetNet.Logging;
 using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -18,14 +19,50 @@ public static partial class CuePackage
     /// </summary>
     private static readonly Dictionary<string, string> _commonSynonyms = new(StringComparer.OrdinalIgnoreCase)
     {
-        {"ARTIST","Performer" },
-        {"ALBUMARTIST","Performer" },
-        {"YEAR","Date" },
-        {"ALBUM","Title" },
-        {"ALBUMTITLE","Title" },
-        {"ALBUMNAME","Title" },
-        {"CURRENT","old" },
+        {"Artis","Performer" },
+        {"AlbumArtist","Performer" },
+        {"Year","Date" },
+        {"Album","Title" },
+        {"AlbumTitle","Title" },
+        {"AlbumName","Title" },
+        {"Current","Old" },
     };
+    private static readonly HashSet<Type?> AllowedTypes =new()
+    {
+        typeof(int),
+        typeof(int?),
+        typeof(string),
+        typeof(Encoding),
+        typeof(CueTime),
+        typeof(CueTime?),
+        typeof(float),
+        typeof(double),
+    };
+    public static string[] GetAvailableProperties()
+    {
+        var properties = typeof(CueSheet).GetProperties(_propertyBindingFlags);
+        List<string> props = new();
+
+        foreach (var pr in properties)
+        {
+            if (!AllowedTypes.Contains(pr.PropertyType))
+            {
+                continue;
+            }
+            var synos = from synonym in _commonSynonyms
+                        where synonym.Value.Equals(pr.Name, StringComparison.OrdinalIgnoreCase)
+                        select synonym.Key;
+            string element = pr.Name;
+            string append = string.Join(", ", synos);
+            if (append.Length > 0)
+            {
+                element += " (" + append + ")";
+            }
+            props.Add(element);
+        }
+        props.Add("Old (Current)");
+        return props.ToArray();
+    }
 
     /// <summary>
     /// Finds all files related to the CueSheet
@@ -151,6 +188,9 @@ public static partial class CuePackage
                 continue;
             }
             PropertyInfo? prop = sheet.GetType().GetProperty(groupVal, _propertyBindingFlags); // case-insensitive search
+            if (!AllowedTypes.Contains(prop?.PropertyType)){
+                prop = null;
+            }
             object? value = prop?.GetValue(sheet);
             if (value is null)
             {
@@ -493,7 +533,7 @@ public static partial class CuePackage
 
     public static CueSheet Convert(CueSheet cueSheet, IAudioConverter converter, string destination, string? pattern = null)
     {
-        throw new  NotImplementedException(); 
+        throw new NotImplementedException();
         //converter.Convert();
     }
 }
