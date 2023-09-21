@@ -26,7 +26,7 @@ internal class OggFormatReader : IFileFormatReader
         {
             var tr = new Track(stream, "audio/ogg");
             metadata = new FileMetadata(
-                0,
+                 stream.Length,
                 TimeSpan.FromMilliseconds(tr.DurationMs),
                 (int)tr.SampleRate,
                 tr.ChannelsArrangement.NbChannels,

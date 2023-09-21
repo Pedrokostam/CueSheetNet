@@ -26,7 +26,7 @@ internal class WmaFormatReader : IFileFormatReader
         {
             var tr = new Track(stream, "audio/x-ms-wma");
             metadata = new FileMetadata(
-                0,
+                 stream.Length,
                 TimeSpan.FromMilliseconds(tr.DurationMs),
                 (int)tr.SampleRate,
                 tr.ChannelsArrangement.NbChannels,

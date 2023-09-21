@@ -28,7 +28,7 @@ internal class Mp3FormatReader : IFileFormatReader
         {
             var tr = new Track(stream, "audio/mp3");
             metadata = new FileMetadata(
-                0,
+                 stream.Length,
                 TimeSpan.FromMilliseconds(tr.DurationMs),
                 (int)tr.SampleRate,
                 tr.ChannelsArrangement.NbChannels,
