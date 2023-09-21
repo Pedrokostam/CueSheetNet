@@ -1,7 +1,9 @@
 ﻿using CueSheetNet.Logging;
+using CueSheetNet.NameParsing;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Reflection;
+using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -12,58 +14,6 @@ namespace CueSheetNet.FileHandling;
 /// </summary>
 public static partial class CuePackage
 {
-    private const BindingFlags _propertyBindingFlags = BindingFlags.IgnoreCase | BindingFlags.Instance | BindingFlags.Public;
-
-    /// <summary>
-    /// Mapping of commonly used names for some of Cue properties to said properties. Case-insensitive Dictionary
-    /// </summary>
-    private static readonly Dictionary<string, string> _commonSynonyms = new(StringComparer.OrdinalIgnoreCase)
-    {
-        {"Artis","Performer" },
-        {"AlbumArtist","Performer" },
-        {"Year","Date" },
-        {"Album","Title" },
-        {"AlbumTitle","Title" },
-        {"AlbumName","Title" },
-        {"Current","Old" },
-    };
-    private static readonly HashSet<Type?> AllowedTypes =new()
-    {
-        typeof(int),
-        typeof(int?),
-        typeof(string),
-        typeof(Encoding),
-        typeof(CueTime),
-        typeof(CueTime?),
-        typeof(float),
-        typeof(double),
-    };
-    public static string[] GetAvailableProperties()
-    {
-        var properties = typeof(CueSheet).GetProperties(_propertyBindingFlags);
-        List<string> props = new();
-
-        foreach (var pr in properties)
-        {
-            if (!AllowedTypes.Contains(pr.PropertyType))
-            {
-                continue;
-            }
-            var synos = from synonym in _commonSynonyms
-                        where synonym.Value.Equals(pr.Name, StringComparison.OrdinalIgnoreCase)
-                        select synonym.Key;
-            string element = pr.Name;
-            string append = string.Join(", ", synos);
-            if (append.Length > 0)
-            {
-                element += " (" + append + ")";
-            }
-            props.Add(element);
-        }
-        props.Add("Old (Current)");
-        return props.ToArray();
-    }
-
     /// <summary>
     /// Finds all files related to the CueSheet
     /// </summary>
@@ -155,54 +105,6 @@ public static partial class CuePackage
     [GeneratedRegex(@"%(?<property>[\w\s]+)%")]
     private static partial Regex PropertyParser();
 
-    /// <summary>
-    /// Parse the format for output filepath. E.g. %Artist%/%DATE%/%Album% can result in
-    /// ./Artist/2001/Album.
-    /// All invalid characters are replaced with '_'.
-    /// Property names do not need to match case.
-    /// </summary>
-    /// <param name="sheet"></param>
-    /// <returns>Path stem made accoridng to the treeformat. All invalid path chars removed.</returns>
-    /// <param name="treeFormat">Pattern which may contain reference to properies of CueSheet, case insensitive names. To get the original filename, specify %old%
-    /// <para/>If parameter is null, the original filename will be used
-    /// <para/>If parameter is null and the sheet has not filename yet, the following pattern will be used: "{Performer} - {Title}"
-    /// </param>
-    public static string ParseFormatPattern(CueSheet sheet, string? treeFormat)
-    {
-        if (treeFormat == null)
-            return Path.GetFileNameWithoutExtension(sheet.SourceFile?.Name) ?? sheet.DefaultFilename;
-        Regex formatter = PropertyParser();
-        MatchCollection matches = formatter.Matches(treeFormat);
-        foreach (Match match in matches.Cast<Match>())
-        {
-            string val = match.Value;
-            string groupVal = match.Groups["property"].Value.Replace(" ", ""); // No properties contain space in the name, so we remove them
-            if (_commonSynonyms.TryGetValue(groupVal, out string? syn))
-            {
-                groupVal = syn;
-            }
-            if (groupVal.Equals("old", StringComparison.InvariantCultureIgnoreCase))
-            {
-                // special tag "old" - reuse current name of the file
-                treeFormat = treeFormat.Replace(val, Path.GetFileNameWithoutExtension(sheet.SourceFile!.Name));
-                continue;
-            }
-            PropertyInfo? prop = sheet.GetType().GetProperty(groupVal, _propertyBindingFlags); // case-insensitive search
-            if (!AllowedTypes.Contains(prop?.PropertyType)){
-                prop = null;
-            }
-            object? value = prop?.GetValue(sheet);
-            if (value is null)
-            {
-                // Invalid tags will be left without changing, still in percent signs
-                Logger.LogWarning("No matching property found for {Property} when parsing tree format {Format}.", val, treeFormat);
-                continue;
-            }
-            treeFormat = treeFormat.Replace(val, value.ToString());
-        }
-        //replace all invalid path chars with underscore
-        return PathStringNormalization.RemoveInvalidPathCharacters(treeFormat);
-    }
 
     /// <summary>
     /// Gets parent directory path of <paramref name="destinationWithPattern"/>, creates the directory on the disk and return its <see cref="DirectoryInfo"/>
@@ -516,7 +418,7 @@ public static partial class CuePackage
                                                           bool preserveSubfolders)
     {
         // Combine Destination with whatever results from parsing (which may contain more directories)
-        string patternParsed = ParseFormatPattern(activeSheet, pattern);
+        string patternParsed = CueTreeFormatter.ParseFormatPattern(activeSheet, pattern);
         string destinationWithPattern = Path.Combine(destinationDirectory, patternParsed);
         //If we can't create the directory, IOException happens and we stop without needing to reverse anything.
         immediateParentDir = GetImmediateParentDir(destinationWithPattern);

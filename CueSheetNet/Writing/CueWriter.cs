@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using CueSheetNet.FileHandling;
 using CueSheetNet.Internal;
 using CueSheetNet.Logging;
+using CueSheetNet.NameParsing;
 using CueSheetNet.Syntax;
 using CueSheetNet.TextParser;
 
@@ -266,7 +267,7 @@ public sealed class CueWriter
     }
     public void SaveCueSheet(CueSheet sheet, string destination, string? pattern)
     {
-        string patternParsed = CuePackage.ParseFormatPattern(sheet, pattern);
+        string patternParsed = CueTreeFormatter.ParseFormatPattern(sheet, pattern);
         string destinationWithPattern = Path.Combine(destination, patternParsed);
         SaveCueSheet(sheet, destinationWithPattern);
     }
