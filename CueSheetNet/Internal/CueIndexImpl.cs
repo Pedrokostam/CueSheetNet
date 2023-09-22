@@ -26,9 +26,13 @@ internal class CueIndexImpl : CueItemBase
             Number = Number,
         };
     }
-
+    /// <summary>
+    /// Number of index for whole cue
+    /// </summary>
     public int Index { get; internal set; }
-
+    /// <summary>
+    /// Number of index per track
+    /// </summary>
     public int Number { get; internal set; }
 
     public CueTime Time { get; set; }

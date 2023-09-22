@@ -222,6 +222,12 @@ internal class CueContainer
         }
         return (start, start + count);
     }
+    /// <summary>
+    /// Get range [inclusive,exclusive) of all indices pertaining to the track
+    /// </summary>
+    /// <param name="trackIndex"></param>
+    /// <param name="includeDangling">If true, will include Index 00 if it occurs on the previous file. Otherwise that index is excluded</param>
+    /// <returns></returns>
     internal (int Start, int End) GetCueIndicesOfTrack_Range(int trackIndex = -1, bool includeDangling = false)
     {
         if (trackIndex < 0) trackIndex = Tracks.Count - 1;
@@ -230,7 +236,16 @@ internal class CueContainer
         int count = 0;
         for (int i = 0; i < Indexes.Count; i++)
         {
-            bool condition = includeDangling ? Indexes[i].Track == track : Indexes[i].Track == track && Indexes[i].File == track.ParentFile;
+            bool condition;
+            if (includeDangling) // Index only has to be match the track
+            {
+                condition = Indexes[i].Track == track;
+            }
+            else // Index has to be on the same file as well
+            {
+                condition = Indexes[i].Track == track && Indexes[i].File == track.ParentFile;
+            }
+
             if (condition)
             {
                 count++;

@@ -140,6 +140,18 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
 
     #region Index
     internal ReadOnlyCollection<CueIndexImpl> IndexesImpl => Container.Indexes.AsReadOnly();
+    internal CueIndex GetCueIndexAt(int index) => new CueIndex(Container.Indexes[index]);
+    internal CueIndex? GetCueIndexAt_Safe(int index)
+    {
+        if(Container.Indexes.Count > index)
+        {
+            return GetCueIndexAt(index);
+        }
+        else
+        {
+            return null;
+        }
+    }
     public CueIndex[] Indexes => Container.Indexes.Select(x => new CueIndex(x)).ToArray();
     public CueIndex AddIndex(CueTime time, CueAudioFile file, CueTrack track)
     {
@@ -348,7 +360,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
         return Container.Tracks.Skip(start).Take(end - start).ToArray();
     }
 
-    internal (int Start, int End) GetIndexesOfTrack_Range(int fileIndex) => Container.GetCueIndicesOfTrack_Range(fileIndex);
+    internal (int Start, int End) GetIndexesOfTrack_Range(int trackIndex) => Container.GetCueIndicesOfTrack_Range(trackIndex);
     public CueIndex[] GetIndexesOfTrack(int trackIndex)
     {
         (int start, int end) = Container.GetCueIndicesOfTrack_Range(trackIndex);

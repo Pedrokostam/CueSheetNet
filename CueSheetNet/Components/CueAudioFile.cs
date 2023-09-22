@@ -16,7 +16,7 @@ public interface ICueFile
 {
     FileInfo SourceFile { get; }
     bool ValidFile { get; }
-    long Length();
+    long FileSize();
     bool Exists();
     void Remove();
     bool Copy(string destination);
@@ -36,7 +36,7 @@ public class CueExtraFile : ICueFile
     public static implicit operator FileInfo(CueExtraFile file) => file.SourceFile;
     public static explicit operator CueExtraFile(FileInfo file) => new CueExtraFile(file);
 
-    public long Length() => throw new NotImplementedException();
+    public long FileSize() => throw new NotImplementedException();
     public bool Exists() => throw new NotImplementedException();
     public void Remove() => throw new NotImplementedException();
     public bool Copy(string destination) => throw new NotImplementedException();
@@ -84,7 +84,7 @@ public class CueAudioFile : CueItemBase, ICueFile, IEquatable<CueAudioFile>
         private set => validFile = value;
     }
     private bool NeedsRefresh { get; set; }
-    public long FileSize => SourceFile.Exists ? SourceFile.Length : -1;
+    public long FileSize() => SourceFile.Exists ? SourceFile.Length : -1;
 
     private FileInfo _file;
     private bool validFile;
@@ -233,7 +233,6 @@ public class CueAudioFile : CueItemBase, ICueFile, IEquatable<CueAudioFile>
     }
     static public implicit operator FileInfo(CueAudioFile file) => file.SourceFile;
     public override int GetHashCode() => HashCode.Combine(NormalizedPath, Index);
-    public long Length() => _file.Length;
     public bool Exists() => _file.Exists;
     public void Remove() => _file.Delete();
 
