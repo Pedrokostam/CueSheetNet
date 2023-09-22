@@ -163,6 +163,7 @@ public sealed class CueWriter
                 AppendPregap(track);
             }
             AppendIndex(ind);
+            var s = Builder.ToString();
         }
         if (Settings.Newline != Environment.NewLine)
         {
@@ -177,10 +178,11 @@ public sealed class CueWriter
         Builder.Append(' ');
         Builder.AppendLine(file.Type);
     }
+   
 
     private void AppendFilepath(CueAudioFile file)
     {
-        string filename = file.SourceFile.Name;
+        string filename = file.GetRelativePath();
         string path = HasWhitespace(filename) ? Enquote(filename) : filename;
         Builder.Append(path);
     }

@@ -54,6 +54,19 @@
     <None Update="TestItems\Parsing\MinimalFoobarCue.cue">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="TestItems\SavingTests\Jethro Tull - Aqualung.cue">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="TestItems\SavingTests\MultiFile.cue">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="TestItems\SavingTests\Spandau Ballet - True.cue">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="TestItems\SavingTests\" />
   </ItemGroup>
 
 </Project>

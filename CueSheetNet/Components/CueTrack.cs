@@ -99,7 +99,7 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemarkableCommentabl
         {
             (int Start, int End) = ParentSheet.GetIndexesOfTrack_Range(Index);
             // non-dangling because audio cannot start on previous file
-            if (End - Start == 1) // Only one index for track - only 00 or only 01
+            if (End - Start == 1) // Only one index for track - only 00 or only 01 - just take it
             {
                 return ParentSheet.GetCueIndexAt(Start);
             }
@@ -112,6 +112,7 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemarkableCommentabl
                 }
                 else
                 {
+                    // first index is 01, this is audio start
                     return ParentSheet.GetCueIndexAt(Start);
                 }
             }
@@ -122,22 +123,26 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemarkableCommentabl
         get
         {
             var (_, indexOfNextTrack) = ParentSheet.GetIndexesOfTrack_Range(Index);
-            CueIndexImpl? nextTrackImplIndex =  ParentSheet.IndexesImpl.ElementAtOrDefault(indexOfNextTrack);
-            bool isLastIndex = nextTrackImplIndex is null; // no cueindexes after that - we can only work with file duration
-            bool isLastFileIndex = nextTrackImplIndex?.File != ParentFile; // no more cueindexes in that file - we can only work with file duration
-            if (isLastIndex || isLastFileIndex) 
+            CueIndexImpl? nextTrackImplIndex =  ParentSheet.GetIndexImplOrDefault(indexOfNextTrack);
+            // it's the last track of cuesheet
+            bool isLastTrackInCue = nextTrackImplIndex is null;
+            // it's the last track of its file
+            bool isLastTrackInFile = nextTrackImplIndex?.File != ParentFile;
+            if (isLastTrackInCue || isLastTrackInFile) 
             {
+                // Only way to get track's duration is to subtract its start from the file duration
                 CueTime? fileDur = ParentFile.Meta?.CueDuration;
                 if (fileDur.HasValue)
                 {
-                    return fileDur.Value - this.AudioStartIndex.Time;
+                    return fileDur.Value - AudioStartIndex.Time;
                 }
                 else
                 {
+                    // File meta is unknown / no file
                     return null;
                 }
             }
-            else // next track start at the same file
+            else // next track starts in the same file
             {
                 return nextTrackImplIndex!.Time - AudioStartIndex.Time;
             }

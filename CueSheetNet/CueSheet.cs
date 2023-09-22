@@ -140,10 +140,11 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
 
     #region Index
     internal ReadOnlyCollection<CueIndexImpl> IndexesImpl => Container.Indexes.AsReadOnly();
+    internal CueIndexImpl? GetIndexImplOrDefault(int index) => Container.Indexes.Count > index ? Container.Indexes[index] : null;
     internal CueIndex GetCueIndexAt(int index) => new CueIndex(Container.Indexes[index]);
     internal CueIndex? GetCueIndexAt_Safe(int index)
     {
-        if(Container.Indexes.Count > index)
+        if (Container.Indexes.Count > index)
         {
             return GetCueIndexAt(index);
         }
@@ -307,7 +308,34 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
 
 
     public bool Equals(CueSheet? other) => Equals(other, StringComparison.CurrentCulture);
-
+    //public bool HasSameContent(CueSheet? other) =>HasSameContent(other, StringComparison.CurrentCulture);
+    //public bool HasSameContent(CueSheet? other, StringComparison stringComparison) {
+    //    if (other == null) return false;
+    //    if (ReferenceEquals(this, other)) return true;
+    //    if (Container.Indexes.Count != other.Container.Indexes.Count) return false;
+    //    if (Container.Tracks.Count != other.Container.Tracks.Count) return false;
+    //    if (Container.Files.Count != other.Container.Files.Count) return false;
+    //    for (int i = 0; i < Container.Indexes.Count; i++)
+    //    {
+    //        CueIndexImpl one = Container.Indexes[i];
+    //        CueIndexImpl two = other.Container.Indexes[i];
+    //        if (one.Number != two.Number || one.Time != two.Time)
+    //            return false;
+    //    }
+    //    for (int i = 0; i < Container.Tracks.Count; i++)
+    //    {
+    //        CueTrack one = Container.Tracks[i];
+    //        CueTrack two = other.Container.Tracks[i];
+    //        if (!one.Equals(two))
+    //            return false;
+    //    }
+    //    bool finalCheck = string.Equals(CdTextFile?.Name, other.CdTextFile?.Name, StringComparison.OrdinalIgnoreCase) //Paths are compared without caring for case
+    //                   && string.Equals(SourceFile?.Name, other.SourceFile?.Name, StringComparison.OrdinalIgnoreCase)
+    //                   && string.Equals(Performer, other.Performer, stringComparison)
+    //                   && string.Equals(Catalog, other.Catalog)
+    //                   && string.Equals(Composer, other.Composer, stringComparison)
+    //                   && string.Equals(Title, other.Title, stringComparison);
+    //}
     public bool Equals(CueSheet? other, StringComparison stringComparison)
     {
         if (other == null) return false;
@@ -337,7 +365,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
                 return false;
         }
         bool finalCheck = string.Equals(CdTextFile?.Name, other.CdTextFile?.Name, StringComparison.OrdinalIgnoreCase) //Paths are compared without caring for case
-                       && string.Equals(SourceFile?.Name, other.SourceFile?.Name, StringComparison.OrdinalIgnoreCase)
+                       //&& string.Equals(SourceFile?.Name, other.SourceFile?.Name, StringComparison.OrdinalIgnoreCase)
                        && string.Equals(Performer, other.Performer, stringComparison)
                        && string.Equals(Catalog, other.Catalog)
                        && string.Equals(Composer, other.Composer, stringComparison)
@@ -533,4 +561,5 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
     {
         get => $"{Performer ?? "No Artist"} - {Title ?? "No Title"}";
     }
+
 }

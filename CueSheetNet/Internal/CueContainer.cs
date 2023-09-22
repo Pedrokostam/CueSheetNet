@@ -169,7 +169,7 @@ internal class CueContainer
             {
                 Tracks.Add(track.ClonePartial(Files[^1]));
                 //var t = donor.GetCueIndicesOfTrack(track.Index);
-                foreach (CueIndexImpl ci in donor.GetCueIndicesOfTrack(track.Index))
+                foreach (CueIndexImpl ci in donor.GetCueIndicesOfTrackWithDangling(track.Index))
                 {
                     Indexes.Add(ci.ClonePartial(Tracks[^1], Files[^1]));
                 }
@@ -199,9 +199,9 @@ internal class CueContainer
         (int Start, int End) = GetCueTracksOfFile_Range(fileIndex);
         return Tracks.Skip(Start).Take(End - Start);
     }
-    internal IEnumerable<CueIndexImpl> GetCueIndicesOfTrack(int fileIndex = -1)
+    internal IEnumerable<CueIndexImpl> GetCueIndicesOfTrackWithDangling(int fileIndex = -1)
     {
-        (int Start, int End) = GetCueIndicesOfTrack_Range(fileIndex);
+        (int Start, int End) = GetCueIndicesOfTrack_Range(fileIndex,true);
         return Indexes.Skip(Start).Take(End - Start);
     }
     internal (int Start, int End) GetCueIndicesOfFile_Range(int fileIndex = -1)
