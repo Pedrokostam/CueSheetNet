@@ -57,8 +57,7 @@ public partial class CueEncodingTests
     [TestMethod]
     public void TestEncodingDetection()
     {
-        string encodingsPath=Path.Join(Directory.GetCurrentDirectory(), "TestItems", "EncodingDetection");
-        var files = Directory.EnumerateFiles(encodingsPath,"*.cue");
+        var files= Utils.GetFiles("*.cue", "EncodingDetection");
         foreach (var file in files)
         {
             TestParsing(file);
@@ -67,7 +66,7 @@ public partial class CueEncodingTests
     [TestMethod]
     public void TestParsingMinimum()
     {
-        string minimalPath = Path.Join(Directory.GetCurrentDirectory(), "TestItems", "Parsing", "MinimalFoobarCue.cue");
+        string minimalPath =Utils.GetFile( "Parsing", "MinimalFoobarCue.cue");
         var cue = reader.ParseCueSheet(minimalPath);
         Assert.AreEqual(cue.Files[0].SourceFile.Name, "A");
         Assert.AreEqual(cue.Tracks[0].Title, "A");

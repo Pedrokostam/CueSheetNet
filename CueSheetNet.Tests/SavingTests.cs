@@ -11,10 +11,26 @@ public class SavingTests
     CueReader reader = new();
     CueWriter writer = new();
     [TestMethod]
+    public void LoadCloneSame()
+    {
+        foreach (var file in Utils.GetFiles("*.cue", "SavingTests"))
+        {
+            var cue = reader.ParseCueSheet(file);
+            var clone = cue.Clone();
+            if (Path.GetFileNameWithoutExtension(file).Contains("wrong", StringComparison.OrdinalIgnoreCase))
+            {
+                Assert.AreNotEqual(clone, cue, Path.GetFileNameWithoutExtension(file));
+            }
+            else
+            {
+                Assert.AreEqual(clone, cue, Path.GetFileNameWithoutExtension(file));
+            }
+        }
+    }
+    [TestMethod]
     public void SaveReloadSame()
     {
-        string dir = Path.Join(Directory.GetCurrentDirectory(), "TestItems", "SavingTests");
-        foreach (var file in Directory.EnumerateFiles(dir, "*.cue"))
+        foreach (var file in Utils.GetFiles("*.cue", "SavingTests"))
         {
             var cue = reader.ParseCueSheet(file);
             var clone = cue.Clone();
@@ -35,8 +51,7 @@ public class SavingTests
     [TestMethod]
     public void SaveCloneSame()
     {
-        string dir = Path.Join(Directory.GetCurrentDirectory(), "TestItems", "SavingTests");
-        foreach (var file in Directory.EnumerateFiles(dir, "*.cue"))
+        foreach (var file in Utils.GetFiles("*.cue", "SavingTests"))
         {
             var cue = reader.ParseCueSheet(file);
             var clone = cue.Clone();
