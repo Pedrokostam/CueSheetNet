@@ -92,7 +92,7 @@ public class CueAudioFile : CueItemBase, ICueFile, IEquatable<CueAudioFile>
         Debug.WriteLine($"Refreshing file meta: {_file}");
         if (_file.Exists)
         {
-            Meta = AudioFileReader.ParseDuration(_file.FullName);
+            Meta = AudioFileReader.ReadMetadata(_file.FullName);
             ValidFile = true;
         }
         else

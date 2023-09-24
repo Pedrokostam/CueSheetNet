@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace CueSheetNet.AudioFormatReaders;
-internal class WaveFormatReader : IFileFormatReader
+internal sealed class WaveFormatReader : IFileFormatReader
 {
     private readonly string[] extensions = new string[] { ".WAV", ".WAVE" };
     private readonly string formatName = "Wave";
@@ -92,5 +92,10 @@ internal class WaveFormatReader : IFileFormatReader
             FormatName = FormatName
         };
         return true;
+    }
+    public bool ReadMetadata(string path, out FileMetadata metadata)
+    {
+        using FileStream stream = File.OpenRead(path);
+        return ReadMetadata(stream, out metadata);
     }
 }

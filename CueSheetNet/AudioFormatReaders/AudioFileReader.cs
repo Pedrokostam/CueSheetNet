@@ -19,8 +19,8 @@ static public class AudioFileReader
         };
         FileReaders = new List<IFileFormatReader>(BaseFileReaders);
     }
-    static readonly IFileFormatReader[] BaseFileReaders; 
-    
+    static readonly IFileFormatReader[] BaseFileReaders;
+
     static readonly List<IFileFormatReader> FileReaders;
     public static void AddFileReader(IFileFormatReader reader)
     {
@@ -33,9 +33,9 @@ static public class AudioFileReader
         FileReaders.Clear();
         FileReaders.AddRange(BaseFileReaders);
     }
-    static public FileMetadata? ParseDuration(string filePath)
+    static public FileMetadata? ReadMetadata(string filePath)
     {
-        using FileStream fs = new(filePath, FileMode.Open, FileAccess.Read);
+        using FileStream stream = File.OpenRead(filePath);
         FileMetadata meta = default;
         foreach (var reader in FileReaders)
         {
@@ -43,7 +43,16 @@ static public class AudioFileReader
             {
                 try
                 {
-                    if (reader.ReadMetadata(fs, out meta))
+                    bool read = false;
+                    if (reader is IStreamFormatReader streamFormatReader)
+                    {
+                        read = streamFormatReader.ReadMetadata(stream, out meta);
+                    }
+                    else
+                    {
+                        read = reader.ReadMetadata(filePath, out meta);
+                    }
+                    if (read)
                     {
                         Logger.Log(LogLevel.Debug, "Read metadata on {File} using {Reader.FormatName} reader", filePath, reader);
                         return meta;

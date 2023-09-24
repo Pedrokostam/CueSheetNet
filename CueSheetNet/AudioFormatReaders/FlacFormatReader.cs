@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace CueSheetNet.AudioFormatReaders;
-internal class FlacFormatReader : IFileFormatReader
+internal sealed class FlacFormatReader : IStreamFormatReader
 {
     private readonly string[] extensions = new string[] { ".flac" };
     private readonly string formatName = "Flac";
@@ -78,5 +78,11 @@ internal class FlacFormatReader : IFileFormatReader
             FormatName = FormatName
         };
         return true;
+    }
+
+    public bool ReadMetadata(string path, out FileMetadata metadata)
+    {
+        using FileStream stream = File.OpenRead(path);
+        return ReadMetadata(stream, out metadata);
     }
 }
