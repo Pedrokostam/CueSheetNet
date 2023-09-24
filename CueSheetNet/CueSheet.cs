@@ -6,38 +6,6 @@ using CueSheetNet.Internal;
 
 namespace CueSheetNet;
 
-[Flags]
-public enum CueType
-{
-    Unknown = 0,
-
-    /// <summary>Single continuous file</summary>
-    SingleFile = 0b1,
-
-    /// <summary>Multiple files</summary>
-    MultipleFiles = 0b10,
-
-    /// <summary>Gaps trimmed from files and simulated</summary>
-    SimulatedGaps = 0b1000,
-
-    /// <summary>Gaps appended to previous tracks</summary>
-    GapsAppended = 0b10000,
-
-    /// <summary>Gaps prepended to next tracks</summary>
-    GapsPrepended = 0b100000,
-
-    /// <summary>Hidden Track One Audio</summary>
-    HTOA = 0b1000000,
-
-    /// <summary>Gaps appended to next tracks</summary>
-    EacStyle = MultipleFiles | GapsAppended,
-
-    MultipleFilesWithAppendedGaps = EacStyle,
-    SingleFileWithHiddenTrackOneAudio = SingleFile | HTOA,
-    MultipleFilesWithPrependedGaps = MultipleFiles | GapsPrepended,
-    MultipleFileWithSimulatedGaps = MultipleFiles | SimulatedGaps,
-}
-
 public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
 {
     #region Rem
@@ -242,7 +210,10 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
     private CueContainer Container { get; }
     private FileInfo? _CdTextFile;
 
-
+    internal void SetParsingMode(bool parsing)
+    {
+        this.Container.ParsingMode=parsing;
+    }
 
     public CueSheet()
     {
@@ -347,7 +318,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
         {
             CueIndexImpl one = Container.Indexes[i];
             CueIndexImpl two = other.Container.Indexes[i];
-            if (one.Number != two.Number || one.Time != two.Time)
+            if (one.Number != two.Number || one.Time != two.Time || one.File.Index != two.File.Index)
                 return false;
         }
         for (int i = 0; i < Container.Tracks.Count; i++)
@@ -365,7 +336,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
                 return false;
         }
         bool finalCheck = string.Equals(CdTextFile?.Name, other.CdTextFile?.Name, StringComparison.OrdinalIgnoreCase) //Paths are compared without caring for case
-                       //&& string.Equals(SourceFile?.Name, other.SourceFile?.Name, StringComparison.OrdinalIgnoreCase)
+                                                                                                                      //&& string.Equals(SourceFile?.Name, other.SourceFile?.Name, StringComparison.OrdinalIgnoreCase)
                        && string.Equals(Performer, other.Performer, stringComparison)
                        && string.Equals(Catalog, other.Catalog)
                        && string.Equals(Composer, other.Composer, stringComparison)
@@ -477,6 +448,48 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
     {
         RefreshFiles();
         RefreshIndices();
+        UpdateCueType();
+    }
+
+    private void UpdateCueType()
+    {
+        CueType type = CueType.Unknown;
+        if (Tracks.Count == 0)
+        {
+            SheetType = type;
+            return;
+        }
+        if (Files.Count == 1)
+        {
+            type |= CueType.SingleFile;
+        }
+        else if (Files.Count > 1)
+        {
+            type |= CueType.MultipleFiles;
+        }
+        if (Tracks[0].HasZerothIndex)
+        {
+            type |= CueType.HTOA;
+        }
+        bool pregaps = false;
+        bool simgaps = false;
+        bool appgaps = false;
+        foreach (var track in Tracks)
+        {
+            pregaps |= (track.PreGap != default) && track.Index != 1;//HTOA does not count
+            simgaps |= track.PreGap != default || track.PostGap != default;
+            appgaps |= track.PostGap != default;
+        }
+        foreach (var file in Files)
+        {
+            (int first, int afterLast) = GetIndexesOfFile_Range(file.Index);
+            appgaps |= IndexesImpl[afterLast - 1].Number == 0;
+            pregaps |= IndexesImpl[first].Number == 0;
+        }
+        if (pregaps) { type |= CueType.GapsPrepended; }
+        if (simgaps) { type |= CueType.SimulatedGaps; }
+        if (appgaps) { type |= CueType.GapsAppended; }
+        SheetType = type;
     }
 
     private void RefreshFiles()

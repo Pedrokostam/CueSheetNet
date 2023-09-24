@@ -3,11 +3,16 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
+using CueSheetNet.FileHandling;
+using Moq;
 namespace CueSheetNet.Tests;
 [TestClass]
 public class SavingTests
 {
+    [TestInitialize]
+    public void Init()
+    {
+    }
     CueReader reader = new();
     CueWriter writer = new();
     [TestMethod]

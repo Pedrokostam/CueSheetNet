@@ -17,7 +17,7 @@ public partial class CueReader
     public CueSource Source { get; private set; }
 
     public string? CurrentLine { get; private set; } = "No line read yet";
-
+   
     CueSheet? Sheet { get; set; }
 
     /// <summary>
@@ -130,6 +130,7 @@ public partial class CueReader
 
     private CueSheet ReadImpl(TextReader txtRead)
     {
+        Sheet!.SetParsingMode(true);
         Stopwatch st = Stopwatch.StartNew();
         while (txtRead.ReadLine()?.Trim() is string line)
         {
@@ -179,10 +180,11 @@ public partial class CueReader
         {
             Sheet!.SetTrackHasZerothIndex(i, TrackHasZerothIndex[i]);
         }
-        Sheet!.RefreshIndices();
+        Sheet!.Refresh();
         st.Stop();
         Logger.LogInformation("Finished parsing {Source} in {Time}ms", Source, st.ElapsedMilliseconds);
         Sheet.SourceEncoding = Encoding;
+        Sheet.SetParsingMode(false);
         return Sheet;
     }
 

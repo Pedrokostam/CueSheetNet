@@ -7,6 +7,7 @@ namespace CueSheetNet.Internal;
 [DebuggerDisplay("Files: {Files.Count}, Track: {Tracks.Count}, Indexes: {Indexes.Count}")]
 internal class CueContainer
 {
+    public bool ParsingMode { get; set; }
     private CueSheet ParentSheet { get; }
     public List<CueAudioFile> Files { get; } = new();
     public List<CueTrack> Tracks { get; } = new();
@@ -102,7 +103,7 @@ internal class CueContainer
         CueTrack track = Tracks[trackIndex];
         CueAudioFile file = Files[fileIndex];
         if (track.ParentFile != file) throw new InvalidOperationException("Specified track does not belong to specified file");
-        if (file.Meta?.CueDuration is CueTime maxTime && time > maxTime)
+        if (!ParsingMode && file.Meta?.CueDuration is CueTime maxTime && time > maxTime)
             throw new ArgumentOutOfRangeException("Specified time occurs after the file ends");
 
         //No indices at all
@@ -122,7 +123,7 @@ internal class CueContainer
         for (int i = fileIndices.Start; i < fileIndices.End; i++)
         {
             CueIndexImpl curr = Indexes[i];
-            if (curr.Time == time) throw new ArgumentException("Index with specified time already exists in the file");
+            if (curr.Time == time && !ParsingMode) throw new ArgumentException("Index with specified time already exists in the file");
             if (curr.Time > time)
             {
                 CueIndexImpl inserted = new(track, file) { Time = time };
@@ -165,16 +166,19 @@ internal class CueContainer
         foreach (CueAudioFile file in donor.Files)
         {
             Files.Add(file.ClonePartial(ParentSheet));
-            foreach (CueTrack track in donor.GetCueTracksOfFile(file.Index))
-            {
-                Tracks.Add(track.ClonePartial(Files[^1]));
-                //var t = donor.GetCueIndicesOfTrack(track.Index);
-                foreach (CueIndexImpl ci in donor.GetCueIndicesOfTrackWithDangling(track.Index))
-                {
-                    Indexes.Add(ci.ClonePartial(Tracks[^1], Files[^1]));
-                }
-            }
         }
+        foreach (CueTrack track in donor.Tracks)
+        {
+            int fIndex = track.ParentFile.Index;
+            Tracks.Add(track.ClonePartial(Files[track.ParentFile.Index]));
+        }
+        foreach (CueIndexImpl cimpl in donor.Indexes)
+        {
+            int fIndex = cimpl.File.Index;
+            int tIndex = cimpl.Track.Index;
+            Indexes.Add(cimpl.ClonePartial(Tracks[tIndex], Files[fIndex]));
+        }
+        return;
     }
     internal (int Start, int End) GetCueTracksOfFile_Range(int fileIndex = -1)
     {
@@ -201,7 +205,7 @@ internal class CueContainer
     }
     internal IEnumerable<CueIndexImpl> GetCueIndicesOfTrackWithDangling(int fileIndex = -1)
     {
-        (int Start, int End) = GetCueIndicesOfTrack_Range(fileIndex,true);
+        (int Start, int End) = GetCueIndicesOfTrack_Range(fileIndex, true);
         return Indexes.Skip(Start).Take(End - Start);
     }
     internal (int Start, int End) GetCueIndicesOfFile_Range(int fileIndex = -1)

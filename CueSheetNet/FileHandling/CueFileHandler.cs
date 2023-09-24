@@ -317,7 +317,11 @@ public static partial class CuePackage
     ///     <para>Pattern can be a directory structure (slashes are allowed), so this pattern is permitted: %artist%/%year%/%title%/%old%.cue</para>
     /// </param>
     /// <returns>Newly copied cuesheet</returns>
-    public static CueSheet CopyPackage(CueSheet activeSheet, string destinationDirectory, string? pattern = null, CueWriterSettings? settings = null, bool preserveSubfolders = false)
+    public static CueSheet CopyPackage(CueSheet activeSheet,
+                                       string destinationDirectory,
+                                       string? pattern = null,
+                                       CueWriterSettings? settings = null,
+                                       bool preserveSubfolders = false)
     {
         activeSheet = activeSheet.Clone();
         SaveModifiedCueSheetInNewLocation(destinationDirectory,
