@@ -2,10 +2,31 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Net.Http.Headers;
+using System.Numerics;
 
 namespace CueSheetNet;
-
-public readonly record struct CueTime : IComparable<CueTime>, IComparable
+public readonly record struct CueTime :
+    IComparable<CueTime>
+    , IComparable
+    , IParsable<CueTime>
+    , ISpanParsable<CueTime>
+    , IDecrementOperators<CueTime>
+    , IIncrementOperators<CueTime>
+    , IAdditionOperators<CueTime, CueTime, CueTime>
+    , IAdditionOperators<CueTime, int, CueTime>
+    , IAdditiveIdentity<CueTime, CueTime>
+    , ISubtractionOperators<CueTime, CueTime, CueTime>
+    , ISubtractionOperators<CueTime, int, CueTime>
+    , IMultiplyOperators<CueTime, int, CueTime>
+    , IMultiplyOperators<CueTime, double, CueTime>
+    , IDivisionOperators<CueTime, int, CueTime>
+    , IDivisionOperators<CueTime, double, CueTime>
+    , IDivisionOperators<CueTime, CueTime, double>
+    , IUnaryNegationOperators<CueTime, CueTime>
+    , IUnaryPlusOperators<CueTime, CueTime>
+    , IModulusOperators<CueTime, CueTime, CueTime>
+    , IEqualityOperators<CueTime, CueTime, bool>
+    , IComparisonOperators<CueTime, CueTime, bool>
 {
     private const int SecondsPerMinute = 60;
 
@@ -79,6 +100,8 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable
     /// Tick equivalent for <see cref="TimeSpan"/> truncated to <see cref="long"/>
     /// </summary>
     public long LongTicks => (long)(TotalFrames * TicksPerFrame);
+
+    public static CueTime AdditiveIdentity => CueTime.Zero;
 
 
     /// <summary>
@@ -283,6 +306,10 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable
         if (s == null) return false;
         return TryParse(s.AsSpan(), out cueTime);
     }
+    public static CueTime Parse(string s, IFormatProvider? provider) => Parse(s);
+    public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out CueTime result) => TryParse(s, out result);
+    public static CueTime Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s);
+    public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, [MaybeNullWhen(false)] out CueTime result) => TryParse(s, out result);
     #endregion
     #region Comparison and Equality
     public static int Compare(CueTime ct1, CueTime ct2) => ct1.TotalFrames.CompareTo(ct2.TotalFrames);
@@ -353,6 +380,8 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable
     public CueTime Subtract(CueTime right) => new(TotalFrames - right.TotalFrames);
 
     public CueTime SubtractFrames(int right) => new(TotalFrames - right);
+
+
     #endregion
     #region Operators
     public static bool operator <(CueTime left, CueTime right) => left.CompareTo(right) < 0;
@@ -364,6 +393,7 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable
     public static bool operator <=(CueTime left, CueTime right) => left.CompareTo(right) <= 0;
 
     public static CueTime operator +(CueTime left, CueTime right) => left.Add(right);
+    public static CueTime operator +(CueTime left, int right) => left.AddFrames(right);
 
     public static CueTime operator -(CueTime time) => new(-time.TotalFrames);
 
@@ -408,5 +438,9 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable
     public static CueTime operator *(int multiplier, CueTime right) => right.Multiply(multiplier);
 
     public static CueTime operator *(double multiplier, CueTime right) => right.Multiply(multiplier);
+
+    public static CueTime operator %(CueTime left, CueTime right) => new(left.Frames % right.Frames);
+
+    public static double operator /(CueTime left, CueTime right) => (left.Frames / right.Frames);
     #endregion
 }
