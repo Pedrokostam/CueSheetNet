@@ -14,7 +14,10 @@ namespace CueSheetNet;
 
 public sealed class CueWriter
 {
-    readonly StringBuilder Builder = new();
+    /// <summary>
+    /// Based on personal collection, where most of the sheets were well under 2000 characters long, with the longest being ~7500
+    /// </summary>
+    readonly StringBuilder Builder = new(2000);
     public CueWriterSettings Settings { get; set; } = new CueWriterSettings();
 
     public CueWriter() : this(null)
@@ -36,16 +39,18 @@ public sealed class CueWriter
         }
         return false;
     }
+
     /// <summary>
     /// Converts to string with optional enquoting and appends to stringbuilder. If value is null nothing is appended
     /// </summary>
-    private bool AppendStringify(string header, object? value, int depth, bool quoteAllowed)
+    private bool AppendStringify<T>(string header, T? value, int depth, bool quoteAllowed)
     {
         if (value == null) return false;
         AppendIndentation(depth);
         Builder.AppendLine(Stringify(header, value, quoteAllowed));
         return true;
     }
+
     /// <inheritdoc cref="InnerQuotation.ReplaceQuotes(string?)"/>
     /// <remarks>Also performs other string replacements, if specified in settings</remarks>
     [return: NotNullIfNotNull(nameof(str))]
@@ -58,7 +63,7 @@ public sealed class CueWriter
         if (s == null) return null;
         return "\"" + s + "\"";
     }
-    public string? Stringify(string Header, object? value, bool quoteAllowed)
+    public string? Stringify<T>(string Header, T? value, bool quoteAllowed)
     {
         if (value == null) return null;
         if (quoteAllowed && HasWhitespace(value.ToString()))
@@ -92,7 +97,7 @@ public sealed class CueWriter
             FieldSetFlags.Title => (track.Title, null),
             FieldSetFlags.Performer => (track.Performer, track.ParentSheet.Performer),
             FieldSetFlags.Composer => (track.Composer, track.ParentSheet.Composer),
-            _ => throw new NotImplementedException(),
+            _ => throw new NotImplementedException($"{key} is not implemented"),
         };
         bool isSame = trackValue == sheetValue;
         bool isSet = track.CommonFieldsSet.HasFlag(key);
