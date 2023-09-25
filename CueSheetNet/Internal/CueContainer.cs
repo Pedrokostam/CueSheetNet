@@ -142,9 +142,9 @@ internal class CueContainer
     private CueIndexImpl AddIndex_NoIndexInTrack(CueTime time, CueAudioFile file, CueTrack lastTrack)
     {
         CueIndexImpl lastIndex = Indexes[^1];
-        (int Start, int End) trackIndices = GetCueIndicesOfTrack_Range(lastTrack.Index, true);
+        (int Start, int End) = GetCueIndicesOfTrack_Range(lastTrack.Index, true);
         // track has no indices, and the previous file has no tracks - move track to current file
-        int length = trackIndices.End - trackIndices.Start;
+        int length = End - Start;
         if (length == 0)
         {
             lastTrack.ParentFile = file;

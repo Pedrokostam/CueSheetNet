@@ -5,8 +5,11 @@ using System.Net.Http.Headers;
 using System.Numerics;
 
 namespace CueSheetNet;
-public readonly record struct CueTime :
-    IComparable<CueTime>
+/// <summary>
+/// Represents a time interval measured in CD Frames
+/// </summary>
+public readonly record struct CueTime
+    : IComparable<CueTime>
     , IComparable
     , IParsable<CueTime>
     , ISpanParsable<CueTime>
@@ -88,9 +91,9 @@ public readonly record struct CueTime :
     public double TotalMinutes => TotalFrames / (double)FramesPerMinute;
 
     /// <summary>
-    /// Indicates whether the number of equivalent Ticks is rational, i.e. has no fractional part. Every 3 frames (or every 40ms) is rational.
+    /// Indicates whether the number of equivalent Ticks is a whole number, i.e. has no fractional part. Every 3 frames (or every 40ms) is integer.
     /// </summary>
-    public bool IsRational => TotalFrames % 3 == 0;
+    public bool IsTickWhole => TotalFrames % 3 == 0;
 
     /// <summary>
     /// Tick equivalent for <see cref="TimeSpan"/> represented as a real number.
@@ -100,9 +103,6 @@ public readonly record struct CueTime :
     /// Tick equivalent for <see cref="TimeSpan"/> truncated to <see cref="long"/>
     /// </summary>
     public long LongTicks => (long)(TotalFrames * TicksPerFrame);
-
-    public static CueTime AdditiveIdentity => CueTime.Zero;
-
 
     /// <summary>
     /// Calculates the equivalent milliseconds to the given frames. Truncates it to the nearest integer.
@@ -442,5 +442,8 @@ public readonly record struct CueTime :
     public static CueTime operator %(CueTime left, CueTime right) => new(left.Frames % right.Frames);
 
     public static double operator /(CueTime left, CueTime right) => (left.Frames / right.Frames);
+    #endregion
+    #region Explicit Interfaces
+    static CueTime IAdditiveIdentity<CueTime, CueTime>.AdditiveIdentity => CueTime.Zero;
     #endregion
 }
