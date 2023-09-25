@@ -212,7 +212,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
 
     internal void SetParsingMode(bool parsing)
     {
-        this.Container.ParsingMode=parsing;
+        this.Container.ParsingMode = parsing;
     }
 
     public CueSheet()
@@ -433,10 +433,6 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
         Container.RefreshIndexIndices();
     }
 
-    //    //foreach (var item in sheet.Comments)
-    //    //    AddComment(item);
-    //    //foreach (var item in sheet.Remarks)
-    //    //    AddRemark(item);
     private static bool SetZerothIndexImpl(bool hasZerothIndex, CueTrack track)
     {
         bool old = track.HasZerothIndex;
@@ -448,7 +444,65 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
     {
         RefreshFiles();
         RefreshIndices();
+        UpdateGlobalPerformer();
+        UpdateGlobalComposer();
         UpdateCueType();
+    }
+
+    private void UpdateGlobalPerformer()
+    {
+        if (Performer is null)
+        {
+            string? p = null;
+            foreach (CueTrack track in Tracks)
+            {
+                if (!track.CommonFieldsSet.HasFlag(FieldSetFlags.Performer))
+                {
+                    // performer is not set, cannot set global
+                    return;
+                }
+                if (p is null)
+                {
+                    // set performer to current track's
+                    p = track.Performer;
+                }
+                else if (p != track.Performer)
+                {
+                    // tracks have different performers
+                    // cannot set global
+                    return;
+                }
+            }
+            Performer = p;
+        }
+    }
+
+    private void UpdateGlobalComposer()
+    {
+        if (Composer is null)
+        {
+            string? p = null;
+            foreach (CueTrack track in Tracks)
+            {
+                if (!track.CommonFieldsSet.HasFlag(FieldSetFlags.Composer))
+                {
+                    // Composer is not set, cannot set global
+                    return;
+                }
+                if (p is null)
+                {
+                    // set performer to current track's
+                    p = track.Composer;
+                }
+                else if (p != track.Composer)
+                {
+                    // tracks have different Composers
+                    // cannot set global
+                    return;
+                }
+            }
+            Composer = p;
+        }
     }
 
     private void UpdateCueType()
