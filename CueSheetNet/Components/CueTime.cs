@@ -1,12 +1,10 @@
-﻿using System;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Net.Http.Headers;
 using System.Numerics;
 
 namespace CueSheetNet;
 /// <summary>
-/// Represents a time interval measured in CD Frames
+/// Represents a time interval measured in CD Frames.
 /// </summary>
 public readonly record struct CueTime
     : IComparable<CueTime>
@@ -22,8 +20,10 @@ public readonly record struct CueTime
     , ISubtractionOperators<CueTime, int, CueTime>
     , IMultiplyOperators<CueTime, int, CueTime>
     , IMultiplyOperators<CueTime, double, CueTime>
+    , IMultiplyOperators<CueTime, decimal, CueTime>
     , IDivisionOperators<CueTime, int, CueTime>
     , IDivisionOperators<CueTime, double, CueTime>
+    , IDivisionOperators<CueTime, decimal, CueTime>
     , IDivisionOperators<CueTime, CueTime, double>
     , IUnaryNegationOperators<CueTime, CueTime>
     , IUnaryPlusOperators<CueTime, CueTime>
@@ -31,18 +31,48 @@ public readonly record struct CueTime
     , IEqualityOperators<CueTime, CueTime, bool>
     , IComparisonOperators<CueTime, CueTime, bool>
 {
+    public int TotalFrames { get; } // Int is sufficient - it can describe up to 331 days of continuous playback (or about 4.5 TB of WAVE)
+
+    public CueTime(int totalFrames)
+    {
+        TotalFrames = totalFrames;
+    }
+
+    public CueTime(int minutes, int seconds, int frames)
+    {
+        bool allNonNegative = minutes >= 0 && seconds >= 0 && frames >= 0;
+        bool allNonPositive = minutes <= 0 && seconds <= 0 && frames <= 0;
+        if (!(allNonNegative || allNonPositive))
+            throw new ArgumentException($"Parameters must all be either be all non-negative or all non-positive");
+
+        TotalFrames = CalculateTotalFrames(minutes, seconds, frames);
+    }
+
+    public void Deconstruct(out int minutes, out int seconds, out int frames)
+    {
+        minutes = Minutes;
+        seconds = Seconds;
+        frames = Frames;
+    }
+
+    // Since all elements are either non-negative or non-positive, we can use raw value of minutes (which may or may not have a minus) and absolute value of the rest.
+    // Result will have the minus sign, if the time is negative
+    public override string ToString() => $"{Minutes:d2}:{Math.Abs(Seconds):d2}:{Math.Abs(Frames):d2}";
+
+    public override int GetHashCode() => TotalFrames.GetHashCode();
+    
+    #region Constants
     private const int SecondsPerMinute = 60;
 
     private const int MillisecondsPerSecond = 1000;
 
     public const int FramesPerSecond = 75;
+    
     /// <summary>133'333.(3)</summary>
     public const double TicksPerFrame = (double)TimeSpan.TicksPerSecond / FramesPerSecond;
-    /// <summary>133'333</summary>
-    private const int TicksPerFrameInt = (int)TicksPerFrame;
-
-    /// <summary>45'000</summary>
-    public const int FramesPerMinute = FramesPerSecond * SecondsPerMinute; // 45'000
+   
+    /// <summary>4'500</summary>
+    public const int FramesPerMinute = FramesPerSecond * SecondsPerMinute; // 4'500
 
     /// <summary>13.(3)</summary>
     public const double MillisecondsPerFrame = (double)MillisecondsPerSecond / FramesPerSecond; // 13.333333
@@ -58,7 +88,7 @@ public readonly record struct CueTime
     public static readonly CueTime TheoreticalMax = new(int.MaxValue);
 
     /// <summary>
-    /// CueTime corresponding to 99:59:74, which is the maximum an ordinary CueSheet syntax can represent..
+    /// CueTime corresponding to 99:59:74, which is the maximum an ordinary CueSheet syntax can represent.
     /// </summary>
     public static readonly CueTime Max = new(99, 59, 74);
 
@@ -71,9 +101,9 @@ public readonly record struct CueTime
     /// CueTime corresponding to -99:59:74.
     /// </summary>
     public static readonly CueTime Min = new(-99, -59, -74);
-
-    public int TotalFrames { get; }
-
+    #endregion
+   
+    #region Properties
     public int Minutes => (TotalFrames - Frames - SecondsPerMinute * Seconds) / FramesPerMinute;
 
     public int Seconds => ((TotalFrames - Frames) / FramesPerSecond) % SecondsPerMinute;
@@ -99,11 +129,14 @@ public readonly record struct CueTime
     /// Tick equivalent for <see cref="TimeSpan"/> represented as a real number.
     /// </summary>
     public double Ticks => TotalFrames * TicksPerFrame;
+   
     /// <summary>
     /// Tick equivalent for <see cref="TimeSpan"/> truncated to <see cref="long"/>
     /// </summary>
     public long LongTicks => (long)(TotalFrames * TicksPerFrame);
-
+    #endregion
+    
+    #region Statics
     /// <summary>
     /// Calculates the equivalent milliseconds to the given frames. Truncates it to the nearest integer.
     /// </summary>
@@ -118,7 +151,7 @@ public readonly record struct CueTime
         int intFrames = checked((int)round);
         // If there are fractional frames, we must truncate them.
         // Otherwise, it would be possible to have a time longer than the length of the audio file.
-        // Casting to int is better, as it always does to towards zero.
+        // Casting to int is better, as it always does it towards zero.
         // Math.Floor would not work correctly with negative milliseconds.
         return intFrames;
     }
@@ -128,22 +161,6 @@ public readonly record struct CueTime
         double frames = ticks / TicksPerFrame;
         double round = Math.Round(frames);
         return checked((int)round);
-    }
-
-
-    public CueTime(int totalFrames)
-    {
-        TotalFrames = totalFrames;
-    }
-
-    public CueTime(int minutes, int seconds, int frames)
-    {
-        bool allNonNegative = minutes >= 0 && seconds >= 0 && frames >= 0;
-        bool allNonPositive = minutes <= 0 && seconds <= 0 && frames <= 0;
-        if (!(allNonNegative || allNonPositive))
-            throw new ArgumentException($"Parameters must all be either be all non-negative or all non-positive");
-
-        TotalFrames = CalculateTotalFrames(minutes, seconds, frames);
     }
 
     /// <summary>
@@ -164,40 +181,28 @@ public readonly record struct CueTime
     /// <param name="frames"></param>
     /// <returns></returns>
     public static int CalculateTotalFrames_Unchecked(int minutes, int seconds, int frames) => unchecked(frames + FramesPerSecond * seconds + FramesPerMinute * minutes);
-
+    #endregion
+    
+    #region Conversions
     public static CueTime FromTimeSpan(TimeSpan timeSpan) => new(totalFrames: TicksToFrames(timeSpan.Ticks));
+    
     public TimeSpan ToTimeSpan() => TimeSpan.FromTicks(LongTicks);
-
-    public static implicit operator TimeSpan(CueTime cueTime) => cueTime.ToTimeSpan();
-
-    public static explicit operator CueTime(TimeSpan timeSpan) => FromTimeSpan(timeSpan);
 
     public static CueTime FromMilliseconds(double millis) => new((int)(millis / MillisecondsPerFrame));
 
     public static CueTime FromSeconds(double seconds) => new((int)(seconds * FramesPerSecond));
 
     public static CueTime FromMinutes(double minutes) => new((int)(minutes * FramesPerMinute));
-
-    // Since all elements are either non-negative or non-positive, we can use raw value of minutes (which may or may not have a minus) and absolute value of the rest.
-    // Result will have the minus sign, if the time is negative
-    public override string ToString() => $"{Minutes:d2}:{Math.Abs(Seconds):d2}:{Math.Abs(Frames):d2}";
-
-    public void Deconstruct(out int minutes, out int seconds, out int frames)
-    {
-        minutes = Minutes;
-        seconds = Seconds;
-        frames = Frames;
-    }
-
-    public override int GetHashCode() => TotalFrames.GetHashCode();
+    #endregion
+    
     #region Parsing
     /// <summary>
-    /// Parses string to CueTime (±mm:ss:ff). The parsed time is negative, only if the minute part is negative.
+    /// Parses ReadOnlySpan to CueTime (±mm:ss:ff). The parsed time is negative, only if the minute part is negative.
     /// The frame and seconds parts do not affect the negativity.
     /// </summary>
     /// <param name="span"></param>
     /// <returns>CueTime instance corresponding to <see cref="s"/></returns>
-    /// <exception cref="FormatException"></exception>
+    /// <exception cref="ArgumentException"></exception>
     public static CueTime Parse(ReadOnlySpan<char> span)
     {
         ReadOnlySpan<char> spanTrimmed = span.Trim();
@@ -224,6 +229,7 @@ public readonly record struct CueTime
         int totalFrames = checked(CalculateTotalFrames(_minutes, _seconds, _frames) * multiplier);
         return new CueTime(totalFrames);
     }
+    
     /// <summary>
     /// Finds all separators (':') in the given span.
     /// </summary>
@@ -244,11 +250,19 @@ public readonly record struct CueTime
         return inds;
     }
 
+    /// <summary>
+    /// Parses string to CueTime (±mm:ss:ff). The parsed time is negative, only if the minute part is negative.
+    /// The frame and seconds parts do not affect the negativity.
+    /// </summary>
+    /// <param name="str"></param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentException">If string is null</exception>
     public static CueTime Parse([NotNull] string? str)
     {
         ArgumentNullException.ThrowIfNull(str);
         return Parse(str.AsSpan());
     }
+    
     /// <summary>
     /// Tries to parse string (±mm:ss:ff). The parsed time is negative, only if the minute part is negative.
     /// The frame and seconds parts do not affect the negativity.
@@ -306,11 +320,8 @@ public readonly record struct CueTime
         if (s == null) return false;
         return TryParse(s.AsSpan(), out cueTime);
     }
-    public static CueTime Parse(string s, IFormatProvider? provider) => Parse(s);
-    public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out CueTime result) => TryParse(s, out result);
-    public static CueTime Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s);
-    public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, [MaybeNullWhen(false)] out CueTime result) => TryParse(s, out result);
     #endregion
+    
     #region Comparison and Equality
     public static int Compare(CueTime ct1, CueTime ct2) => ct1.TotalFrames.CompareTo(ct2.TotalFrames);
 
@@ -324,6 +335,7 @@ public readonly record struct CueTime
 
     public static bool Equals(CueTime ct1, CueTime ct2) => ct1.TotalFrames == ct2.TotalFrames;
     #endregion
+   
     #region Math
     /// <summary>
     /// Divides the time by the divisor
@@ -336,6 +348,19 @@ public readonly record struct CueTime
     {
         if (divisor == 0) throw new DivideByZeroException();
         return new(TotalFrames / divisor);
+    }
+    
+    /// <summary>
+    /// Divides the time by the divisor
+    /// </summary>
+    /// <param name="time">The time</param>
+    /// <param name="divisor">The divisor</param>
+    /// <returns>CueTime equivalent to the number frames of input CueTime divided by the divisor, truncated towards zero</returns>
+    /// <exception cref="DivideByZeroException">Thrown if parameter <paramref name="divisor"/> is zero</exception>
+    public CueTime Divide(decimal divisor)
+    {
+        if (divisor == 0) throw new DivideByZeroException();
+        return new((int)(TotalFrames / divisor));
     }
 
     /// <summary>
@@ -367,8 +392,17 @@ public readonly record struct CueTime
         if (double.IsNaN(multiplier)) throw new ArgumentException("Multiplier must be a number");
         return new((int)(TotalFrames * multiplier));
     }
+    /// <summary>
+    /// Multiplies the time by the multiplier
+    /// </summary>
+    /// <param name="multiplier"></param>
+    /// <returns>CueTime equivalent to the number frames of input CueTime multiplied by the <paramref name="multiplier"/>, truncated towards zero</returns>
+    public CueTime Multiply(decimal multiplier)
+    {
+        return new((int)(TotalFrames * multiplier));
+    }
 
-    public CueTime Add(CueTime right) => new(TotalFrames + right.TotalFrames);
+    public CueTime Add(CueTime time) => new(TotalFrames + time.TotalFrames);
 
     /// <summary>
     /// Add the <paramref name="frames"/> number of frames to the time
@@ -377,13 +411,16 @@ public readonly record struct CueTime
     /// <returns></returns>
     public CueTime AddFrames(int frames) => new(TotalFrames + frames);
 
-    public CueTime Subtract(CueTime right) => new(TotalFrames - right.TotalFrames);
+    public CueTime Subtract(CueTime time) => new(TotalFrames - time.TotalFrames);
 
-    public CueTime SubtractFrames(int right) => new(TotalFrames - right);
-
-
+    public CueTime SubtractFrames(int frames) => new(TotalFrames - frames);
     #endregion
+    
     #region Operators
+    public static implicit operator TimeSpan(CueTime cueTime) => cueTime.ToTimeSpan();
+
+    public static explicit operator CueTime(TimeSpan timeSpan) => FromTimeSpan(timeSpan);
+   
     public static bool operator <(CueTime left, CueTime right) => left.CompareTo(right) < 0;
 
     public static bool operator >(CueTime left, CueTime right) => left.CompareTo(right) > 0;
@@ -421,6 +458,8 @@ public readonly record struct CueTime
     /// <returns></returns>
     /// <exception cref="DivideByZeroException">Thrown if parameter <paramref name="divisor"/> is zero</exception>
     public static CueTime operator /(CueTime time, double divisor) => time.Divide(divisor);
+    
+    public static CueTime operator /(CueTime time, decimal divisor) => time.Divide(divisor);
 
     /// <summary>
     /// Divides the time by the divisor
@@ -433,17 +472,31 @@ public readonly record struct CueTime
 
     public static CueTime operator *(CueTime left, double multiplier) => left.Multiply(multiplier);
 
+    public static CueTime operator *(CueTime left, decimal multiplier) => left.Multiply(multiplier);
+
     public static CueTime operator *(CueTime left, int multiplier) => left.Multiply(multiplier);
 
     public static CueTime operator *(int multiplier, CueTime right) => right.Multiply(multiplier);
 
     public static CueTime operator *(double multiplier, CueTime right) => right.Multiply(multiplier);
 
+    public static CueTime operator *(decimal multiplier, CueTime right) => right.Multiply(multiplier);
+
     public static CueTime operator %(CueTime left, CueTime right) => new(left.Frames % right.Frames);
 
     public static double operator /(CueTime left, CueTime right) => (left.Frames / right.Frames);
     #endregion
+   
     #region Explicit Interfaces
+   
+    static CueTime IParsable<CueTime>.Parse(string s, IFormatProvider? provider) => Parse(s);
+    
+    static bool IParsable<CueTime>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out CueTime result) => TryParse(s, out result);
+    
+    static CueTime ISpanParsable<CueTime>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s);
+    
+    static bool ISpanParsable<CueTime>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, [MaybeNullWhen(false)] out CueTime result) => TryParse(s, out result);
+    
     static CueTime IAdditiveIdentity<CueTime, CueTime>.AdditiveIdentity => CueTime.Zero;
     #endregion
 }
