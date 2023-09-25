@@ -170,7 +170,7 @@ internal class CueContainer
         foreach (CueTrack track in donor.Tracks)
         {
             int fIndex = track.ParentFile.Index;
-            Tracks.Add(track.ClonePartial(Files[track.ParentFile.Index]));
+            Tracks.Add(track.ClonePartial(Files[fIndex]));
         }
         foreach (CueIndexImpl cimpl in donor.Indexes)
         {
