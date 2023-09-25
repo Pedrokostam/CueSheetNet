@@ -6,28 +6,17 @@ public enum CueType
     Unknown = 0,
 
     /// <summary>Single continuous file</summary>
-    SingleFile = 0b1,
+    SingleFile = 0b00000001,
 
     /// <summary>Multiple files</summary>
-    MultipleFiles = 0b10,
-
-    /// <summary>Gaps trimmed from files and simulated</summary>
-    SimulatedGaps = 0b1000,
-
-    /// <summary>Gaps appended to previous tracks</summary>
-    GapsAppended = 0b10000,
-
-    /// <summary>Gaps prepended to its tracks</summary>
-    GapsPrepended = 0b100000,
+    MultipleFiles = 0b00000010,
 
     /// <summary>Hidden Track One Audio</summary>
-    HTOA = 0b1000000,
+    HTOA = 0b00000100,
 
-    /// <summary>Gaps appended to next tracks</summary>
-    EacStyle = MultipleFiles | GapsAppended,
+    /// <summary>Uses Postgap or Pregap</summary>
+    SimulatedGaps = 0b00001000,
 
-    //MultipleFilesWithAppendedGaps = EacStyle,
-    //SingleFileWithHiddenTrackOneAudio = SingleFile | HTOA,
-    //MultipleFilesWithPrependedGaps = MultipleFiles | GapsPrepended,
-    //MultipleFileWithSimulatedGaps = MultipleFiles | SimulatedGaps,
+    /// <summary>Index 00 of track on previous file</summary>
+    InterfileGaps = 0b00010000,
 }

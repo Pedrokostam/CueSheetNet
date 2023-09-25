@@ -525,24 +525,25 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
         {
             type |= CueType.HTOA;
         }
-        bool pregaps = false;
         bool simgaps = false;
-        bool appgaps = false;
         foreach (var track in Tracks)
         {
-            pregaps |= (track.PreGap != default) && track.Index != 1;//HTOA does not count
             simgaps |= track.PreGap != default || track.PostGap != default;
-            appgaps |= track.PostGap != default;
         }
-        foreach (var file in Files)
-        {
-            (int first, int afterLast) = GetIndexesOfFile_Range(file.Index);
-            appgaps |= IndexesImpl[afterLast - 1].Number == 0;
-            pregaps |= IndexesImpl[first].Number == 0;
-        }
-        if (pregaps) { type |= CueType.GapsPrepended; }
         if (simgaps) { type |= CueType.SimulatedGaps; }
-        if (appgaps) { type |= CueType.GapsAppended; }
+        if (Files.Count > 1)
+        {
+            bool intergaps = false;
+            foreach (var file in Files)
+            {
+                (int first, int afterLast) = GetIndexesOfFile_Range(file.Index);
+                intergaps |= IndexesImpl[afterLast - 1].Number == 0;
+            }
+            if (intergaps)
+            {
+                type |= CueType.InterfileGaps;
+            }
+        }
         SheetType = type;
     }
 
