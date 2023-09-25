@@ -13,9 +13,9 @@ public class SavingTests
     public void Init()
     {
     }
-    CueReader reader = new();
-    CueWriter writer = new();
-    [TestMethod]
+    readonly CueReader reader = new();
+    readonly CueWriter writer = new();
+    [TestMethod("Test if cloned sheet is equal to its source")]
     public void LoadCloneSame()
     {
         foreach (var file in Utils.GetFiles("*.cue", "SavingTests"))
@@ -32,7 +32,7 @@ public class SavingTests
             }
         }
     }
-    [TestMethod]
+    [TestMethod("Test if save and reloaded sheet is equal to its source")]
     public void SaveReloadSame()
     {
         foreach (var file in Utils.GetFiles("*.cue", "SavingTests"))
@@ -53,7 +53,7 @@ public class SavingTests
             File.Delete(temp);
         }
     }
-    [TestMethod]
+    [TestMethod("Test if saved sheet is equal to its source's clone")]
     public void SaveCloneSame()
     {
         foreach (var file in Utils.GetFiles("*.cue", "SavingTests"))
