@@ -6,7 +6,7 @@ namespace CueSheetNet.Internal
     {
         internal bool Orphaned { get; set; }
         protected CueSheet _ParentSheet;
-        internal CueSheet ParentSheet
+        public CueSheet ParentSheet
         {
             get
             {

@@ -39,7 +39,7 @@ public readonly record struct InnerQuotation
 
     private readonly char openingQuote;
     private readonly char closingQuote;
-    private readonly bool Symmetrical => closingQuote == openingQuote;
+    public readonly bool Symmetrical => closingQuote == openingQuote;
     /// <summary>
     /// Return whether this quotation replacement is redundant, i.e. replaces '"' with '"'
     /// </summary>

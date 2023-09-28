@@ -302,6 +302,7 @@ public static partial class CuePackage
             file.Delete();
             Logger.LogInformation("Removed file {File}", file);
         }
+        sheet.SourceFile?.Delete();
     }
 
     /// <summary>
