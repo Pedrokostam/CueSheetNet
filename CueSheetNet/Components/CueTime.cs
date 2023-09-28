@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
+using System.Text;
 
 namespace CueSheetNet;
 /// <summary>
@@ -9,6 +10,7 @@ namespace CueSheetNet;
 public readonly record struct CueTime
     : IComparable<CueTime>
     , IComparable
+    , IFormattable
     , IParsable<CueTime>
     , ISpanParsable<CueTime>
     , IDecrementOperators<CueTime>
@@ -55,22 +57,30 @@ public readonly record struct CueTime
         frames = Frames;
     }
 
-    // Since all elements are either non-negative or non-positive, we can use raw value of minutes (which may or may not have a minus) and absolute value of the rest.
-    // Result will have the minus sign, if the time is negative
-    public override string ToString() => $"{Minutes:d2}:{Math.Abs(Seconds):d2}:{Math.Abs(Frames):d2}";
+    public override string ToString()
+    {
+        if (Negative)
+        {
+            return $"-{-Minutes:d2}:{-Seconds:d2}:{-Frames:d2}";
+        }
+        else
+        {
+            return $"{Minutes:d2}:{Seconds:d2}:{Frames:d2}";
+        }
+    }
 
     public override int GetHashCode() => TotalFrames.GetHashCode();
-    
+
     #region Constants
     private const int SecondsPerMinute = 60;
 
     private const int MillisecondsPerSecond = 1000;
 
     public const int FramesPerSecond = 75;
-    
+
     /// <summary>133'333.(3)</summary>
     public const double TicksPerFrame = (double)TimeSpan.TicksPerSecond / FramesPerSecond;
-   
+
     /// <summary>4'500</summary>
     public const int FramesPerMinute = FramesPerSecond * SecondsPerMinute; // 4'500
 
@@ -102,7 +112,7 @@ public readonly record struct CueTime
     /// </summary>
     public static readonly CueTime Min = new(-99, -59, -74);
     #endregion
-   
+
     #region Properties
     public int Minutes => (TotalFrames - Frames - SecondsPerMinute * Seconds) / FramesPerMinute;
 
@@ -129,13 +139,13 @@ public readonly record struct CueTime
     /// Tick equivalent for <see cref="TimeSpan"/> represented as a real number.
     /// </summary>
     public double Ticks => TotalFrames * TicksPerFrame;
-   
+
     /// <summary>
     /// Tick equivalent for <see cref="TimeSpan"/> truncated to <see cref="long"/>
     /// </summary>
     public long LongTicks => (long)(TotalFrames * TicksPerFrame);
     #endregion
-    
+
     #region Statics
     /// <summary>
     /// Calculates the equivalent milliseconds to the given frames. Truncates it to the nearest integer.
@@ -182,10 +192,10 @@ public readonly record struct CueTime
     /// <returns></returns>
     public static int CalculateTotalFrames_Unchecked(int minutes, int seconds, int frames) => unchecked(frames + FramesPerSecond * seconds + FramesPerMinute * minutes);
     #endregion
-    
+
     #region Conversions
     public static CueTime FromTimeSpan(TimeSpan timeSpan) => new(totalFrames: TicksToFrames(timeSpan.Ticks));
-    
+
     public TimeSpan ToTimeSpan() => TimeSpan.FromTicks(LongTicks);
 
     public static CueTime FromMilliseconds(double millis) => new((int)(millis / MillisecondsPerFrame));
@@ -194,7 +204,7 @@ public readonly record struct CueTime
 
     public static CueTime FromMinutes(double minutes) => new((int)(minutes * FramesPerMinute));
     #endregion
-    
+
     #region Parsing
     /// <summary>
     /// Parses ReadOnlySpan to CueTime (±mm:ss:ff). The parsed time is negative, only if the minute part is negative.
@@ -229,7 +239,7 @@ public readonly record struct CueTime
         int totalFrames = checked(CalculateTotalFrames(_minutes, _seconds, _frames) * multiplier);
         return new CueTime(totalFrames);
     }
-    
+
     /// <summary>
     /// Finds all separators (':') in the given span.
     /// </summary>
@@ -262,7 +272,7 @@ public readonly record struct CueTime
         ArgumentNullException.ThrowIfNull(str);
         return Parse(str.AsSpan());
     }
-    
+
     /// <summary>
     /// Tries to parse string (±mm:ss:ff). The parsed time is negative, only if the minute part is negative.
     /// The frame and seconds parts do not affect the negativity.
@@ -321,7 +331,7 @@ public readonly record struct CueTime
         return TryParse(s.AsSpan(), out cueTime);
     }
     #endregion
-    
+
     #region Comparison and Equality
     public static int Compare(CueTime ct1, CueTime ct2) => ct1.TotalFrames.CompareTo(ct2.TotalFrames);
 
@@ -335,7 +345,7 @@ public readonly record struct CueTime
 
     public static bool Equals(CueTime ct1, CueTime ct2) => ct1.TotalFrames == ct2.TotalFrames;
     #endregion
-   
+
     #region Math
     /// <summary>
     /// Divides the time by the divisor
@@ -349,7 +359,7 @@ public readonly record struct CueTime
         if (divisor == 0) throw new DivideByZeroException();
         return new(TotalFrames / divisor);
     }
-    
+
     /// <summary>
     /// Divides the time by the divisor
     /// </summary>
@@ -415,12 +425,12 @@ public readonly record struct CueTime
 
     public CueTime SubtractFrames(int frames) => new(TotalFrames - frames);
     #endregion
-    
+
     #region Operators
     public static implicit operator TimeSpan(CueTime cueTime) => cueTime.ToTimeSpan();
 
     public static explicit operator CueTime(TimeSpan timeSpan) => FromTimeSpan(timeSpan);
-   
+
     public static bool operator <(CueTime left, CueTime right) => left.CompareTo(right) < 0;
 
     public static bool operator >(CueTime left, CueTime right) => left.CompareTo(right) > 0;
@@ -458,7 +468,7 @@ public readonly record struct CueTime
     /// <returns></returns>
     /// <exception cref="DivideByZeroException">Thrown if parameter <paramref name="divisor"/> is zero</exception>
     public static CueTime operator /(CueTime time, double divisor) => time.Divide(divisor);
-    
+
     public static CueTime operator /(CueTime time, decimal divisor) => time.Divide(divisor);
 
     /// <summary>
@@ -486,17 +496,95 @@ public readonly record struct CueTime
 
     public static double operator /(CueTime left, CueTime right) => (left.Frames / right.Frames);
     #endregion
-   
+
     #region Explicit Interfaces
-   
+
     static CueTime IParsable<CueTime>.Parse(string s, IFormatProvider? provider) => Parse(s);
-    
+
     static bool IParsable<CueTime>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out CueTime result) => TryParse(s, out result);
-    
+
     static CueTime ISpanParsable<CueTime>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s);
-    
+
     static bool ISpanParsable<CueTime>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, [MaybeNullWhen(false)] out CueTime result) => TryParse(s, out result);
-    
     static CueTime IAdditiveIdentity<CueTime, CueTime>.AdditiveIdentity => CueTime.Zero;
+    #endregion
+    #region String
+    public string ToString(string? format) => ToString(format, CultureInfo.CurrentCulture);
+    public string ToString(string? format, IFormatProvider? formatProvider)
+    {
+        switch (format)
+        {
+            case null or "" or "G" or "g" or @"-mm\:ss\:ff":
+                return ToString();
+            default:
+                break;
+        }
+        ReadOnlySpan<char> span = format;
+        int spanLength = span.Length;
+        int i = 0;
+        StringBuilder strb = new();
+        while (i < spanLength)
+        {
+            char c = span[i];
+            if (c == '\\')
+            {
+                if (i < spanLength - 1)
+                {
+                    strb.Append(c);
+                    i += 2;
+                }
+            }
+            else if (c is '+' or '-')
+            {
+                i++;
+                if (!(c == '-' && !Negative))
+                {
+                    strb.Append(Negative ? '-' : '+');
+                }
+            }
+            else if (c is 'm' or 's' or 'f')
+            {
+                int charLength = ParseRepeat(span, i);
+                if (charLength > 2)
+                {
+                    throw new FormatException();
+                }
+                i += charLength;
+                int num = c switch
+                {
+                    'm' => Math.Abs(Minutes),
+                    's' => Math.Abs(Seconds),
+                    'f' => Math.Abs(Frames),
+                    _ => 0
+                };
+                strb.Append(num.ToString().PadRight(charLength, '0'));
+            }
+            else if (c == 'D')
+            {
+                int charLength = ParseRepeat(span, i);
+                i += charLength;
+                string fmt = "." + new string('0', charLength);
+                strb.Append((Math.Abs(Milliseconds) / 1000).ToString(fmt)[1..]);
+            }
+            else
+            {
+                strb.Append(c);
+                i++;
+            }
+        }
+        return strb.ToString();
+
+    }
+
+    private static int ParseRepeat(ReadOnlySpan<char> format, int pos)
+    {
+        char patternChar = format[pos];
+        int index = pos + 1;
+        while ((uint)index < (uint)format.Length && format[index] == patternChar)
+        {
+            index++;
+        }
+        return index - pos;
+    }
     #endregion
 }
