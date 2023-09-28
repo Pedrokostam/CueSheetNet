@@ -11,40 +11,21 @@ using static System.Net.WebRequestMethods;
 
 namespace CueSheetNet;
 
-
-public interface ICueFile
+public enum FileType
 {
-    FileInfo SourceFile { get; }
-    bool ValidFile { get; }
-    long FileSize { get; }
-    bool Exists { get; }
-
-
-}
-public class CueExtraFile : ICueFile
-{
-    public FileInfo SourceFile { get; set; }
-    public bool ValidFile => SourceFile.Exists;
-    public CueExtraFile(FileInfo source)
-    {
-        SourceFile = source;
-    }
-    public CueExtraFile(string path) : this(new FileInfo(path))
-    {
-    }
-    public static implicit operator FileInfo(CueExtraFile file) => file.SourceFile;
-    public static explicit operator CueExtraFile(FileInfo file) => new CueExtraFile(file);
-
-    public long FileSize => SourceFile.Length;
-    public bool Exists => SourceFile.Exists;
-
+    None,
+    WAVE,
+    AIFF,
+    MP3,
+    BINARY,
+    MOTOROLA
 }
 
 public class CueAudioFile : CueItemBase, ICueFile, IEquatable<CueAudioFile>
 {
     private FileSystemWatcher? watcher;
     public int Index { get; internal set; }
-    public CueAudioFile(CueSheet parent, string filePath, string type) : base(parent)
+    public CueAudioFile(CueSheet parent, string filePath, FileType type) : base(parent)
     {
         SetFile(filePath);
         Type = type;
@@ -53,13 +34,7 @@ public class CueAudioFile : CueItemBase, ICueFile, IEquatable<CueAudioFile>
     {
         return new(newOwner, SourceFile.FullName, Type);
     }
-    private string _Type;
-    public string Type
-    {
-        get => _Type;
-        [MemberNotNull(nameof(_Type))]
-        set => _Type = value.ToUpperInvariant().Trim();
-    }
+    public FileType Type { get; internal set; } 
     public FileMetadata? Meta
     {
         get

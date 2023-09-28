@@ -181,7 +181,7 @@ public sealed class CueWriter
         Builder.Append("FILE ");
         AppendFilepath(file);
         Builder.Append(' ');
-        Builder.AppendLine(file.Type);
+        Builder.AppendLine(file.Type.ToString());
     }
    
 

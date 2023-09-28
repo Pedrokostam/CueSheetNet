@@ -97,7 +97,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
     {
         Files[index].SetFile(newPath);
     }
-    public CueAudioFile AddFile(string path, string type) => Container.AddFile(path, type);
+    public CueAudioFile AddFile(string path, FileType type) => Container.AddFile(path, type);
     public CueAudioFile? LastFile => Container.Files.LastOrDefault();
 
     private List<ICueFile> _associatedFiles { get; } = new();

@@ -1,4 +1,5 @@
-﻿using System.Collections.ObjectModel;
+﻿using CueSheetNet.Logging;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
@@ -55,9 +56,8 @@ internal class CueContainer
         ParentSheet = cueSheet;
     }
 
-    public CueAudioFile AddFile(string filePath, string type)
+    public CueAudioFile AddFile(string filePath, FileType type)
     {
-        if (string.IsNullOrEmpty(type)) type = "WAVE";
         CueAudioFile cf = new(ParentSheet, filePath, type)
         {
             Index = Files.Count
@@ -65,7 +65,7 @@ internal class CueContainer
         Files.Add(cf);
         return cf;
     }
-    public CueAudioFile InsertFile(int insertionIndex, string filePath, string type)
+    public CueAudioFile InsertFile(int insertionIndex, string filePath, FileType type)
     {
         CueAudioFile cf = new(ParentSheet, filePath, type);
         Files.Insert(insertionIndex, cf);

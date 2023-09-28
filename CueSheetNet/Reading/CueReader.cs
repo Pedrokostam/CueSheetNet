@@ -209,7 +209,12 @@ public partial class CueReader
     private void ParseFile(string line)
     {
         (string path, string type) = GetFile(line, 5);// FILE_
-        _ = Sheet!.AddFile(path, type);
+        if(!Enum.TryParse<FileType>(type.Trim().ToUpperInvariant(), out FileType typeEnum))
+        {
+            Logger.LogWarning("Text {type} does not match eny file type - assigning type WAVE", type);
+            typeEnum = FileType.WAVE;
+        }
+        _ = Sheet!.AddFile(path, typeEnum);
     }
     private void ParseTrack(string line)
     {
