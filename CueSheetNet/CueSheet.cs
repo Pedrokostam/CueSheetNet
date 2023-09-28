@@ -81,14 +81,14 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
     #region Tracks
     public ReadOnlyCollection<CueTrack> Tracks => Container.Tracks.AsReadOnly();
     public CueTrack? LastTrack => Container.Tracks.LastOrDefault();
-    public CueTrack AddTrack(int index, CueAudioFile file)
+    public CueTrack AddTrack(int index, TrackType type, CueAudioFile file)
     {
         if (file.ParentSheet != this)
             throw new InvalidOperationException("Specified file does not belong to this cuesheet");
-        return AddTrack(index, file.Index);
+        return AddTrack(index, type, file.Index);
     }
 
-    public CueTrack AddTrack(int index, int fileIndex = -1) => Container.AddTrack(index, fileIndex);
+    public CueTrack AddTrack(int index, TrackType type, int fileIndex = -1) => Container.AddTrack(index, type, fileIndex);
 
     #endregion
 
@@ -526,10 +526,16 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
             type |= CueType.HTOA;
         }
         bool simgaps = false;
+        bool audio = false;
+        bool data = false;
         foreach (var track in Tracks)
         {
+            audio |=track.Type.Audio;
+            data |=!track.Type.Audio;
             simgaps |= track.PreGap != default || track.PostGap != default;
         }
+        if (audio) { type |= CueType.Audio; }
+        if (data) { type |= CueType.Data; }
         if (simgaps) { type |= CueType.SimulatedGaps; }
         if (Files.Count > 1)
         {

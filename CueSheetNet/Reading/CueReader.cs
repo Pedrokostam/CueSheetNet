@@ -17,7 +17,7 @@ public partial class CueReader
     public CueSource Source { get; private set; }
 
     public string? CurrentLine { get; private set; } = "No line read yet";
-   
+
     CueSheet? Sheet { get; set; }
 
     /// <summary>
@@ -40,7 +40,7 @@ public partial class CueReader
     }
     /// <remarks></remarks>
     /// <inheritdoc cref="ParseCueSheet(string, Encoding?)"/>
-    public CueSheet ParseCueSheet(string cuePath)=>ParseCueSheet(cuePath, null);
+    public CueSheet ParseCueSheet(string cuePath) => ParseCueSheet(cuePath, null);
     /// <summary>
     /// Loads specified text file and parses it as CueSheet.
     /// </summary>
@@ -48,7 +48,7 @@ public partial class CueReader
     /// <param name="cuePath">Filepath to be loaded and parsed</param>
     /// <param name="encoding">Encoding to be used when decoding bytes to text. If null, encoding detection will be perfomed/></param>
     /// <returns>Parsed <see cref="CueSheet"/></returns>
-    public CueSheet ParseCueSheet(string cuePath,Encoding? encoding)
+    public CueSheet ParseCueSheet(string cuePath, Encoding? encoding)
     {
         var t = Path.GetFullPath(cuePath);
         Reset(encoding);
@@ -62,7 +62,7 @@ public partial class CueReader
         if (!File.Exists(cuePath)) throw new FileNotFoundException($"{cuePath} does not exist");
         byte[] cueFileBytes = File.ReadAllBytes(cuePath);
         using MemoryStream fs = new(cueFileBytes, false);
-        CueSheet cue = ParseCueSheet_Impl(fs,cuePath);
+        CueSheet cue = ParseCueSheet_Impl(fs, cuePath);
         return cue;
     }
     /// <summary>Parsing CueSheet from: {Source}</summary>
@@ -71,7 +71,7 @@ public partial class CueReader
     private static void LogParseStart() => Logger.LogDebug("Parsing started");
     /// <remarks></remarks>
     /// <inheritdoc cref="ParseCueSheet(byte[], Encoding?)"/>
-    public CueSheet ParseCueSheet(byte[] cueFileBytes)=>ParseCueSheet(cueFileBytes,null);
+    public CueSheet ParseCueSheet(byte[] cueFileBytes) => ParseCueSheet(cueFileBytes, null);
     /// <summary>
     /// Parses byte array as CueSheet. 
     /// </summary>
@@ -85,7 +85,7 @@ public partial class CueReader
         Source = new CueSource(cueFileBytes);
         LogParseSource();
         using MemoryStream fs = new(cueFileBytes, false);
-        return ParseCueSheet_Impl(fs,null);
+        return ParseCueSheet_Impl(fs, null);
     }
     /// <summary>
     /// Parses string as CueSheet. 
@@ -111,7 +111,7 @@ public partial class CueReader
         return ParseCueSheetFromStringContent(new string(cueContentChars));
     }
 
-    private CueSheet ParseCueSheet_Impl(Stream fs,string? path)
+    private CueSheet ParseCueSheet_Impl(Stream fs, string? path)
     {
         LogParseStart();
         Sheet = new(path);
@@ -209,7 +209,7 @@ public partial class CueReader
     private void ParseFile(string line)
     {
         (string path, string type) = GetFile(line, 5);// FILE_
-        if(!Enum.TryParse<FileType>(type.Trim().ToUpperInvariant(), out FileType typeEnum))
+        if (!Enum.TryParse<FileType>(type.Trim().ToUpperInvariant(), out FileType typeEnum))
         {
             Logger.LogWarning("Text {type} does not match eny file type - assigning type WAVE", type);
             typeEnum = FileType.WAVE;
@@ -224,7 +224,8 @@ public partial class CueReader
             number = Sheet!.LastTrack?.Number + 1 ?? 1;
             Logger.LogWarning("Invalid TRACK number at line {Line number}: \\\"{Line}\\\"\". Substituting {Substitute number:d2}", CurrentLineIndex, CurrentLine, number);
         }
-        _ = Sheet!.AddTrack(number);
+        string type = GetKeyword(line, 6 + 1 + num.Length);
+        _ = Sheet!.AddTrack(number, TrackType.FromString(type));
 
     }
     private void ParsePerformer(string line)

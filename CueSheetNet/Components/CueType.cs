@@ -19,4 +19,8 @@ public enum CueType
 
     /// <summary>Index 00 of track on previous file</summary>
     InterfileGaps = 0b00010000,
+    /// <summary>Contains audio tracks</summary>
+    Audio = 0b00100000,
+    /// <summary>Contains data tracks</summary>
+    Data = 0b01000000,
 }

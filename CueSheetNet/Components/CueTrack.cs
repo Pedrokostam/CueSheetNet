@@ -1,10 +1,10 @@
 ﻿using CueSheetNet.Internal;
 using CueSheetNet.Syntax;
 using System.Collections.ObjectModel;
+using System.Security.Cryptography;
 using System.Xml.Linq;
 
 namespace CueSheetNet;
-
 public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemarkableCommentable
 {
     internal FieldSetFlags CommonFieldsSet { get; private set; }
@@ -13,6 +13,7 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemarkableCommentabl
     /// </summary>
     public int Index { get; internal set; }
     public int Offset { get; internal set; }
+    public TrackType Type { get; internal set; }
     public CueTime PostGap { get; set; }
     public CueTime PreGap { get; set; }
     private CueAudioFile _ParentFile;
@@ -123,12 +124,12 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemarkableCommentabl
         get
         {
             var (_, indexOfNextTrack) = ParentSheet.GetIndexesOfTrack_Range(Index);
-            CueIndexImpl? nextTrackImplIndex =  ParentSheet.GetIndexImplOrDefault(indexOfNextTrack);
+            CueIndexImpl? nextTrackImplIndex = ParentSheet.GetIndexImplOrDefault(indexOfNextTrack);
             // it's the last track of cuesheet
             bool isLastTrackInCue = nextTrackImplIndex is null;
             // it's the last track of its file
             bool isLastTrackInFile = nextTrackImplIndex?.File != ParentFile;
-            if (isLastTrackInCue || isLastTrackInFile) 
+            if (isLastTrackInCue || isLastTrackInFile)
             {
                 // Only way to get track's duration is to subtract its start from the file duration
                 CueTime? fileDur = ParentFile.Meta?.CueDuration;
@@ -149,9 +150,10 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemarkableCommentabl
         }
     }
 
-    public CueTrack(CueAudioFile parentFile) : base(parentFile.ParentSheet)
+    public CueTrack(CueAudioFile parentFile,TrackType type) : base(parentFile.ParentSheet)
     {
         _ParentFile = parentFile;
+        Type = type;
     }
     public override string ToString()
     {
@@ -180,7 +182,7 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemarkableCommentabl
 
     internal CueTrack ClonePartial(CueAudioFile newOwner)
     {
-        CueTrack newTrack = new(newOwner)
+        CueTrack newTrack = new(newOwner,Type)
         {
             CommonFieldsSet = CommonFieldsSet,
             Composer = Composer,
