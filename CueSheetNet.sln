@@ -5,7 +5,7 @@ VisualStudioVersion = 17.3.32929.385
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CueSheetNet", "CueSheetNet\CueSheetNet.csproj", "{5FF1C596-40AC-4F43-B9E5-467211CCB1B2}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CueSheetNet.Prototyper", "CueSheetNet.Test\CueSheetNet.Prototyper.csproj", "{12BF08D2-1D2F-4785-9949-073BDDD45665}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CueSheetNet.Prototyper", "CueSheetNet.Prototyper\CueSheetNet.Prototyper.csproj", "{12BF08D2-1D2F-4785-9949-073BDDD45665}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CueSheetNet.Benchmark", "CueSheetNet.Benchmark\CueSheetNet.Benchmark.csproj", "{01FA9897-CE1D-4A1A-BC03-DCC278821634}"
 EndProject
