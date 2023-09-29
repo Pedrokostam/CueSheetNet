@@ -56,7 +56,7 @@ internal class CueContainer
         ParentSheet = cueSheet;
     }
 
-    public CueAudioFile AddFile(string filePath, FileType type)
+    public CueAudioFile AddFile(string filePath, CueAudioFile.FileType type)
     {
         CueAudioFile cf = new(ParentSheet, filePath, type)
         {
@@ -65,7 +65,7 @@ internal class CueContainer
         Files.Add(cf);
         return cf;
     }
-    public CueAudioFile InsertFile(int insertionIndex, string filePath, FileType type)
+    public CueAudioFile InsertFile(int insertionIndex, string filePath, CueAudioFile.FileType type)
     {
         CueAudioFile cf = new(ParentSheet, filePath, type);
         Files.Insert(insertionIndex, cf);

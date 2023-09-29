@@ -5,7 +5,6 @@ using CueSheetNet.FileHandling;
 using CueSheetNet.Internal;
 
 namespace CueSheetNet;
-
 public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
 {
     #region Rem
@@ -97,7 +96,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
     {
         Files[index].SetFile(newPath);
     }
-    public CueAudioFile AddFile(string path, FileType type) => Container.AddFile(path, type);
+    public CueAudioFile AddFile(string path, CueAudioFile.FileType type) => Container.AddFile(path, type);
     public CueAudioFile? LastFile => Container.Files.LastOrDefault();
 
     private List<ICueFile> _associatedFiles { get; } = new();

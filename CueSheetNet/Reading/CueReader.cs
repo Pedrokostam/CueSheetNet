@@ -209,10 +209,10 @@ public partial class CueReader
     private void ParseFile(string line)
     {
         (string path, string type) = GetFile(line, 5);// FILE_
-        if (!Enum.TryParse<FileType>(type.Trim().ToUpperInvariant(), out FileType typeEnum))
+        if (!Enum.TryParse<CueAudioFile.FileType>(type.Trim().ToUpperInvariant(), out CueAudioFile.FileType typeEnum))
         {
             Logger.LogWarning("Text {type} does not match eny file type - assigning type WAVE", type);
-            typeEnum = FileType.WAVE;
+            typeEnum = CueAudioFile.FileType.WAVE;
         }
         _ = Sheet!.AddFile(path, typeEnum);
     }

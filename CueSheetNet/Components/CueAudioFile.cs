@@ -11,18 +11,27 @@ using static System.Net.WebRequestMethods;
 
 namespace CueSheetNet;
 
-public enum FileType
-{
-    None,
-    WAVE,
-    AIFF,
-    MP3,
-    BINARY,
-    MOTOROLA
-}
 
 public class CueAudioFile : CueItemBase, ICueFile, IEquatable<CueAudioFile>
 {
+    public enum FileType
+    {
+        Invalid = 0,
+        WAVE = 0b1,
+        AIFF = 0b10,
+        MP3 = 0b100,
+        /// <summary>Big-Endian binary</summary>
+        BINARY = 0b1000,
+        /// <summary>Little-Endian binary</summary>
+        MOTOROLA = 0b10000
+    }
+    public const FileType AudioTypes = FileType.WAVE | FileType.AIFF | FileType.MP3;
+    public const FileType DataTypes = FileType.BINARY | FileType.MOTOROLA;
+    public static bool IsAudioFile(FileType type)
+    {
+
+        return type.HasFlag(FileType.WAVE);
+    }
     private FileSystemWatcher? watcher;
     public int Index { get; internal set; }
     public CueAudioFile(CueSheet parent, string filePath, FileType type) : base(parent)
@@ -34,7 +43,7 @@ public class CueAudioFile : CueItemBase, ICueFile, IEquatable<CueAudioFile>
     {
         return new(newOwner, SourceFile.FullName, Type);
     }
-    public FileType Type { get; internal set; } 
+    public FileType Type { get; internal set; }
     public FileMetadata? Meta
     {
         get
@@ -67,8 +76,16 @@ public class CueAudioFile : CueItemBase, ICueFile, IEquatable<CueAudioFile>
         Debug.WriteLine($"Refreshing file meta: {_file}");
         if (_file.Exists)
         {
-            Meta = AudioFileReader.ReadMetadata(_file.FullName);
-            ValidFile = true;
+            if (IsAudio())
+            {
+                Meta = AudioFileReader.ReadMetadata(_file.FullName);
+                ValidFile = true;
+            }
+            else
+            {
+                Meta = null;
+                ValidFile = false;
+            }
         }
         else
         {
@@ -77,6 +94,9 @@ public class CueAudioFile : CueItemBase, ICueFile, IEquatable<CueAudioFile>
         }
         NeedsRefresh = false;
     }
+
+    private bool IsAudio() => (AudioTypes & Type) != FileType.Invalid;
+
     public FileInfo SourceFile => _file;
 
 
