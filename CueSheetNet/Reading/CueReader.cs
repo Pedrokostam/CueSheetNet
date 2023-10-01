@@ -1,4 +1,4 @@
-﻿using CueSheetNet.AudioFormatReaders;
+﻿using CueSheetNet.FileReaders;
 using CueSheetNet.Internal;
 using CueSheetNet.Logging;
 using CueSheetNet.Reading;

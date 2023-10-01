@@ -5,8 +5,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CueSheetNet.AudioFormatReaders;
-internal sealed class FlacFormatReader : IStreamFormatReader
+namespace CueSheetNet.FileReaders;
+internal sealed class FlacFormatReader : IAudioBinaryStreamFormatReader
 {
     private readonly string[] extensions = new string[] { ".flac" };
     private readonly string formatName = "Flac";
@@ -69,7 +69,6 @@ internal sealed class FlacFormatReader : IStreamFormatReader
         var totalSamples = (ulong)totalSample_0 + ((ulong)totalSample_24 << 24);
         metadata = new()
         {
-            Size = stream.Length,
             Duration = TimeSpan.FromSeconds((double)totalSamples / samples),
             SampleRate = samples,
             Channels = numChannels,

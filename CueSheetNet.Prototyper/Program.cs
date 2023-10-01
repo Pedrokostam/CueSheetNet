@@ -1,6 +1,6 @@
 ﻿// See https://aka.ms/new-console-template for more information
 using CueSheetNet;
-using CueSheetNet.AudioFormatReaders;
+using CueSheetNet.FileReaders;
 using CueSheetNet.Logging;
 using CueSheetNet.Test;
 using CueSheetNet.TextParser;
@@ -25,7 +25,6 @@ void xd()
     foreach (var item in s)
     {
        Console.WriteLine(Path.GetFileName(item));
-       Console.WriteLine(AudioFileReader.ReadMetadata(item));
        Console.WriteLine();
     }
 }

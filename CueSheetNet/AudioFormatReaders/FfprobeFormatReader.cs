@@ -3,9 +3,9 @@ using System.Globalization;
 using System.Reflection.Metadata.Ecma335;
 using CueSheetNet.Logging;
 
-namespace CueSheetNet.AudioFormatReaders;
+namespace CueSheetNet.FileReaders;
 
-public abstract class FfprobeFormatReader : IFileFormatReader
+public abstract class FfprobeFormatReader : IAudioFileFormatReader
 {
     abstract protected bool Lossy { get; }
     public static string FFProbePath { get; set; } = "ffprobe";
@@ -84,8 +84,8 @@ public abstract class FfprobeFormatReader : IFileFormatReader
             bit_depth = GetValue(ini, "bits_per_raw_sample", -1);
         }
         data = new FileMetadata(
-            GetValue(ini,"size",-1L),
             TimeSpan.FromSeconds(GetValue(ini, "duration", -1.0)),
+            false,
             GetValue(ini, "sample_rate", -1),
             GetValue(ini, "channels", -1),
             bit_depth,

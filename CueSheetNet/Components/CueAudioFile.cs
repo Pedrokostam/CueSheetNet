@@ -1,4 +1,4 @@
-﻿using CueSheetNet.AudioFormatReaders;
+﻿using CueSheetNet.FileReaders;
 using CueSheetNet.FileHandling;
 using CueSheetNet.Internal;
 using CueSheetNet.Logging;
@@ -20,9 +20,9 @@ public class CueAudioFile : CueItemBase, ICueFile, IEquatable<CueAudioFile>
         WAVE = 0b1,
         AIFF = 0b10,
         MP3 = 0b100,
-        /// <summary>Big-Endian binary</summary>
-        BINARY = 0b1000,
         /// <summary>Little-Endian binary</summary>
+        BINARY = 0b1000,
+        /// <summary>Big-Endian binary</summary>
         MOTOROLA = 0b10000
     }
     public const FileType AudioTypes = FileType.WAVE | FileType.AIFF | FileType.MP3;
@@ -72,20 +72,16 @@ public class CueAudioFile : CueItemBase, ICueFile, IEquatable<CueAudioFile>
 
     private void RefreshIfNeeded()
     {
-        if (!NeedsRefresh) return;
+        if (!NeedsRefresh || ParentSheet.Files.Count <= Index) return;
         Debug.WriteLine($"Refreshing file meta: {_file}");
         if (_file.Exists)
         {
-            if (IsAudio())
-            {
-                Meta = AudioFileReader.ReadMetadata(_file.FullName);
-                ValidFile = true;
-            }
-            else
-            {
-                Meta = null;
-                ValidFile = false;
-            }
+            var meta = FileReader.ReadMetadata(_file.FullName,
+                                           ParentSheet
+                                           .GetTracksOfFile_IEnum(Index)
+                                           .Select(x => x.Type));
+            ValidFile = meta.HasValue;
+            Meta = meta;
         }
         else
         {
@@ -192,7 +188,6 @@ public class CueAudioFile : CueItemBase, ICueFile, IEquatable<CueAudioFile>
         SetFile(absPath);
     }
 
-    public bool Equals(CueAudioFile? other) => Equals(other, StringComparison.OrdinalIgnoreCase);
 
     public string NormalizedPath
     {
@@ -206,7 +201,7 @@ public class CueAudioFile : CueItemBase, ICueFile, IEquatable<CueAudioFile>
         }
     }
 
-    public bool Equals(CueAudioFile? other, StringComparison stringComparison)
+    public bool Equals(CueAudioFile? other)
     {
         if (ReferenceEquals(this, other)) return true;
         if (other is null) return false;

@@ -357,6 +357,12 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
         if (start == end) return Array.Empty<CueTrack>();
         return Container.Tracks.Skip(start).Take(end - start).ToArray();
     }
+    internal IEnumerable<CueTrack> GetTracksOfFile_IEnum(int fileIndex)
+    {
+        (int start, int end) = Container.GetCueTracksOfFile_Range(fileIndex);
+        if (start == end) return Array.Empty<CueTrack>();
+        return Container.Tracks.Skip(start).Take(end - start);
+    }
 
     internal (int Start, int End) GetIndexesOfTrack_Range(int trackIndex) => Container.GetCueIndicesOfTrack_Range(trackIndex);
     public CueIndex[] GetIndexesOfTrack(int trackIndex)
@@ -529,8 +535,8 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
         bool data = false;
         foreach (var track in Tracks)
         {
-            audio |=track.Type.Audio;
-            data |=!track.Type.Audio;
+            audio |=track.Type.ContainsAudioData;
+            data |=!track.Type.ContainsAudioData;
             simgaps |= track.PreGap != default || track.PostGap != default;
         }
         if (audio) { type |= CueType.Audio; }

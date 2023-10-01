@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CueSheetNet.AudioFormatReaders;
+namespace CueSheetNet.FileReaders;
 internal sealed class Mp3FormatReader : FfprobeFormatReader
 {
     private readonly string[] extensions = new string[] { ".MP3" };

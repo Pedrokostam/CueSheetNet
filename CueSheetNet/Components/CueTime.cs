@@ -5,7 +5,7 @@ using System.Text;
 
 namespace CueSheetNet;
 /// <summary>
-/// Represents a time interval measured in CD Frames.
+/// Represents a time interval measured in Cue Frames. Cue Frame is equivalent to 1 CD sector (not to be confused with CD frame, which is a part of a sector) 
 /// </summary>
 public readonly record struct CueTime
     : IComparable<CueTime>

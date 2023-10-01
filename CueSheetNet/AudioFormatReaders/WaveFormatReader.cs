@@ -5,8 +5,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CueSheetNet.AudioFormatReaders;
-internal sealed class WaveFormatReader : IFileFormatReader
+namespace CueSheetNet.FileReaders;
+internal sealed class WaveFormatReader : IAudioFileFormatReader
 {
     private readonly string[] extensions = new string[] { ".WAV", ".WAVE" };
     private readonly string formatName = "Wave";
@@ -83,7 +83,6 @@ internal sealed class WaveFormatReader : IFileFormatReader
         var p = new PointF() { X = 0, Y = 0 };
         metadata = new()
         {
-            Size = stream.Length,
             Duration = TimeSpan.FromSeconds(durationSec),
             SampleRate = (int)sampleRate,
             Channels = numChannels,

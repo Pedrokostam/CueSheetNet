@@ -1,5 +1,5 @@
 ﻿
-namespace CueSheetNet.AudioFormatReaders;
+namespace CueSheetNet.FileReaders;
 
 class UnsupportedFileFormatException : Exception
 {
