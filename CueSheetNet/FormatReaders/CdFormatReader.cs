@@ -30,11 +30,11 @@ internal class CdFormatReader : IBinaryStreamFormatReader
             return true;
         }
         stream.Seek(0, SeekOrigin.Begin);
-        Span<byte> sixteenn = stackalloc byte[16];
-        stream.Read(sixteenn);
-        if (!sixteenn[..12].SequenceEqual(Header))
+        Span<byte> sixteen = stackalloc byte[16];
+        stream.Read(sixteen);
+        if (!sixteen[..12].SequenceEqual(Header))
             return false;
-        byte modeByte = sixteenn[^1];
+        byte modeByte = sixteen[^1];
         bool byteGood = mode switch
         {
             TrackType.Modes.Mode0 => modeByte == 0,
