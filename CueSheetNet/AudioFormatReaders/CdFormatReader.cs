@@ -42,7 +42,7 @@ internal class CdFormatReader : IBinaryStreamFormatReader
             TrackType.Modes.Mode2 => modeByte == 2,
             _ => false
         };
-        return true;
+        return byteGood;
     }
 
 
