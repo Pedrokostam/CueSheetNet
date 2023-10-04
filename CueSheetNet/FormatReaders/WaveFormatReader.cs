@@ -8,10 +8,10 @@ using System.Threading.Tasks;
 namespace CueSheetNet.FileReaders;
 internal sealed class WaveFormatReader : IAudioFileFormatReader
 {
-    private readonly string[] extensions = new string[] { ".WAV", ".WAVE" };
-    private readonly string formatName = "Wave";
-    private readonly byte[] RIFF = "RIFF"u8.ToArray();//  0x52 0x49 0x46 0x46
-    private readonly byte[] WAVE = "WAVE"u8.ToArray();//  0x57 0x41 0x56 0x45
+    private static readonly string[] extensions = new string[] { ".WAV", ".WAVE" };
+    private static readonly string formatName = "Wave";
+    private static readonly byte[] RIFF = "RIFF"u8.ToArray();//  0x52 0x49 0x46 0x46
+    private static readonly byte[] WAVE = "WAVE"u8.ToArray();//  0x57 0x41 0x56 0x45
     public string FormatName => formatName;
     public string[] Extensions => extensions;
     public bool ExtensionMatches(string fileName)
@@ -21,6 +21,12 @@ internal sealed class WaveFormatReader : IAudioFileFormatReader
     }
     public bool FileSignatureMatches(Stream stream)
     {
+        /*
+        range_B     range_b     endian	type	expected
+        [00..04]	[000..032]  big		str		"RIFF"
+        [04..08]	[032..064]  little  int		filesize-8
+        [08..12]	[064..096]  big 	str		"WAVE"
+         */
         stream.Seek(0, SeekOrigin.Begin);
         Span<byte> four = stackalloc byte[4];
         stream.Read(four);
@@ -38,20 +44,20 @@ internal sealed class WaveFormatReader : IAudioFileFormatReader
             return false;
 
         /*
-           range_B     range_b     endian	type	expected
+           range_B  range_b     endian	type	expected
            [00..04]	[000..032]  big		str		"RIFF"
            [04..08]	[032..064]  little  int		filesize-8
            [08..12]	[064..096]  big 	str		"WAVE"
            [12..16]	[096..128]  big 	str		"fmt "
-           [16..20]	[128..160]  little	int		format chunk size from this point (PCM -> 16)
-           [20..22]	[160..176]  little	int		format (PCM -> 1)
-           [22..24]	[176..192]  little	int		num_channels
-           [24..28]	[192..224]  little	int		sample_rate
-           [34..36]	[272..288]  little	int		bits_per_sample
+           [16..20]	[128..160]  little	int32	format chunk size from this point (PCM -> 16)
+           [20..22]	[160..176]  little	int16	format (PCM -> 1)
+           [22..24]	[176..192]  little	int16	num_channels
+           [24..28]	[192..224]  little	int32	sample_rate
+           [34..36]	[272..288]  little	int16	bits_per_sample
            [36..40]	[288..320]  big		str		"data"
            [40..44]	[320..336]  little	int		data_chunk_size
         */
-        stream.Seek(4, SeekOrigin.Begin);
+        stream.Seek(4, SeekOrigin.Begin); // Positioned at filesize
         using BinaryReader binaryReader = new(stream, Encoding.Default, true);
         uint fileSize = binaryReader.ReadUInt32() + 8;
         if (fileSize != stream.Length)
@@ -80,7 +86,6 @@ internal sealed class WaveFormatReader : IAudioFileFormatReader
             throw new InvalidFileFormatException($"Written ByteRate does not match calculated one ({byteRate} vs {calculatedByteRate})");
         var numberSamples = 8D * dataChunkSize / (numChannels * bitsPerSample);
         double durationSec = numberSamples / sampleRate;
-        var p = new PointF() { X = 0, Y = 0 };
         metadata = new()
         {
             Duration = TimeSpan.FromSeconds(durationSec),

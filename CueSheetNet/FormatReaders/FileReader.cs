@@ -63,11 +63,9 @@ static public class FileReader
                             return meta;
                         }
                     }
-                    catch (Exception x) when (x is FileFormatRecognitionException
-                                              || x is InvalidFileFormatException)
+                    catch (Exception x) when (x is InvalidFileFormatException)
                     {
                         Logger.Log(LogLevel.Warning, "Could not read audio file metadata of \"{File}\". Error: {Error}", filePath, x);
-
                     }
 
                 }

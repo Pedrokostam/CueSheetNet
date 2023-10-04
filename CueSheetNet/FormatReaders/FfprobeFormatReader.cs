@@ -31,7 +31,7 @@ public abstract class FfprobeFormatReader : IAudioFileFormatReader
             startInfo.ArgumentList.Add(@"-of");
             startInfo.ArgumentList.Add(@"default=noprint_wrappers=1");
             startInfo.ArgumentList.Add(@"-show_entries");
-            startInfo.ArgumentList.Add(@"stream=duration,bit_rate,channels,sample_rate,bits_per_raw_sample,bits_per_sample:format=size");
+            startInfo.ArgumentList.Add(@"stream=duration,bit_rate,channels,sample_rate,bits_per_raw_sample,bits_per_sample:format=size,format_name");
             startInfo.RedirectStandardOutput = true;
             startInfo.UseShellExecute = false;
             proc.StartInfo = startInfo;
@@ -52,7 +52,7 @@ public abstract class FfprobeFormatReader : IAudioFileFormatReader
         return false;
     }
     private static readonly char[] Separators = new char[] { '\r', '\n' };
-    private static T GetValue<T>(Dictionary<string, string> dict, string key, T default_val) where T : IParsable<T>
+    private static T GetValue<T>(Dictionary<string, string> dict, string key, T default_val) where T : IParsable< T>
     {
         if (dict.TryGetValue(key, out var value))
         {
@@ -90,7 +90,7 @@ public abstract class FfprobeFormatReader : IAudioFileFormatReader
             GetValue(ini, "channels", -1),
             bit_depth,
             Lossy,
-            FormatName);
+            ini.GetValueOrDefault("format_name", FormatName));
         /*
          * 
 sample_rate=48000

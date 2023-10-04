@@ -6,10 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace CueSheetNet.FileReaders;
-internal ref struct CDDA
-{
-    public Span<byte> Data;
-}
+
 internal class CdFormatReader : IBinaryStreamFormatReader
 {
     private readonly string[] extensions = new string[] { ".BIN",".MM2",".ISO",".MOT",".IMG" };
@@ -30,11 +27,12 @@ internal class CdFormatReader : IBinaryStreamFormatReader
             return true;
         }
         stream.Seek(0, SeekOrigin.Begin);
-        Span<byte> sixteen = stackalloc byte[16];
-        stream.Read(sixteen);
-        if (!sixteen[..12].SequenceEqual(Header))
+        Span<byte> twelve = stackalloc byte[12];
+        stream.Read(twelve);
+        if (!twelve.SequenceEqual(Header))
             return false;
-        byte modeByte = sixteen[^1];
+        stream.Seek(4, SeekOrigin.Current);
+        int modeByte =stream.ReadByte();
         bool byteGood = mode switch
         {
             TrackType.Modes.Mode0 => modeByte == 0,
@@ -49,10 +47,10 @@ internal class CdFormatReader : IBinaryStreamFormatReader
     public bool ReadMetadata(Stream stream, IEnumerable<TrackType> trackTypes, out FileMetadata metadata)
     {
         if (trackTypes.FirstOrDefault() is not TrackType trackType)
-            throw new ArgumentException("No track type specified", nameof(trackTypes));
+            throw new ArgumentException("No track type specified",nameof(trackTypes));
         var t = trackTypes.Select(x => x.SectorSize).Distinct().Count();
         if (t > 1)
-            throw new ArgumentException("Differing sector sizes specified");
+            throw new InvalidFileFormatException("Differing sector sizes specified");
 
         int size = trackType.SectorSize;
         if(!FileSignatureMatches(stream, size, trackType.Mode))
@@ -63,7 +61,7 @@ internal class CdFormatReader : IBinaryStreamFormatReader
         }
         (long numberOfSectors, long Remainder) = Math.DivRem(stream.Length, size);
         if (Remainder > 0)
-            throw new ArgumentException("Length of data is not a multiple of specified sector size");
+            throw new InvalidFileFormatException("Length of data is not a multiple of specified sector size");
         // each sector corresponds to 1 cue frame, so 75 of them is 1 second
         TimeSpan duration = TimeSpan.FromSeconds(numberOfSectors / 75.0);
         bool hasAudio = trackTypes.Where(x => x.ContainsAudioData).Any();
