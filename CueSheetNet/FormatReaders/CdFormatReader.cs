@@ -9,11 +9,10 @@ namespace CueSheetNet.FileReaders;
 
 internal class CdFormatReader : IBinaryStreamFormatReader
 {
-    private readonly string[] extensions = new string[] { ".BIN",".MM2",".ISO",".MOT",".IMG" };
-    private readonly string formatName = "BINARY";
-    public string FormatName => formatName;
-    public string[] Extensions => extensions;
-    private readonly byte[] Header = { 0x0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00 }; // 0
+    public string FormatName { get; } = "BINARY";
+    public string[] Extensions { get; } = new string[] { ".BIN", ".MM2", ".ISO", ".MOT", ".IMG" };
+
+    private static readonly byte[] Header = { 0x0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00 }; // 0
     public bool ExtensionMatches(string fileName)
     {
         string ext = Path.GetExtension(fileName);
@@ -71,7 +70,6 @@ internal class CdFormatReader : IBinaryStreamFormatReader
             hasAudio ? 44100 : -1,
             hasAudio ? 2 : -1,
             hasAudio ? 16 : -1,
-            false,
             $"Binary data ({trackType.Identifier})"
             );
         return true;

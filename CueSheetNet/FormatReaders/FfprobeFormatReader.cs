@@ -5,18 +5,15 @@ using CueSheetNet.Logging;
 
 namespace CueSheetNet.FileReaders;
 
-public abstract class FfprobeFormatReader : IAudioFileFormatReader
+public sealed class FfprobeFormatReader : IAudioFileFormatReader
 {
-    abstract protected bool Lossy { get; }
     public static string FFProbePath { get; set; } = "ffprobe";
-    public abstract string FormatName { get; }
-    abstract public string[] Extensions { get; }
-    virtual public bool ExtensionMatches(string fileName)
-    {
-        string ext = Path.GetExtension(fileName);
-        return Extensions.Contains(ext, StringComparer.OrdinalIgnoreCase);
-    }
-    public virtual bool ReadMetadata(string path, out FileMetadata metadata)
+    private static readonly string fFormatName = "Dependent";
+    private static readonly string[] extensions = new string[] { "*"};
+    public string FormatName => fFormatName;
+     public string[] Extensions => extensions;
+    public bool ExtensionMatches(string fileName) => true;
+    public bool ReadMetadata(string path, out FileMetadata metadata)
     {
         try
         {
@@ -89,7 +86,6 @@ public abstract class FfprobeFormatReader : IAudioFileFormatReader
             GetValue(ini, "sample_rate", -1),
             GetValue(ini, "channels", -1),
             bit_depth,
-            Lossy,
             ini.GetValueOrDefault("format_name", FormatName));
         /*
          * 

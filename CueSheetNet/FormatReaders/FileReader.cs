@@ -13,14 +13,17 @@ static public class FileReader
         {
             new FlacFormatReader(),
             new WaveFormatReader(),
-            new Mp3FormatReader(),
-            new OggFormatReader(),
-            new WmaFormatReader()
         };
         AudioFileReaders = new List<IAudioFileFormatReader>(BaseAudioFileReaders);
         CdReader = new();
+        BaseFallbackReader = new FfprobeFormatReader();
+        FallbackReader = BaseFallbackReader;
     }
     static readonly IAudioFileFormatReader[] BaseAudioFileReaders;
+
+    private static readonly IAudioFileFormatReader BaseFallbackReader;
+
+    public static IAudioFileFormatReader FallbackReader { get; set; }
 
     static readonly List<IAudioFileFormatReader> AudioFileReaders;
     static readonly CdFormatReader CdReader;
@@ -37,26 +40,18 @@ static public class FileReader
     }
     static public FileMetadata? ReadMetadata(string filePath, IEnumerable<TrackType> trackTypes)
     {
-        using FileStream stream = File.OpenRead(filePath);
         FileMetadata meta = default;
         bool isStandardAudioFile = trackTypes.All(x => !x.CdSpecification);
         if (isStandardAudioFile)
         {
-            foreach (var reader in AudioFileReaders)
+            foreach (var reader in AudioFileReaders.Append(FallbackReader))
             {
                 if (reader.ExtensionMatches(filePath))
                 {
                     try
                     {
                         bool read = false;
-                        if (reader is IAudioBinaryStreamFormatReader streamFormatReader)
-                        {
-                            read = streamFormatReader.ReadMetadata(stream, out meta);
-                        }
-                        else
-                        {
-                            read = reader.ReadMetadata(filePath, out meta);
-                        }
+                        read = reader.ReadMetadata(filePath, out meta);
                         if (read)
                         {
                             Logger.Log(LogLevel.Debug, "Read metadata on {File} using {Reader.FormatName} reader", filePath, reader);
@@ -70,6 +65,7 @@ static public class FileReader
 
                 }
             }
+
         }
         else
         {
@@ -77,7 +73,7 @@ static public class FileReader
             {
                 return null;
             }
-            if (CdReader.ReadMetadata(stream, trackTypes, out meta))
+            if (CdReader.ReadMetadata(filePath, trackTypes, out meta))
             {
                 return meta;
             }

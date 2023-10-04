@@ -8,15 +8,13 @@ using System.Threading.Tasks;
 namespace CueSheetNet.FileReaders;
 internal sealed class FlacFormatReader : IAudioBinaryStreamFormatReader
 {
-    private readonly string[] extensions = new string[] { ".flac" };
-    private readonly string formatName = "Flac";
-    private readonly byte[] fLaC = "fLaC"u8.ToArray();// 0x66 0x4c 0x61 0x43
-    public string FormatName => formatName;
-    public string[] Extensions => extensions;
+    public string FormatName { get; } = "Flac";
+    public string[] Extensions { get; } = new string[] { ".flac" };
+    private static readonly byte[] fLaC = "fLaC"u8.ToArray();// 0x66 0x4c 0x61 0x43
     public bool ExtensionMatches(string fileName)
     {
         string ext = Path.GetExtension(fileName);
-        return extensions.Contains(ext, StringComparer.OrdinalIgnoreCase);
+        return Extensions.Contains(ext, StringComparer.OrdinalIgnoreCase);
     }
     public bool FileSignatureMatches(Stream stream)
     {
@@ -73,7 +71,6 @@ internal sealed class FlacFormatReader : IAudioBinaryStreamFormatReader
             SampleRate = samples,
             Channels = numChannels,
             BitDepth = bitsPerSample,
-            Lossy = false,
             FormatName = FormatName
         };
         return true;

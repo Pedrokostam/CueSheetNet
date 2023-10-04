@@ -12,7 +12,6 @@ public readonly record struct FileMetadata
      int SampleRate,
      int Channels,
      int BitDepth,
-     bool Lossy,
      string FormatName)
 {
     public CueTime CueDuration => CueTime.FromTimeSpan(Duration);

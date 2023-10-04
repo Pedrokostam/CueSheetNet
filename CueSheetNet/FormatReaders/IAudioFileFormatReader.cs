@@ -52,33 +52,3 @@ public interface IBinaryStreamFormatReader : IBinaryFileFormatReader
     /// <returns>Duration in seconds</returns>
     bool ReadMetadata(Stream stream, IEnumerable<TrackType> trackTypes, out FileMetadata metadata);
 }
-public class DummyReader : IAudioBinaryStreamFormatReader, IBinaryStreamFormatReader
-{
-    public string FormatName { get; } = "No format";
-
-    public string[] Extensions { get; } = new string[] { };
-
-    public bool ExtensionMatches(string fileName) => true;
-    public bool ReadMetadata(string path, out FileMetadata metadata)
-    {
-        metadata = default;
-        return false;
-    }
-
-    public bool ReadMetadata(Stream stream, out FileMetadata metadata)
-    {
-        metadata = default;
-        return false;
-    }
-
-    public bool ReadMetadata(Stream stream, IEnumerable<TrackType> trackTypes, out FileMetadata metadata)
-    {
-        metadata = default;
-        return false;
-    }
-    public bool ReadMetadata(string path, IEnumerable<TrackType> trackTypes, out FileMetadata metadata)
-    {
-        metadata = default;
-        return false;
-    }
-}

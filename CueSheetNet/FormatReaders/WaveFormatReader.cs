@@ -8,16 +8,14 @@ using System.Threading.Tasks;
 namespace CueSheetNet.FileReaders;
 internal sealed class WaveFormatReader : IAudioFileFormatReader
 {
-    private static readonly string[] extensions = new string[] { ".WAV", ".WAVE" };
-    private static readonly string formatName = "Wave";
     private static readonly byte[] RIFF = "RIFF"u8.ToArray();//  0x52 0x49 0x46 0x46
     private static readonly byte[] WAVE = "WAVE"u8.ToArray();//  0x57 0x41 0x56 0x45
-    public string FormatName => formatName;
-    public string[] Extensions => extensions;
+    public string FormatName { get; } = "Wave";
+    public string[] Extensions { get; } = new string[] { ".WAV", ".WAVE" };
     public bool ExtensionMatches(string fileName)
     {
         string ext = Path.GetExtension(fileName);
-        return extensions.Contains(ext, StringComparer.OrdinalIgnoreCase);
+        return Extensions.Contains(ext, StringComparer.OrdinalIgnoreCase);
     }
     public bool FileSignatureMatches(Stream stream)
     {
@@ -92,7 +90,6 @@ internal sealed class WaveFormatReader : IAudioFileFormatReader
             SampleRate = (int)sampleRate,
             Channels = numChannels,
             BitDepth = bitsPerSample,
-            Lossy = false,
             FormatName = FormatName
         };
         return true;
