@@ -7,14 +7,29 @@ namespace CueSheetNet.FileReaders;
 
 public sealed class FfprobeFormatReader : IAudioFileFormatReader
 {
-    public static string FFProbePath { get; set; } = "ffprobe";
+    public static bool? FfprobeDetected { get; private set; }
+    private static string fFProbePath = "ffprobe";
+    public static string FFProbePath
+    {
+        get => fFProbePath;
+        set
+        {
+            fFProbePath = value;
+            FfprobeDetected = null;
+        }
+    }
     private static readonly string fFormatName = "Dependent";
-    private static readonly string[] extensions = new string[] { "*"};
+    private static readonly string[] extensions = new string[] { "*" };
     public string FormatName => fFormatName;
-     public string[] Extensions => extensions;
+    public string[] Extensions => extensions;
     public bool ExtensionMatches(string fileName) => true;
     public bool ReadMetadata(string path, out FileMetadata metadata)
     {
+        if (FfprobeDetected == false)
+        {
+            metadata = default;
+            return false;
+        }
         try
         {
             Process proc = new();
@@ -35,10 +50,12 @@ public sealed class FfprobeFormatReader : IAudioFileFormatReader
             proc.Start();
             proc.WaitForExit();
             ParseFfprobeOutput(proc.StandardOutput, out metadata);
+            FfprobeDetected = true;
             return true;
         }
         catch (System.ComponentModel.Win32Exception)
         {
+            FfprobeDetected = false;
             Logger.LogWarning($"Could not find ffprobe using path: '{FFProbePath}' - file metadata not read. Specify path to ffprobe using {nameof(FfprobeFormatReader)}.{nameof(FfprobeFormatReader.FFProbePath)}");
         }
         catch (Exception e)
@@ -49,7 +66,8 @@ public sealed class FfprobeFormatReader : IAudioFileFormatReader
         return false;
     }
     private static readonly char[] Separators = new char[] { '\r', '\n' };
-    private static T GetValue<T>(Dictionary<string, string> dict, string key, T default_val) where T : IParsable< T>
+
+    private static T GetValue<T>(Dictionary<string, string> dict, string key, T default_val) where T : IParsable<T>
     {
         if (dict.TryGetValue(key, out var value))
         {
@@ -87,23 +105,6 @@ public sealed class FfprobeFormatReader : IAudioFileFormatReader
             GetValue(ini, "channels", -1),
             bit_depth,
             ini.GetValueOrDefault("format_name", FormatName));
-        /*
-         * 
-sample_rate=48000
-channels=2
-bits_per_sample=0
-duration=0:03:34.997854
-bit_rate=N/A
-bits_per_raw_sample=24
-
-
-sample_rate=44100
-channels=2
-bits_per_sample=0
-duration=0:02:08.035000
-bit_rate=64000
-bits_per_raw_sample=N/A
-         */
     }
 }
 

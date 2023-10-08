@@ -10,7 +10,7 @@ using System.Text.RegularExpressions;
 namespace CueSheetNet.FileHandling;
 
 /// <summary>
-/// Class which takes care of file operations related to the CueSheet passed to the constructor.
+/// Class which takes care of file operations related to the CueSheet.
 /// </summary>
 public static partial class CuePackage
 {
@@ -173,7 +173,7 @@ public static partial class CuePackage
         SortedDictionary<string, List<TransFile>> ExtGroups = new(StringComparer.OrdinalIgnoreCase);
         foreach (ICueFile file in files)
         {
-            TransFile transFile = new(file, relativeBase);
+            TransFile transFile = new(file, relativeBase, FileType.Extra);
             if (ExtGroups.TryGetValue(file.SourceFile.Extension, out List<TransFile>? extFiles))
             {
                 extFiles.Add(transFile);
@@ -235,7 +235,7 @@ public static partial class CuePackage
         if (sheet.Files.Count == 0) { yield break; }
         if (sheet.Files.Count == 1)
         {
-            TransFile transFile = new(sheet.Files[0], relativeBase) { NewName = filename };
+            TransFile transFile = new(sheet.Files[0], relativeBase, FileType.Audio) { NewName = filename };
             yield return transFile;
         }
         else
@@ -249,7 +249,7 @@ public static partial class CuePackage
                 {
                     audiofilename += $" - {trackOfFile[0].Title}";
                 }
-                TransFile currAudio = new(cueFile, relativeBase) { NewName = audiofilename };
+                TransFile currAudio = new(cueFile, relativeBase, FileType.Audio) { NewName = audiofilename };
                 yield return currAudio;
             }
         }
@@ -310,7 +310,7 @@ public static partial class CuePackage
     /// <para/>The final path is created by using <see cref="Path.Combine"/> on both the parameters
     /// </summary>
     /// <remarks>If the pattern is rooted (e.g. C:\Music\%artist%\%current%) any previous parts will be ignored</remarks>
-    /// <param name="activeSheet">CueSheet to processed</param>
+    /// <param name="sheet">CueSheet to processed</param>
     /// <param name="destinationDirectory">Path to destinationDirectory folder</param>
     /// <param name="pattern">Pattern to be added to <paramref name="destinationDirectory"/>. Can contain tags (surrounded by '%') which will be expanded bases on the CueSheet.
     ///     <para>E.G. %title% will be replaced by sheet's title. Speical tag %old'% is replaced by the current filename of the sheet.</para>
@@ -318,13 +318,13 @@ public static partial class CuePackage
     ///     <para>Pattern can be a directory structure (slashes are allowed), so this pattern is permitted: %artist%/%year%/%title%/%old%.cue</para>
     /// </param>
     /// <returns>Newly copied cuesheet</returns>
-    public static CueSheet CopyPackage(CueSheet activeSheet,
+    public static CueSheet CopyPackage(CueSheet sheet,
                                        string destinationDirectory,
                                        string? pattern = null,
                                        CueWriterSettings? settings = null,
-                                       bool preserveSubfolders = false)
+                                       bool preserveSubfolders = true)
     {
-        activeSheet = activeSheet.Clone();
+        CueSheet activeSheet = sheet.Clone();
         SaveModifiedCueSheetInNewLocation(destinationDirectory,
                                           pattern,
                                           settings,
@@ -371,7 +371,7 @@ public static partial class CuePackage
                                        string destinationDirectory,
                                        string? pattern = null,
                                        CueWriterSettings? settings = null,
-                                       bool preserveSubfolders = false)
+                                       bool preserveSubfolders = true)
     {
         CueSheet activeSheet = sheet.Clone();
         SaveModifiedCueSheetInNewLocation(destinationDirectory,
@@ -438,9 +438,58 @@ public static partial class CuePackage
         // At this point we saved a sheet referencing file that do not exist yet
     }
 
-    public static CueSheet Convert(CueSheet cueSheet, IAudioConverter converter, string destination, string? pattern = null)
+    public static CueSheet Convert(CueSheet sheet,
+                                       string destinationDirectory,
+                                       string? pattern,
+                                       CueWriterSettings? settings,
+                                       bool preserveSubfolders,
+                                       IAudioConverter? converter = null)
     {
-        throw new NotImplementedException();
-        //converter.Convert();
+        converter ??= new RecipeConverter(destinationDirectory, "converted.txt");
+        CueSheet activeSheet = sheet.Clone();
+        SaveModifiedCueSheetInNewLocation(destinationDirectory,
+                                          pattern,
+                                          settings,
+                                          activeSheet,
+                                          out DirectoryInfo immediateParentDir,
+                                          out List<TransFile> transFiles,
+                                          preserveSubfolders);
+
+        List<FileInfo> inProgressCopied = new();
+        try
+        {
+            converter.PreConvert();
+            foreach (var item in transFiles)
+            {
+                if (item.Type == FileType.Audio)
+                {
+                    converter.Convert(item.SourceFile.FullName, item.DestinationPath(immediateParentDir));
+                }
+                else
+                {
+                    var copied = item.Copy(immediateParentDir);
+                    inProgressCopied.Add(copied);
+                }
+            }
+            // All associated file copied
+            // Cuesheet already saved
+            // We're done here
+            converter.PostConvert();
+        }
+        catch (Exception)
+        {
+            // One of the file failed to copy
+            // Removing all already copied files and throwing
+            foreach (var item in inProgressCopied)
+            {
+                if (!item.Exists)
+                    continue;
+                item.Delete();
+                Logger.LogWarning("Removed copied file {File}", item);
+            }
+            throw;
+        }
+        // Sheet of this cuepackage is already updated, no need to change anything
+        return activeSheet;
     }
 }

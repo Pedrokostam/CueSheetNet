@@ -5,9 +5,9 @@ using System.Text;
 
 
 namespace CueSheetNet.FileReaders;
-static public class FileReader
+static public class FormatReader
 {
-    static FileReader()
+    static FormatReader()
     {
         BaseAudioFileReaders = new IAudioFileFormatReader[]
         {
@@ -30,11 +30,11 @@ static public class FileReader
     public static void AddFileReader(IAudioFileFormatReader reader)
     {
         AudioFileReaders.Add(reader);
-        Logger.Log(LogLevel.Debug, $"Added {reader.FormatName} file format reader for a total of {AudioFileReaders.Count} readers", nameof(FileReader), "");
+        Logger.Log(LogLevel.Debug, $"Added {reader.FormatName} file format reader for a total of {AudioFileReaders.Count} readers", nameof(FormatReader), "");
     }
     public static void ResetFileReader()
     {
-        Logger.Log(LogLevel.Debug, $"Reset file readers list to base state", nameof(FileReader), "");
+        Logger.Log(LogLevel.Debug, $"Reset file readers list to base state", nameof(FormatReader), "");
         AudioFileReaders.Clear();
         AudioFileReaders.AddRange(BaseAudioFileReaders);
     }

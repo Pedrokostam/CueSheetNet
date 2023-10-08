@@ -2,15 +2,6 @@
 using System.Diagnostics.CodeAnalysis;
 
 namespace CueSheetNet.FileHandling;
-
-internal record class MovedFile(string OldPath, string NewPath, byte[] Content)
-{
-    public void Undo()
-    {
-        File.WriteAllBytes(OldPath, Content);
-        File.ReadAllBytes(NewPath);
-    }
-}
 /// <summary>
 /// Class which store information about original file, can backup its content to memory, delete the file, copy/move it to new location under a new name.
 /// </summary>
@@ -19,6 +10,7 @@ internal record class TransFile
     private string? newName;
     public string Subfolder { get; }
     public FileInfo SourceFile { get; }
+    public FileType Type { get; }
 
     public string Extension => SourceFile.Extension;
     /// <summary>
@@ -48,8 +40,7 @@ internal record class TransFile
             return newName + Extension;
         }
     }
-
-    public TransFile(ICueFile source, DirectoryInfo? cueFolder)
+    public TransFile(ICueFile source, DirectoryInfo? cueFolder, FileType type)
     {
         if (cueFolder is null)
         {
@@ -59,27 +50,32 @@ internal record class TransFile
         {
             Subfolder = Path.GetRelativePath(cueFolder.FullName, source.SourceFile.FullName);
         }
+        Type = type;
         SourceFile = source.SourceFile;
     }
 
     public virtual FileInfo Copy(DirectoryInfo destination)
     {
-        string dest = Path.GetFullPath(Path.Join(destination.FullName, Subfolder, NewNameWithExtension));
+        string dest = DestinationPath(destination);
         FileInfo res = SourceFile.CopyTo(dest);
         Logger.LogInformation("Copied file {File} from {Source}", res, SourceFile);
         return res;
     }
-
+    public string DestinationPath(DirectoryInfo destination)
+    {
+        return Path.GetFullPath(Path.Join(destination.FullName, Subfolder, NewNameWithExtension));
+    }
     public virtual MovedFile Move(DirectoryInfo destination)
     {
         byte[] content = File.ReadAllBytes(SourceFile.FullName);
         string old = SourceFile.FullName;
-        string dest = Path.GetFullPath(Path.Join(destination.FullName, Subfolder, NewNameWithExtension));
+        string dest = DestinationPath(destination);
         SourceFile.MoveTo(dest);
         FileInfo res = new(dest);
         Logger.LogInformation("Moved file {File} from {Source}", res, SourceFile);
         return new MovedFile(old, res.FullName, content);
     }
+
 
     /// <summary>
     /// Check if the file with NewName exists in a given folder
@@ -93,26 +89,3 @@ internal record class TransFile
     }
 
 }
-/*
-internal record class TransAudioFile : TransFile
-{
-    public int FileIndex { get; }
-    public CueSheet ParentSheet { get; }
-    public TransAudioFile(CueSheet sheet, int index) : base(sheet.Files[index])
-    {
-        ParentSheet = sheet;
-        FileIndex = index;
-    }
-    public override FileInfo Copy(DirectoryInfo destination)
-    {
-        var f = base.Copy(destination);
-        ParentSheet.ChangeFile(FileIndex, NewNameWithExtension);
-        return f;
-    }
-    public override MovedFile Move(DirectoryInfo destination)
-    {
-        var f = base.Move(destination);
-        ParentSheet.ChangeFile(FileIndex, NewNameWithExtension);
-        return f;
-    }
-}*/

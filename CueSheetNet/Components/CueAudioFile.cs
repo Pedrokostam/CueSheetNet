@@ -76,7 +76,7 @@ public class CueAudioFile : CueItemBase, ICueFile, IEquatable<CueAudioFile>
         Debug.WriteLine($"Refreshing file meta: {_file}");
         if (_file.Exists)
         {
-            var meta = FileReader.ReadMetadata(_file.FullName,
+            var meta = FormatReader.ReadMetadata(_file.FullName,
                                            ParentSheet
                                            .GetTracksOfFile_IEnum(Index)
                                            .Select(x => x.Type));
