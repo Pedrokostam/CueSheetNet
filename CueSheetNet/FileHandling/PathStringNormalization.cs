@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace CueSheetNet.FileHandling;
 
@@ -62,5 +63,6 @@ public static class PathStringNormalization
         // Faster than regex, but uses more memory
         return string.Join(replacement, input.Split(IllegalName));
     }
+
 
 }

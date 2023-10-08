@@ -138,53 +138,6 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
 
 
     #region Fileops
-    /*
-    /// <summary>
-    /// Save the CueSheet to the location specified by its <see cref="SourceFile"/>.
-    /// After changing, directory is not reverted if saving was unsuccessful.
-    /// <para/>Does not do anything with <see cref="CueAudioFile" />s of the Cuesheet, or other associated files (use <see cref="CopyFiles(string, string?)"/> or <see cref="MoveFiles(string, string?)"/> for that).
-    /// </summary>
-    /// <param name="settings">Optional settings for writing. If not specified, new <see cref="CueWriterSettings"/> with default values will be used</param>
-    public void Save(CueWriterSettings? settings = null)
-    {
-        //if (directory is not null)
-        ArgumentNullException.ThrowIfNull(SourceFile);
-        CueWriter writer = new(settings ?? new());
-        writer.SaveCueSheet(this);
-    }
-    /// <summary>
-    /// Save the CueSheet under the specified path.
-    /// <para/>Does not do anything with <see cref="CueAudioFile" />s of the Cuesheet, or other associated files (use <see cref="CopyFiles(string, string?)"/> or <see cref="MoveFiles(string, string?)"/> for that).
-    /// </summary>
-    /// <param name="path">File path to save under</param>
-    /// <inheritdoc cref="Save(Encoding?)"/>
-    public void Save(string path, CueWriterSettings? settings = null)
-    {
-        //if (directory is not null)
-        ArgumentException.ThrowIfNullOrEmpty(path);
-        SetCuePath(path);
-        CueWriter writer = new(settings ?? new());
-        
-        writer.SaveCueSheet(this);
-    }
-    /// <summary>
-    /// Save the CueSheet under the path created by using <see cref="Path.Combine(string, string)"/> on <paramref name="directory"/> and <paramref name="pattern"/>.
-    /// <para/>Does not do anything with <see cref="CueAudioFile" />s of the Cuesheet, or other associated files (use <see cref="CopyFiles(string, string?)"/> or <see cref="MoveFiles(string, string?)"/> for that).
-    /// </summary>
-    /// <inheritdoc cref="Save(string, Encoding?)"/>
-    /// <inheritdoc cref="CopyFiles(string, string?)" path='/remarks'/>
-    /// <inheritdoc cref="CopyFiles(string, string?)" path='/param[@name="pattern"]'/>
-    public void Save(string directory, string? pattern, CueWriterSettings? settings = null)
-    {
-        //if (directory is not null)
-        ArgumentException.ThrowIfNullOrEmpty(directory);
-        string patternPart = CueFileHandler.ParseTreeFormat(this, pattern);
-        string combined = Path.Combine(directory, patternPart);
-        SetCuePath(Path.ChangeExtension(combined, ".cue"));
-        CueWriter writer = new(settings ?? new());
-        writer.SaveCueSheet(this);
-    }
-    */
     /// <summary>
     /// Save the CueSheet to the location specified by its <see cref="SourceFile"/>.
     /// After changing, directory is not reverted if saving was unsuccessful. 
@@ -200,11 +153,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
         CueWriter writer = new(settings);
         writer.SaveCueSheet(this);
     }
-    public CueSheet CopyPackage(string destination, string? pattern) => CopyPackage(destination, pattern, null);
-    public CueSheet CopyPackage(string destination, string? pattern, CueWriterSettings? settings) => CuePackage.CopyPackage(this, destination, pattern, settings);
-    public CueSheet MovePackage(string destination, string? pattern) => MovePackage(destination, pattern, null);
-    public CueSheet MovePackage(string destination, string? pattern, CueWriterSettings? settings) => CuePackage.MovePackage(this, destination, pattern, settings);
-    public void RemovePackage() => CuePackage.RemovePackage(this);
+   
     #endregion
     private CueContainer Container { get; }
     private FileInfo? _CdTextFile;
@@ -623,15 +572,14 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
         return HashCode.Combine(Performer, Title, Date, Files.Count, Tracks.Count, Remarks.Count, Comments.Count);
     }
     /// <inheritdoc cref="CuePackage.CopyCueFiles(CueSheet, string, string?)"/>
-    public CueSheet CopyFiles(string destination, string? pattern)
-    {
-        return CuePackage.CopyPackage(this, destination, pattern);
-    }
+    public CueSheet CopyPackage(string destination, string? pattern) => CopyPackage(destination, pattern, null);
+    /// <inheritdoc cref="CuePackage.CopyCueFiles(CueSheet, string, string?)"/>
+    public CueSheet CopyPackage(string destination, string? pattern, CueWriterSettings? settings) => CuePackage.CopyPackage(this, destination, pattern, settings);
     /// <inheritdoc cref="CuePackage.MoveCueFiles(CueSheet, string, string?)"/>
-    public CueSheet MoveFiles(string destination, string? pattern)
-    {
-        return CuePackage.MovePackage(this, destination, pattern);
-    }
+    public CueSheet MovePackage(string destination, string? pattern) => MovePackage(destination, pattern, null);
+    /// <inheritdoc cref="CuePackage.MoveCueFiles(CueSheet, string, string?)"/>
+    public CueSheet MovePackage(string destination, string? pattern, CueWriterSettings? settings) => CuePackage.MovePackage(this, destination, pattern, settings);
+    public void RemovePackage() => CuePackage.RemovePackage(this);
     public void DeleteFiles()
     {
         CuePackage.RemovePackage(this);
@@ -640,5 +588,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
     {
         get => $"{Performer ?? "No Artist"} - {Title ?? "No Title"}";
     }
+
+    public static CueSheet Read(string path) => new CueReader().ParseCueSheet(path);
 
 }

@@ -48,7 +48,7 @@ internal record class TransFile
         }
         else
         {
-            Subfolder = Path.GetRelativePath(cueFolder.FullName, source.SourceFile.FullName);
+            Subfolder = Path.GetRelativePath(cueFolder.FullName, source.SourceFile?.DirectoryName);
         }
         Type = type;
         SourceFile = source.SourceFile;

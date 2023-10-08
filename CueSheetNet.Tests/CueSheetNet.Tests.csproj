@@ -19,55 +19,15 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="TestItems\EncodingDetection\1252.cue">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="TestItems\EncodingDetection\UTF-16 BE.cue">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="TestItems\EncodingDetection\UTF-16 BE BOM.cue">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="TestItems\EncodingDetection\UTF-16 LE.cue">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="TestItems\EncodingDetection\UTF-16 LE BOM.cue">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="TestItems\EncodingDetection\UTF-32 BE.cue">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="TestItems\EncodingDetection\UTF-32 BE BOM.cue">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="TestItems\EncodingDetection\UTF-32 LE.cue">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="TestItems\EncodingDetection\UTF-32 LE BOM.cue">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="TestItems\EncodingDetection\UTF-8.cue">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="TestItems\EncodingDetection\UTF-8 BOM.cue">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="TestItems\Parsing\MinimalFoobarCue.cue">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="TestItems\SavingTests\Jethro Tull - Aqualung.cue">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="TestItems\SavingTests\MultiFile.cue">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="TestItems\SavingTests\Spandau Ballet - True.cue">
+    <None Update="TestItems\**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="TestItems\CopyingTests\" />
     <Folder Include="TestItems\SavingTests\" />
+    <Folder Include="TestItems\CopyingTests\" />
   </ItemGroup>
 
 </Project>

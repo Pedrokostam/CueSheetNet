@@ -15,7 +15,11 @@ public static partial class CueTreeFormatter
 {
     [GeneratedRegex(@"%(?<property>[\w\s]+)%")]
     private static partial Regex PropertyParser();
+    [GeneratedRegex(@"^[\\/]+$")]
+    private static partial Regex SeparatorChecker();
 
+    [GeneratedRegex(@"[\\/]+")]
+    private static partial Regex SeparatorNormalizer();
     /// <summary>
     /// Parse the format for output filepath. E.g. %Artist%/%DATE%/%Album% can result in
     /// ./Artist/2001/Album.
@@ -30,7 +34,7 @@ public static partial class CueTreeFormatter
     /// </param>
     public static string ParseFormatPattern(CueSheet sheet, string? treeFormat)
     {
-        if (treeFormat == null)
+        if (string.IsNullOrWhiteSpace(treeFormat))
             return Path.GetFileNameWithoutExtension(sheet.SourceFile?.Name) ?? sheet.DefaultFilename;
         Regex formatter = PropertyParser();
         MatchCollection matches = formatter.Matches(treeFormat);
@@ -49,7 +53,15 @@ public static partial class CueTreeFormatter
             }
         }
         //replace all invalid path chars with underscore
-        return PathStringNormalization.RemoveInvalidPathCharacters(treeFormat);
+        string normalized = PathStringNormalization.RemoveInvalidPathCharacters(treeFormat);
+        normalized = SeparatorNormalizer().Replace(normalized, Path.DirectorySeparatorChar.ToString());
+        if (String.IsNullOrWhiteSpace(normalized) || normalized == Path.DirectorySeparatorChar.ToString())
+        {
+            string old = Path.GetFileNameWithoutExtension(sheet.SourceFile?.Name) ?? sheet.DefaultFilename;
+            Logger.LogWarning("Name parsing for pattern {Pattern} resulted in empty string - replacing with old name {OldName}", treeFormat, old);
+            normalized = old;
+        }
+        return normalized;
     }
     private static readonly ParseToken[] Tags;
     private static readonly Dictionary<string, ParseToken> TagDict;
@@ -74,6 +86,9 @@ public static partial class CueTreeFormatter
             {
                 TagDict.Add(alternative.ToLower(), ptoken);
             }
+
+
         }
     }
+  
 }
