@@ -16,11 +16,11 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemarkableCommentabl
     public TrackType Type { get; internal set; }
     public CueTime PostGap { get; set; }
     public CueTime PreGap { get; set; }
-    private CueAudioFile _ParentFile;
+    private CueDataFile _ParentFile;
     /// <summary>
     /// File in which Index 01 (or 00 if there is not 01) of Track appeared
     /// </summary>
-    public CueAudioFile ParentFile
+    public CueDataFile ParentFile
     {
         get
         {
@@ -150,7 +150,7 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemarkableCommentabl
         }
     }
 
-    public CueTrack(CueAudioFile parentFile,TrackType type) : base(parentFile.ParentSheet)
+    public CueTrack(CueDataFile parentFile,TrackType type) : base(parentFile.ParentSheet)
     {
         _ParentFile = parentFile;
         Type = type;
@@ -180,7 +180,7 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemarkableCommentabl
             RawRems.RemoveAt(index);
     }
 
-    internal CueTrack ClonePartial(CueAudioFile newOwner)
+    internal CueTrack ClonePartial(CueDataFile newOwner)
     {
         CueTrack newTrack = new(newOwner,Type)
         {

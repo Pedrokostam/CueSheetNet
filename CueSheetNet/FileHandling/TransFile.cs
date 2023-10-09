@@ -7,10 +7,17 @@ namespace CueSheetNet.FileHandling;
 /// </summary>
 internal record class TransFile
 {
+    public enum GeneralFileType
+    {
+        Cue,
+        Audio,
+        Extra
+    }
+
     private string? newName;
     public string Subfolder { get; }
     public FileInfo SourceFile { get; }
-    public FileType Type { get; }
+    public GeneralFileType Type { get; }
 
     private string? extension;
     [AllowNull]
@@ -53,7 +60,7 @@ internal record class TransFile
             return newName + Extension;
         }
     }
-    public TransFile(ICueFile source, DirectoryInfo? cueFolder, FileType type)
+    public TransFile(ICueFile source, DirectoryInfo? cueFolder, GeneralFileType type)
     {
         if (cueFolder is null)
         {

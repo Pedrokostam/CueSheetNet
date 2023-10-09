@@ -159,8 +159,9 @@ public static partial class CuePackage
         int fileIndex = 0;
         foreach (TransFile transAudio in transAudios)
         {
+            FileType t = CueDataFile.GetFileTypeFromPath("." + newAudioExtension);
             transAudio.Extension = newAudioExtension;
-            sheet.ChangeFile(fileIndex, transAudio.NewNameWithExtension);
+            sheet.ChangeFile(fileIndex, transAudio.NewNameWithExtension,t);
             transFiles.Add(transAudio);
             fileIndex++;
         }
@@ -174,7 +175,7 @@ public static partial class CuePackage
         SortedDictionary<string, List<TransFile>> ExtGroups = new(StringComparer.OrdinalIgnoreCase);
         foreach (ICueFile file in files)
         {
-            TransFile transFile = new(file, relativeBase, FileType.Extra);
+            TransFile transFile = new(file, relativeBase, TransFile.GeneralFileType.Extra);
             if (ExtGroups.TryGetValue(file.SourceFile.Extension, out List<TransFile>? extFiles))
             {
                 extFiles.Add(transFile);
@@ -236,13 +237,13 @@ public static partial class CuePackage
         if (sheet.Files.Count == 0) { yield break; }
         if (sheet.Files.Count == 1)
         {
-            TransFile transFile = new(sheet.Files[0], relativeBase, FileType.Audio) { NewName = filename };
+            TransFile transFile = new(sheet.Files[0], relativeBase, TransFile.GeneralFileType.Audio) { NewName = filename };
             yield return transFile;
         }
         else
         {
             int numOfDigits = GetNumberOfDigits(sheet.Files.Count);
-            foreach (CueAudioFile cueFile in sheet.Files)
+            foreach (CueDataFile cueFile in sheet.Files)
             {
                 string audiofilename = $"{filename} - {GetPaddedNumber(cueFile.Index, numOfDigits)}";// add index if file to filename
                 var trackOfFile = sheet.GetTracksOfFile(cueFile.Index);
@@ -250,7 +251,7 @@ public static partial class CuePackage
                 {
                     audiofilename += $" - {trackOfFile[0].Title}";
                 }
-                TransFile currAudio = new(cueFile, relativeBase, FileType.Audio) { NewName = audiofilename };
+                TransFile currAudio = new(cueFile, relativeBase, TransFile.GeneralFileType.Audio) { NewName = audiofilename };
                 yield return currAudio;
             }
         }
@@ -466,7 +467,7 @@ public static partial class CuePackage
         {
             foreach (var item in transFiles)
             {
-                if (item.Type == FileType.Audio)
+                if (item.Type == TransFile.GeneralFileType.Audio)
                 {
                     converter.Convert(item.SourceFile.FullName, item.DestinationPath(immediateParentDir));
                 }

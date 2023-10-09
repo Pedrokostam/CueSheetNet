@@ -12,21 +12,23 @@ using static System.Net.WebRequestMethods;
 namespace CueSheetNet;
 
 
-public class CueAudioFile : CueItemBase, ICueFile, IEquatable<CueAudioFile>
+public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
 {
-    public enum FileType
-    {
-        Invalid = 0,
-        WAVE = 0b1,
-        AIFF = 0b10,
-        MP3 = 0b100,
-        /// <summary>Little-Endian binary</summary>
-        BINARY = 0b1000,
-        /// <summary>Big-Endian binary</summary>
-        MOTOROLA = 0b10000
-    }
     public const FileType AudioTypes = FileType.WAVE | FileType.AIFF | FileType.MP3;
     public const FileType DataTypes = FileType.BINARY | FileType.MOTOROLA;
+    public static FileType GetFileTypeFromPath(string path)
+    {
+        string extension = Path.GetExtension(path)[1..].ToLowerInvariant();
+        return extension switch
+        {
+            "mp3" or "bit" => FileType.MP3,
+            "aiff" or "aif" or "aifc" => FileType.AIFF,
+            "wav" or "wave" => FileType.WAVE,
+            "bin" or "mm2" or  "iso" or  "img" => FileType.BINARY,
+            "mot" => FileType.MOTOROLA,
+            _ => FileType.WAVE
+        };
+    }
     public static bool IsAudioFile(FileType type)
     {
 
@@ -34,12 +36,11 @@ public class CueAudioFile : CueItemBase, ICueFile, IEquatable<CueAudioFile>
     }
     private FileSystemWatcher? watcher;
     public int Index { get; internal set; }
-    public CueAudioFile(CueSheet parent, string filePath, FileType type) : base(parent)
+    public CueDataFile(CueSheet parent, string filePath, FileType type) : base(parent)
     {
-        SetFile(filePath);
-        Type = type;
+        SetFile(filePath, type);
     }
-    internal CueAudioFile ClonePartial(CueSheet newOwner)
+    internal CueDataFile ClonePartial(CueSheet newOwner)
     {
         return new(newOwner, SourceFile.FullName, Type);
     }
@@ -91,13 +92,13 @@ public class CueAudioFile : CueItemBase, ICueFile, IEquatable<CueAudioFile>
         NeedsRefresh = false;
     }
 
-    private bool IsAudio() => (AudioTypes & Type) != FileType.Invalid;
+    private bool IsAudio() => (AudioTypes & Type) != FileType.Unknown;
 
     public FileInfo SourceFile => _file;
 
 
     [MemberNotNull(nameof(_file))]
-    public void SetFile(string value)
+    public void SetFile(string value,FileType? newType=null)
     {
         string absPath = Path.Combine(ParentSheet.SourceFile?.DirectoryName ?? ".", value);
         if (absPath == _file?.FullName)
@@ -109,6 +110,7 @@ public class CueAudioFile : CueItemBase, ICueFile, IEquatable<CueAudioFile>
         Debug.WriteLine($"Setting file to {absPath}");
         CreateWatcher(absPath);
         _file = new FileInfo(absPath);
+        Type  = newType ?? Type;
         NeedsRefresh = true;
         RefreshIfNeeded();
 
@@ -201,7 +203,7 @@ public class CueAudioFile : CueItemBase, ICueFile, IEquatable<CueAudioFile>
         }
     }
 
-    public bool Equals(CueAudioFile? other)
+    public bool Equals(CueDataFile? other)
     {
         if (ReferenceEquals(this, other)) return true;
         if (other is null) return false;
@@ -219,9 +221,9 @@ public class CueAudioFile : CueItemBase, ICueFile, IEquatable<CueAudioFile>
 
     public override bool Equals(object? obj)
     {
-        return Equals(obj as CueAudioFile);
+        return Equals(obj as CueDataFile);
     }
-    static public implicit operator FileInfo(CueAudioFile file) => file.SourceFile;
+    static public implicit operator FileInfo(CueDataFile file) => file.SourceFile;
     public override int GetHashCode() => HashCode.Combine(NormalizedPath, Index);
     public bool Exists => _file.Exists;
 }

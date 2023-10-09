@@ -10,7 +10,7 @@ internal class CueContainer
 {
     public bool ParsingMode { get; set; }
     private CueSheet ParentSheet { get; }
-    public List<CueAudioFile> Files { get; } = new();
+    public List<CueDataFile> Files { get; } = new();
     public List<CueTrack> Tracks { get; } = new();
     public List<CueIndexImpl> Indexes { get; } = new();
     public void RefreshIndexIndices(int startFromFile = 0)
@@ -56,18 +56,18 @@ internal class CueContainer
         ParentSheet = cueSheet;
     }
 
-    public CueAudioFile AddFile(string filePath, CueAudioFile.FileType type)
+    public CueDataFile AddFile(string filePath, FileType type)
     {
-        CueAudioFile cf = new(ParentSheet, filePath, type)
+        CueDataFile cf = new(ParentSheet, filePath, type)
         {
             Index = Files.Count
         };
         Files.Add(cf);
         return cf;
     }
-    public CueAudioFile InsertFile(int insertionIndex, string filePath, CueAudioFile.FileType type)
+    public CueDataFile InsertFile(int insertionIndex, string filePath, FileType type)
     {
-        CueAudioFile cf = new(ParentSheet, filePath, type);
+        CueDataFile cf = new(ParentSheet, filePath, type);
         Files.Insert(insertionIndex, cf);
         RefreshFileIndices(insertionIndex);
         return cf;
@@ -101,7 +101,7 @@ internal class CueContainer
         if (fileIndex < 0) fileIndex = Files.Count - 1;
         if (trackIndex < 0) trackIndex = Tracks.Count - 1;
         CueTrack track = Tracks[trackIndex];
-        CueAudioFile file = Files[fileIndex];
+        CueDataFile file = Files[fileIndex];
         if (track.ParentFile != file) throw new InvalidOperationException("Specified track does not belong to specified file");
         if (!ParsingMode && file.Meta?.CueDuration is CueTime maxTime && time > maxTime)
             throw new ArgumentOutOfRangeException("Specified time occurs after the file ends");
@@ -139,7 +139,7 @@ internal class CueContainer
         RefreshTracksIndices(fileIndices.End + 1);
         return insertedEnd;
     }
-    private CueIndexImpl AddIndex_NoIndexInTrack(CueTime time, CueAudioFile file, CueTrack lastTrack)
+    private CueIndexImpl AddIndex_NoIndexInTrack(CueTime time, CueDataFile file, CueTrack lastTrack)
     {
         CueIndexImpl lastIndex = Indexes[^1];
         (int Start, int End) = GetCueIndicesOfTrack_Range(lastTrack.Index, true);
@@ -163,7 +163,7 @@ internal class CueContainer
     }
     internal void CloneFrom(CueContainer donor)
     {
-        foreach (CueAudioFile file in donor.Files)
+        foreach (CueDataFile file in donor.Files)
         {
             Files.Add(file.ClonePartial(ParentSheet));
         }
@@ -183,7 +183,7 @@ internal class CueContainer
     internal (int Start, int End) GetCueTracksOfFile_Range(int fileIndex = -1)
     {
         if (fileIndex < 0) fileIndex = Files.Count - 1;
-        CueAudioFile file = Files[fileIndex];
+        CueDataFile file = Files[fileIndex];
         int start = -1;
         int count = 0;
         for (int i = 0; i < Tracks.Count; i++)
@@ -211,7 +211,7 @@ internal class CueContainer
     internal (int Start, int End) GetCueIndicesOfFile_Range(int fileIndex = -1)
     {
         if (fileIndex < 0) fileIndex = Files.Count - 1;
-        CueAudioFile file = Files[fileIndex];
+        CueDataFile file = Files[fileIndex];
         int start = -1;
         int count = 0;
         for (int i = 0; i < Indexes.Count; i++)

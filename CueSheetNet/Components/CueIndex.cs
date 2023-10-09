@@ -19,7 +19,7 @@ public readonly record struct CueIndex
     }
     public int AbsoluteIndex { get; init; }
     public CueTime Time { get; init; }
-    public CueAudioFile File { get; init; }
+    public CueDataFile File { get; init; }
     public CueTrack Track { get; init; }
     internal CueIndex(CueIndexImpl iimpl)
         : this(iimpl.Number,
@@ -27,19 +27,19 @@ public readonly record struct CueIndex
                iimpl.File,
                iimpl.Track,
                iimpl.Time) { }
-    public CueIndex(int number, int absoluteIndex, CueAudioFile file, CueTrack track, int minutes, int seconds, int frames)
+    public CueIndex(int number, int absoluteIndex, CueDataFile file, CueTrack track, int minutes, int seconds, int frames)
         : this(number,
                absoluteIndex,
                file,
                track,
                new CueTime(minutes,seconds,frames)) { }
-    public CueIndex(int number, int absoluteIndex, CueAudioFile file, CueTrack track, CueTime cueTime)
+    public CueIndex(int number, int absoluteIndex, CueDataFile file, CueTrack track, CueTime cueTime)
         : this(number,
                absoluteIndex,
                file,
                track,
                cueTime.TotalFrames) { }
-    public CueIndex(int number, int absoluteIndex, CueAudioFile file, CueTrack track, TimeSpan timeSpan)
+    public CueIndex(int number, int absoluteIndex, CueDataFile file, CueTrack track, TimeSpan timeSpan)
         : this(number,
                absoluteIndex,
                file,
@@ -47,7 +47,7 @@ public readonly record struct CueIndex
                CueTime.FromTimeSpan(timeSpan)) { }
     public CueIndex(int number,
                     int absoluteIndex,
-                    CueAudioFile file,
+                    CueDataFile file,
                     CueTrack track,
                     int totalFrames)
     {

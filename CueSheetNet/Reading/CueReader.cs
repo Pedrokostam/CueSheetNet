@@ -209,10 +209,10 @@ public partial class CueReader
     private void ParseFile(string line)
     {
         (string path, string type) = GetFile(line, 5);// FILE_
-        if (!Enum.TryParse<CueAudioFile.FileType>(type.Trim().ToUpperInvariant(), out CueAudioFile.FileType typeEnum))
+        if (!Enum.TryParse<FileType>(type.Trim().ToUpperInvariant(), out FileType typeEnum))
         {
             Logger.LogWarning("Text {type} does not match eny file type - assigning type WAVE", type);
-            typeEnum = CueAudioFile.FileType.WAVE;
+            typeEnum = FileType.WAVE;
         }
         _ = Sheet!.AddFile(path, typeEnum);
     }
@@ -322,7 +322,7 @@ public partial class CueReader
             //Logger.LogError("Incorrect Index format at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
             throw new FormatException($"Incorrect Index format at line {CurrentLineIndex}: {line}");
         }
-        if (Sheet.LastTrack is CueTrack ctr && Sheet.LastFile is CueAudioFile cfl)
+        if (Sheet.LastTrack is CueTrack ctr && Sheet.LastFile is CueDataFile cfl)
         {
             ctr.ParentFile = cfl;
         }

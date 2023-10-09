@@ -80,7 +80,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
     #region Tracks
     public ReadOnlyCollection<CueTrack> Tracks => Container.Tracks.AsReadOnly();
     public CueTrack? LastTrack => Container.Tracks.LastOrDefault();
-    public CueTrack AddTrack(int index, TrackType type, CueAudioFile file)
+    public CueTrack AddTrack(int index, TrackType type, CueDataFile file)
     {
         if (file.ParentSheet != this)
             throw new InvalidOperationException("Specified file does not belong to this cuesheet");
@@ -92,12 +92,12 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
     #endregion
 
     #region Files
-    public void ChangeFile(int index, string newPath)
+    public void ChangeFile(int index, string newPath,FileType? type=null)
     {
-        Files[index].SetFile(newPath);
+        Files[index].SetFile(newPath,type);
     }
-    public CueAudioFile AddFile(string path, CueAudioFile.FileType type) => Container.AddFile(path, type);
-    public CueAudioFile? LastFile => Container.Files.LastOrDefault();
+    public CueDataFile AddFile(string path, FileType type) => Container.AddFile(path, type);
+    public CueDataFile? LastFile => Container.Files.LastOrDefault();
 
     private List<ICueFile> _associatedFiles { get; } = new();
     public ReadOnlyCollection<ICueFile> AssociatedFiles => _associatedFiles.AsReadOnly();
@@ -121,7 +121,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
         }
     }
     public CueIndex[] Indexes => Container.Indexes.Select(x => new CueIndex(x)).ToArray();
-    public CueIndex AddIndex(CueTime time, CueAudioFile file, CueTrack track)
+    public CueIndex AddIndex(CueTime time, CueDataFile file, CueTrack track)
     {
         if (track.ParentFile != file)
             throw new InvalidOperationException("Specified track does not belong to specified file");
@@ -142,7 +142,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
     /// Save the CueSheet to the location specified by its <see cref="SourceFile"/>.
     /// After changing, directory is not reverted if saving was unsuccessful. 
     /// <para/>File is saved using default <see cref="CueWriterSettings"/>. To use different settings use <see cref="CueWriter"/>
-    /// <para/>Does not do anything with <see cref="CueAudioFile" />s of the Cuesheet, or other associated files (use <see cref="CopyFiles(string, string?)"/> or <see cref="MoveFiles(string, string?)"/> for that).
+    /// <para/>Does not do anything with <see cref="CueDataFile" />s of the Cuesheet, or other associated files (use <see cref="CopyFiles(string, string?)"/> or <see cref="MoveFiles(string, string?)"/> for that).
     /// </summary>
     public void Save() => Save(null);
     public void Save(CueWriterSettings? settings)
@@ -194,7 +194,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
     }
 
     public FileInfo? SourceFile { get; private set; }
-    public ReadOnlyCollection<CueAudioFile> Files => Container.Files.AsReadOnly();
+    public ReadOnlyCollection<CueDataFile> Files => Container.Files.AsReadOnly();
     public string? Performer { get; set; }
     public CueType SheetType { get; internal set; }
     public Encoding? SourceEncoding { get; internal set; }
@@ -278,8 +278,8 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
         }
         for (int i = 0; i < Container.Files.Count; i++)
         {
-            CueAudioFile one = Container.Files[i];
-            CueAudioFile two = other.Container.Files[i];
+            CueDataFile one = Container.Files[i];
+            CueDataFile two = other.Container.Files[i];
             if (!one.Equals(two))
                 return false;
         }

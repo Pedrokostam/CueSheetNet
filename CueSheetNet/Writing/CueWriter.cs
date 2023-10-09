@@ -142,7 +142,7 @@ public sealed class CueWriter
         AppendStringify("REM COMPOSER", Replace(sheet.Composer), 0, true);
         AppendStringify("TITLE", Replace(sheet.Title), 0, true);
         CueTrack? track = null;
-        CueAudioFile? file = null;
+        CueDataFile? file = null;
         foreach (CueIndexImpl ind in sheet.IndexesImpl)
         {
             if (file != ind.File)
@@ -176,7 +176,7 @@ public sealed class CueWriter
         }
     }
 
-    private void AppendFileHeader(CueAudioFile file)
+    private void AppendFileHeader(CueDataFile file)
     {
         Builder.Append("FILE ");
         AppendFilepath(file);
@@ -185,7 +185,7 @@ public sealed class CueWriter
     }
    
 
-    private void AppendFilepath(CueAudioFile file)
+    private void AppendFilepath(CueDataFile file)
     {
         string filename = file.GetRelativePath();
         string path = HasWhitespace(filename) ? Enquote(filename) : filename;
