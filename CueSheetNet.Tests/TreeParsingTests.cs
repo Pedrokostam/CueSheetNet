@@ -15,9 +15,10 @@ public class TreeParsingTests
     public void TestAllAvailable()
     {
         var t = CueTreeFormatter.AvailableProperties;
+        Assert.AreNotEqual(t.Length, 0);
     }
     private static string P(CueSheet sheet, string pattern) => CueTreeFormatter.ParseFormatPattern(sheet, pattern);
-    [TestMethod]
+    [TestMethod("Compares various parse pattern to their parsed results")]
     public void TestParsing()
     {
         string path = Utils.GetFile("SavingTests", "Jethro Tull - Aqualung.cue");
@@ -33,8 +34,9 @@ public class TreeParsingTests
         Assert.AreEqual("Aqualung", P(sheet, "%album%"));
         Assert.AreEqual("Aqualung", P(sheet, "%title%"));
         Assert.AreEqual("970A2F0B", P(sheet, "%DISCID%"));
-        Assert.AreEqual("Jethro Tull" + Path.DirectorySeparatorChar + "1971" + Path.DirectorySeparatorChar + "Aqualung", P(sheet, "%artist%/%date%/%title%"));
-        Assert.AreEqual("Jethro Tull"+Path.DirectorySeparatorChar+"1971"+ Path.DirectorySeparatorChar+"Aqualung", P(sheet, "%ARtist%/%DAte%/%tItLE%"));
+        string expected = "Jethro Tull" + Path.DirectorySeparatorChar + "1971" + Path.DirectorySeparatorChar + "Aqualung";
+        Assert.AreEqual(expected, P(sheet, "%artist%/%date%/%title%"));
+        Assert.AreEqual(expected, P(sheet, "%ARtist%/%DAte%/%tItLE%"));
         ArrayLogger arlog = new(LogLevel.Warning);
         sheet.Date = null;
         sheet.DiscID = null;

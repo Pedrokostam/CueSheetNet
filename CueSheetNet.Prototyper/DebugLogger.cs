@@ -7,23 +7,16 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace CueSheetNet.Test;
-internal class DebugLogger : ILogDevice
+internal class DebugLogger : ArrayLogger
 {
-    public void WriteLog(LogEntry entry)
+    override public void WriteLog(LogEntry entry)
     {
-        LogEntries.Add(entry);
-        Console.WriteLine($"{entry.Timestamp:HH:mm:ss.fff} [{entry.Level}] {entry.Message}");
+        base.WriteLog(entry);
+        Debug.WriteLine($"{entry.Timestamp:HH:mm:ss.fff} [{entry.Level}] {entry.Message}");
     }
 
-    public List<LogEntry> LogEntries = new();
-
-
-    private LogLevel _RequestedLogLevels;
-    public LogLevel RequestedLogLevels => _RequestedLogLevels;
-
-    public DebugLogger(LogLevel requsted)
+    public DebugLogger(LogLevel requsted) : base(requsted)
     {
-        _RequestedLogLevels = requsted;
 
     }
 }
