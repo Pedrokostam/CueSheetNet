@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 namespace CueSheetNet.FileHandling;
 public interface IAudioConverter
 {
-    void PreConvert();
+    string PreConvert(string format);
     void Convert(string input, string output);
     void PostConvert();
 }

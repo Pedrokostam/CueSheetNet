@@ -39,12 +39,13 @@ public class RecipeConverter : IAudioConverter
             stream.Write(Separator);
             stream.WriteLine(output);
         }
-        Logger.LogInformation("Saved all records for converting ({Number})",Elements.Count);
+        Logger.LogInformation("Saved all records for converting ({Number})", Elements.Count);
     }
-    public void PreConvert()
+    public string PreConvert(string format)
     {
         Directory.CreateDirectory(RecipeOutputFolder);
         Elements.Clear();
+        return format;
     }
 
 }

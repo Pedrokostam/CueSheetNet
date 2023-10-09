@@ -71,10 +71,18 @@ public class CopyingTests
         return output;
     }
 
+    [TestMethod("Converts package using RecipeConverter and checks converted.txt")]
     public void ConvertTest()
     {
         CueSheet sheet = CueSheet.Read(Utils.GetFile("CopyingTests", "Spandau Ballet - True.cue"));
         string output= CreateTempDirectory("ConversionTest");
-        CuePackage.Convert(sheet, output,);
+        CuePackage.Convert(sheet, output,null,".Wav");
+        string converted =File.ReadAllText(Utils.GetFile("CopyingTests", "converted.txt"));
+        string[] parts = converted.Split(';');
+        string old = parts[0];
+        string @new = parts[1].Trim();
+        Assert.AreEqual(old, Utils.GetFile("CopyingTests", "Spandau Ballet - True.flac"));
+        string expectedNew = Path.Combine(output, "Spandau Ballet - True.wav");
+        Assert.AreEqual(@new, expectedNew);
     }
 }

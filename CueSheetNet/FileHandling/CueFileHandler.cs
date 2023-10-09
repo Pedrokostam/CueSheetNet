@@ -151,7 +151,7 @@ public static partial class CuePackage
     /// <param name="sheet"></param>
     /// <returns></returns>
     /// <param name="filename">Base anem given all related files, without any invalid characters</param>
-    private static List<TransFile> GetTransFiles(CueSheet sheet, string filename, bool preserveSubfolders)
+    private static List<TransFile> GetTransFiles(CueSheet sheet, string filename, bool preserveSubfolders, string? newAudioExtension)
     {
         DirectoryInfo? cueFolder = preserveSubfolders ? sheet.SourceFile?.Directory : null;
         List<TransFile> transFiles = new();
@@ -159,6 +159,7 @@ public static partial class CuePackage
         int fileIndex = 0;
         foreach (TransFile transAudio in transAudios)
         {
+            transAudio.Extension = newAudioExtension;
             sheet.ChangeFile(fileIndex, transAudio.NewNameWithExtension);
             transFiles.Add(transAudio);
             fileIndex++;
@@ -331,7 +332,7 @@ public static partial class CuePackage
                                           activeSheet,
                                           out DirectoryInfo immediateParentDir,
                                           out List<TransFile> transFiles,
-                                          preserveSubfolders);
+                                          preserveSubfolders, null);
 
         List<FileInfo> inProgressCopied = new();
         try
@@ -380,7 +381,7 @@ public static partial class CuePackage
                                           activeSheet,
                                           out DirectoryInfo immediateParentDir,
                                           out List<TransFile> transFiles,
-                                          preserveSubfolders);
+                                          preserveSubfolders, null);
 
         List<MovedFile> movedFileArchive = new();
         try
@@ -420,7 +421,8 @@ public static partial class CuePackage
                                                           CueSheet activeSheet,
                                                           out DirectoryInfo immediateParentDir,
                                                           out List<TransFile> transFiles,
-                                                          bool preserveSubfolders)
+                                                          bool preserveSubfolders,
+                                                          string? newAudioExtension)
     {
         // Combine Destination with whatever results from parsing (which may contain more directories)
         string patternParsed = CueTreeFormatter.ParseFormatPattern(activeSheet, pattern);
@@ -431,7 +433,7 @@ public static partial class CuePackage
         // Even if user specified some extension in the name, it's discarded here.
         string filename = GetNotNullName(destinationWithPattern);
         filename = PathStringNormalization.RemoveInvalidNameCharacters(filename);
-        transFiles = GetTransFiles(activeSheet, filename, preserveSubfolders);
+        transFiles = GetTransFiles(activeSheet, filename, preserveSubfolders, newAudioExtension);
         CheckForNameCollisions(immediateParentDir, transFiles);
         CueWriter writer = new(settings ?? new());
         SaveModifiedCueSheet(activeSheet, filename, immediateParentDir, writer);
@@ -439,26 +441,29 @@ public static partial class CuePackage
     }
 
     public static CueSheet Convert(CueSheet sheet,
-                                       string destinationDirectory,
-                                       string? pattern,
-                                       CueWriterSettings? settings,
-                                       bool preserveSubfolders,
-                                       IAudioConverter? converter = null)
+                                   string destinationDirectory,
+                                   string? pattern,
+                                   string format,
+                                   CueWriterSettings? settings = null,
+                                   bool preserveSubfolders = true,
+                                   IAudioConverter? converter = null)
     {
-        converter ??= new RecipeConverter(destinationDirectory, "converted.txt");
+        ArgumentException.ThrowIfNullOrEmpty(format, nameof(format));
+        format = format.Trim().Trim('.').ToLowerInvariant();
+        converter ??= new RecipeConverter(sheet.SourceFile?.DirectoryName ?? destinationDirectory, "converted.txt");
         CueSheet activeSheet = sheet.Clone();
+        string extension = converter.PreConvert(format);
         SaveModifiedCueSheetInNewLocation(destinationDirectory,
                                           pattern,
                                           settings,
                                           activeSheet,
                                           out DirectoryInfo immediateParentDir,
                                           out List<TransFile> transFiles,
-                                          preserveSubfolders);
+                                          preserveSubfolders, extension);
 
         List<FileInfo> inProgressCopied = new();
         try
         {
-            converter.PreConvert();
             foreach (var item in transFiles)
             {
                 if (item.Type == FileType.Audio)

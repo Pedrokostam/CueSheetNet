@@ -12,7 +12,22 @@ internal record class TransFile
     public FileInfo SourceFile { get; }
     public FileType Type { get; }
 
-    public string Extension => SourceFile.Extension;
+    private string? extension;
+    [AllowNull]
+    public string Extension
+    {
+        get => extension ?? SourceFile.Extension;
+        set
+        {
+            if(value is not null)
+            {
+                if (!value.StartsWith('.')){
+                    value = "." + value;
+                }
+            }
+            extension = value;
+        }
+    }
     /// <summary>
     /// NewName of the file. No extension. If set to null, the old name will be used
     /// </summary>
@@ -21,9 +36,7 @@ internal record class TransFile
     {
         get
         {
-            if (newName == null)
-                return Path.GetFileNameWithoutExtension(SourceFile.Name);
-            return newName;
+            return newName ?? Path.GetFileNameWithoutExtension(SourceFile.Name); ;
         }
         set
         {
@@ -36,7 +49,7 @@ internal record class TransFile
         get
         {
             if (newName == null)
-                return Path.GetFileName(SourceFile.Name);
+                return Path.ChangeExtension(SourceFile.Name, Extension);
             return newName + Extension;
         }
     }
