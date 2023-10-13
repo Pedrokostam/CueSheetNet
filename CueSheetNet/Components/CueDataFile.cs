@@ -54,20 +54,11 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
         }
         private set => meta = value;
     }
-    public bool ValidFile
-    {
-        get
-        {
-            RefreshIfNeeded();
-            return validFile;
-        }
-        private set => validFile = value;
-    }
+  
     private bool NeedsRefresh { get; set; }
     public long FileSize => SourceFile.Exists ? SourceFile.Length : -1;
 
     private FileInfo _file;
-    private bool validFile;
     private FileMetadata? meta;
     private string? normalizedPath;
 
@@ -81,13 +72,11 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
                                            ParentSheet
                                            .GetTracksOfFile_IEnum(Index)
                                            .Select(x => x.Type));
-            ValidFile = meta.HasValue;
             Meta = meta;
         }
         else
         {
             Meta = null;
-            ValidFile = false;
         }
         NeedsRefresh = false;
     }
@@ -171,7 +160,6 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
 
     private void Watcher_Deleted(object sender, FileSystemEventArgs e)
     {
-        ValidFile = false;
         NeedsRefresh = true;
         Meta = null;
         Debug.WriteLine($"{e.Name} deleted");

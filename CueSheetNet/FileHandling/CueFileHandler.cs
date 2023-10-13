@@ -17,12 +17,12 @@ public static partial class CuePackage
     /// <summary>
     /// Finds all files related to the CueSheet
     /// </summary>
-    public static IEnumerable<ICueFile> GetAssociatedFiles(CueSheet sheet)
+    public static IEnumerable<CueExtraFile> GetAssociatedFiles(CueSheet sheet)
     {
         //If there are no files or directory of last file is null, return - no files
         if (sheet.LastFile is null || sheet.LastFile?.SourceFile?.DirectoryName is null)
         {
-            return Enumerable.Empty<ICueFile>();
+            return Enumerable.Empty<CueExtraFile>();
         }
         // All variations of base name of cuesheet
         HashSet<string> matchStrings = GetMatchStringHashset(sheet);
@@ -54,7 +54,7 @@ public static partial class CuePackage
                 bool isAudioFile = sheet.Files.Select(x => x.SourceFile).Contains(file, PathComparer.Instance);
                 if (isAudioFile)
                     continue; //Audio files are already associated with the sheet
-                compareNames.Add(new(file));
+                compareNames.Add(new(file,sheet));
             }
         }
         return compareNames.Order(PathComparer.Instance);//.Select((file, index) => new IndexedFile(FileType.Additional, index, (FileInfo)file)).ToArray();

@@ -2,7 +2,7 @@
 
 namespace CueSheetNet.Internal
 {
-    public abstract class CueItemBase
+    public abstract class CueItemBase : IParentSheet
     {
         internal bool Orphaned { get; set; }
         protected CueSheet _ParentSheet;
