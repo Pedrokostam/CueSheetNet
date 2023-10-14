@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace CueSheetNet.FileReaders;
+﻿namespace CueSheetNet.FileReaders;
 public interface IFileFormatReader
 {
     string[] Extensions { get; }
@@ -13,7 +7,7 @@ public interface IFileFormatReader
     bool ExtensionMatches(string fileName);
 }
 
-public interface IAudioFileFormatReader: IFileFormatReader
+public interface IAudioFileFormatReader : IFileFormatReader
 {
 
     /// <summary>
@@ -33,7 +27,7 @@ public interface IAudioBinaryStreamFormatReader : IAudioFileFormatReader
     /// <returns>Duration in seconds</returns>
     bool ReadMetadata(Stream stream, out FileMetadata metadata);
 }
-public interface IBinaryFileFormatReader:IFileFormatReader
+public interface IBinaryFileFormatReader : IFileFormatReader
 {
     /// <summary>
     /// Reads duration from file data
@@ -41,7 +35,7 @@ public interface IBinaryFileFormatReader:IFileFormatReader
     /// <param name="path">Path to file</param>
     /// <param name="metadata"></param>
     /// <returns></returns>
-    bool ReadMetadata(string path,IEnumerable<TrackType> trackTypes, out FileMetadata metadata);
+    bool ReadMetadata(string path, IEnumerable<TrackType> trackTypes, out FileMetadata metadata);
 }
 public interface IBinaryStreamFormatReader : IBinaryFileFormatReader
 {

@@ -1,5 +1,4 @@
 ﻿using System.Collections.ObjectModel;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -61,7 +60,7 @@ public partial class LogEntry
 
     public LogEntry(LogLevel level, string messageTemplate, object?[] args)
     {
-        Level= level;
+        Level = level;
         Timestamp = DateTime.Now;
         MessageTemplate = messageTemplate;
         Identifiers = new List<string>();

@@ -1,7 +1,4 @@
-﻿using CueSheetNet;
-using CueSheetNet.FileReaders;
-using CueSheetNet.Logging;
-using System.Text;
+﻿using CueSheetNet.Logging;
 
 
 namespace CueSheetNet.FileReaders;

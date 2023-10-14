@@ -1,9 +1,4 @@
 ﻿using CueSheetNet.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CueSheetNet.FileReaders;
 
@@ -31,7 +26,7 @@ internal class CdFormatReader : IBinaryStreamFormatReader
         if (!twelve.SequenceEqual(Header))
             return false;
         stream.Seek(4, SeekOrigin.Current);
-        int modeByte =stream.ReadByte();
+        int modeByte = stream.ReadByte();
         bool byteGood = mode switch
         {
             TrackType.Modes.Mode0 => modeByte == 0,
@@ -46,13 +41,13 @@ internal class CdFormatReader : IBinaryStreamFormatReader
     public bool ReadMetadata(Stream stream, IEnumerable<TrackType> trackTypes, out FileMetadata metadata)
     {
         if (trackTypes.FirstOrDefault() is not TrackType trackType)
-            throw new ArgumentException("No track type specified",nameof(trackTypes));
+            throw new ArgumentException("No track type specified", nameof(trackTypes));
         var t = trackTypes.Select(x => x.SectorSize).Distinct().Count();
         if (t > 1)
             throw new InvalidFileFormatException("Differing sector sizes specified");
 
         int size = trackType.SectorSize;
-        if(!FileSignatureMatches(stream, size, trackType.Mode))
+        if (!FileSignatureMatches(stream, size, trackType.Mode))
         {
             Logger.LogWarning("Data stream has mismatched Header");
             metadata = default;
@@ -77,6 +72,6 @@ internal class CdFormatReader : IBinaryStreamFormatReader
     public bool ReadMetadata(string path, IEnumerable<TrackType> trackTypes, out FileMetadata metadata)
     {
         using Stream stream = File.OpenRead(path);
-        return ReadMetadata(stream, trackTypes,out metadata);
+        return ReadMetadata(stream, trackTypes, out metadata);
     }
 }

@@ -1,7 +1,4 @@
-﻿using CueSheetNet.Logging;
-using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
+﻿using System.Diagnostics;
 
 namespace CueSheetNet.Internal;
 
@@ -72,11 +69,11 @@ internal class CueContainer
         RefreshFileIndices(insertionIndex);
         return cf;
     }
-    public CueTrack AddTrack(int parsedIndex,TrackType type, int fileIndex = -1)
+    public CueTrack AddTrack(int parsedIndex, TrackType type, int fileIndex = -1)
     {
         if (Files.Count == 0) throw new InvalidOperationException("Cannot add track without any file");
         if (fileIndex < 0) fileIndex = Files.Count - 1;
-        CueTrack cf = new(Files[fileIndex],type)
+        CueTrack cf = new(Files[fileIndex], type)
         {
             Index = Tracks.Count == 0 ? 0 : Tracks[^1].Index + 1
         };
@@ -87,7 +84,7 @@ internal class CueContainer
     public CueTrack InsertTrack(int insertionIndex, int parsedIndex, TrackType type, int fileIndex = -1)
     {
         if (fileIndex < 0) fileIndex = Files.Count - 1;
-        CueTrack cf = new(Files[fileIndex],type);
+        CueTrack cf = new(Files[fileIndex], type);
         Tracks.Insert(insertionIndex, cf);
         RefreshIndexIndices(insertionIndex);
         cf.Offset = cf.Number - parsedIndex;

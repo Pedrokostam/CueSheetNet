@@ -1,14 +1,10 @@
-﻿using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using CueSheetNet.FileHandling;
-using CueSheetNet.Internal;
+﻿using CueSheetNet.Internal;
 using CueSheetNet.Logging;
 using CueSheetNet.NameParsing;
 using CueSheetNet.Syntax;
 using CueSheetNet.TextParser;
+using System.Diagnostics.CodeAnalysis;
+using System.Text;
 
 namespace CueSheetNet;
 
@@ -71,13 +67,13 @@ public sealed class CueWriter
         else return Header + " " + value;
     }
 
-    private void AppendTrackRems(CueTrack track) => AppendRems(track.RawRems, 2);
+    private void AppendTrackRems(CueTrack track) => AppendRems(track.Remarks, 2);
     private void AppendRems(IEnumerable<CueRemark> rems, int depth = 0)
     {
         foreach (var item in rems)
             AppendRemark(item, depth);
     }
-    private void AppendTrackComments(CueTrack track) => AppendComments(track.RawComments, 2);
+    private void AppendTrackComments(CueTrack track) => AppendComments(track.Comments, 2);
     private void AppendComments(IEnumerable<string> comms, int depth = 0)
     {
         foreach (var item in comms)
@@ -88,30 +84,33 @@ public sealed class CueWriter
         if (level > 0)
             Builder.Append(' ', level * Settings.IndentationDepth);
     }
-    private void AppendOptionalField(CueTrack track, FieldSetFlags key)
+    private void AppendOptionalField(CueTrack track, FieldsSet key)
     {
         string keyName = key.ToString();
-
+        bool isSet = track.CommonFieldsSet.HasFlag(key);
+        // If it is not set we can only write with AlwaysWrite
+        if (!isSet && Settings.RedundantFieldsBehavior != CueWriterSettings.RedundantFieldBehaviors.AlwaysWrite)
+        {
+            return;
+        }
         (string? trackValue, string? sheetValue) = key switch
         {
-            FieldSetFlags.Title => (track.Title, null),
-            FieldSetFlags.Performer => (track.Performer, track.ParentSheet.Performer),
-            FieldSetFlags.Composer => (track.Composer, track.ParentSheet.Composer),
+            FieldsSet.Title => (track.Title, null),
+            FieldsSet.Performer => (track.Performer, track.ParentSheet.Performer),
+            FieldsSet.Composer => (track.Composer, track.ParentSheet.Composer),
             _ => throw new NotImplementedException($"{key} is not implemented"),
         };
-        bool isSame = trackValue == sheetValue;
-        bool isSet = track.CommonFieldsSet.HasFlag(key);
-        CueWriterSettings.RedundantFieldBehaviors behavior = Settings.RedundantFieldsBehavior;
-
-        bool write = behavior switch
+        bool write = Settings.RedundantFieldsBehavior switch
         {
+            // if it was set, write it down
             CueWriterSettings.RedundantFieldBehaviors.KeepAsIs => isSet,
-            CueWriterSettings.RedundantFieldBehaviors.RemoveRedundant => isSet && !isSame,
-            CueWriterSettings.RedundantFieldBehaviors.AlwaysWrite => key == FieldSetFlags.Title && isSet || key != FieldSetFlags.Title,
+            // if both values are the same (no matter, if track is not set) don't write it
+            CueWriterSettings.RedundantFieldBehaviors.RemoveRedundant => trackValue != sheetValue,
+            // does not matter, if its not set, take sheet value instead
+            CueWriterSettings.RedundantFieldBehaviors.AlwaysWrite => true, 
             _ => throw new NotImplementedException(),
         };
-
-        if (write)
+        if (write) //if both track and sheet value are null, next method will skip it
             AppendStringify(keyName.ToUpperInvariant(), Replace(trackValue), 2, true);
     }
 
@@ -158,10 +157,10 @@ public sealed class CueWriter
 
                 AppendTrackHeader(track);
 
-                AppendOptionalField(track, FieldSetFlags.Title);
-                AppendOptionalField(track, FieldSetFlags.Performer);
+                AppendOptionalField(track, FieldsSet.Title);
+                AppendOptionalField(track, FieldsSet.Performer);
                 AppendISRC(track);
-                AppendOptionalField(track, FieldSetFlags.Composer);
+                AppendOptionalField(track, FieldsSet.Composer);
                 AppendFlags(track);
                 AppendTrackRems(track);
                 AppendTrackComments(track);
@@ -183,7 +182,7 @@ public sealed class CueWriter
         Builder.Append(' ');
         Builder.AppendLine(file.Type.ToString());
     }
-   
+
 
     private void AppendFilepath(CueDataFile file)
     {
@@ -233,18 +232,18 @@ public sealed class CueWriter
     /// <returns></returns>
     private Encoding GetProperEncoding(CueSheet? sheet)
     {
-        Encoding baza = Settings.Encoding ?? sheet?.SourceEncoding ?? CueWriterSettings.DefaultEncoding;
-        if (baza.EncoderFallback != EncoderFallback.ExceptionFallback)
+        Encoding encodingBaza = Settings.Encoding ?? sheet?.SourceEncoding ?? CueWriterSettings.DefaultEncoding;
+        if (encodingBaza.EncoderFallback != EncoderFallback.ExceptionFallback)
         {
             // If the encoding is a readonly instance, create a clone of it and use it instead
-            baza = (Encoding)baza.Clone();
-            baza.EncoderFallback = EncoderFallback.ExceptionFallback;
+            encodingBaza = (Encoding)encodingBaza.Clone();
+            encodingBaza.EncoderFallback = EncoderFallback.ExceptionFallback;
         }
-        if (baza.Preamble.Length == 0 && (baza is UTF32Encoding || baza is UnicodeEncoding))
+        if (encodingBaza.Preamble.Length == 0 && (encodingBaza is UTF32Encoding || encodingBaza is UnicodeEncoding))
         {
-            Logger.LogWarning("Using non-standard encoding multi-byte encoding without byte order mark: {Encoding.BodyName}", baza);
+            Logger.LogWarning("Using non-standard encoding multi-byte encoding without byte order mark: {Encoding.BodyName}", encodingBaza);
         }
-        return baza;
+        return encodingBaza;
     }
     public void SaveCueSheet(CueSheet sheet)
     {

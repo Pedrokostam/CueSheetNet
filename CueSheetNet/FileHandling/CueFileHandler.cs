@@ -1,10 +1,6 @@
 ﻿using CueSheetNet.Logging;
 using CueSheetNet.NameParsing;
 using System.Collections.Immutable;
-using System.Collections.ObjectModel;
-using System.Reflection;
-using System.Reflection.Metadata.Ecma335;
-using System.Text;
 using System.Text.RegularExpressions;
 
 namespace CueSheetNet.FileHandling;
@@ -54,7 +50,7 @@ public static partial class CuePackage
                 bool isAudioFile = sheet.Files.Select(x => x.SourceFile).Contains(file, PathComparer.Instance);
                 if (isAudioFile)
                     continue; //Audio files are already associated with the sheet
-                compareNames.Add(new(file,sheet));
+                compareNames.Add(new(file, sheet));
             }
         }
         return compareNames.Order(PathComparer.Instance);//.Select((file, index) => new IndexedFile(FileType.Additional, index, (FileInfo)file)).ToArray();
@@ -161,7 +157,7 @@ public static partial class CuePackage
         {
             FileType t = CueDataFile.GetFileTypeFromPath("." + newAudioExtension);
             transAudio.Extension = newAudioExtension;
-            sheet.ChangeFile(fileIndex, transAudio.NewNameWithExtension,t);
+            sheet.ChangeFile(fileIndex, transAudio.NewNameWithExtension, t);
             transFiles.Add(transAudio);
             fileIndex++;
         }

@@ -6,21 +6,21 @@ public enum CueType
     Unknown = 0,
 
     /// <summary>Single continuous file</summary>
-    SingleFile = 0b00000001,
+    SingleFile = 1 << 0,
 
     /// <summary>Multiple files</summary>
-    MultipleFiles = 0b00000010,
+    MultipleFiles = 1 << 1,
 
     /// <summary>Hidden Track One Audio</summary>
-    HTOA = 0b00000100,
+    HTOA = 1 << 2,
 
     /// <summary>Uses Postgap or Pregap</summary>
-    SimulatedGaps = 0b00001000,
+    SimulatedGaps = 1 << 3,
 
     /// <summary>Index 00 of track on previous file</summary>
-    InterfileGaps = 0b00010000,
+    InterfileGaps = 1 << 4,
     /// <summary>Contains audio tracks</summary>
-    Audio = 0b00100000,
+    Audio = 1 << 5,
     /// <summary>Contains data tracks</summary>
-    Data = 0b01000000,
+    Data = 1 << 6,
 }

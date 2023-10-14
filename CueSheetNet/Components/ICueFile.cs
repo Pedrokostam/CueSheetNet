@@ -1,6 +1,6 @@
 ﻿namespace CueSheetNet;
 
-public interface ICueFile:IParentSheet
+public interface ICueFile : IParentSheet
 {
     FileInfo SourceFile { get; }
     long FileSize { get; }

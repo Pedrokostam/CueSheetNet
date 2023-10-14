@@ -3,13 +3,13 @@
 [Flags]
 public enum TrackFlags
 {
-    None = 0b0,
+    None = 0,
     //DCP
-    DigitalCopyPermitted = 0b001,
+    DigitalCopyPermitted = 1 << 0,
     //4CH
-    FourChannel = 0b010,
+    FourChannel = 1 << 1,
     //PRE
-    PreEmphasis = 0b100,
+    PreEmphasis = 1 << 2,
     //SCMS
-    SerialCopyManagementSystem = 0b1000
+    SerialCopyManagementSystem = 1 << 3,
 }

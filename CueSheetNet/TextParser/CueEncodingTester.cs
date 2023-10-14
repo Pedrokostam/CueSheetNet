@@ -1,16 +1,8 @@
 ﻿using CueSheetNet.Logging;
 using CueSheetNet.Reading;
-using CueSheetNet.Syntax;
-using Microsoft.VisualBasic;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Drawing;
-using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace CueSheetNet.TextParser;
 internal class CueEncodingTester

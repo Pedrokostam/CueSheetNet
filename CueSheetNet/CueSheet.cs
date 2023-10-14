@@ -1,8 +1,7 @@
-﻿using System.Collections.ObjectModel;
-using System.Runtime.CompilerServices;
-using System.Text;
-using CueSheetNet.FileHandling;
+﻿using CueSheetNet.FileHandling;
 using CueSheetNet.Internal;
+using System.Collections.ObjectModel;
+using System.Text;
 
 namespace CueSheetNet;
 public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
@@ -92,9 +91,9 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
     #endregion
 
     #region Files
-    public void ChangeFile(int index, string newPath,FileType? type=null)
+    public void ChangeFile(int index, string newPath, FileType? type = null)
     {
-        Files[index].SetFile(newPath,type);
+        Files[index].SetFile(newPath, type);
     }
     public CueDataFile AddFile(string path, FileType type) => Container.AddFile(path, type);
     public CueDataFile? LastFile => Container.Files.LastOrDefault();
@@ -144,16 +143,20 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
     /// <para/>File is saved using default <see cref="CueWriterSettings"/>. To use different settings use <see cref="CueWriter"/>
     /// <para/>Does not do anything with <see cref="CueDataFile" />s of the Cuesheet, or other associated files (use <see cref="CopyFiles(string, string?)"/> or <see cref="MoveFiles(string, string?)"/> for that).
     /// </summary>
-    public void Save() => Save(null);
-    public void Save(CueWriterSettings? settings)
+    public void Save()
     {
 
         //if (directory is not null)
         ArgumentNullException.ThrowIfNull(SourceFile);
-        CueWriter writer = new(settings);
+        CueWriter writer = new();
         writer.SaveCueSheet(this);
     }
-   
+    public void Save(string path)
+    {
+        SetCuePath(path);
+        Save();
+    }
+
     #endregion
     private CueContainer Container { get; }
     private FileInfo? _CdTextFile;
@@ -410,7 +413,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
             string? p = null;
             foreach (CueTrack track in Tracks)
             {
-                if (!track.CommonFieldsSet.HasFlag(FieldSetFlags.Performer))
+                if (!track.CommonFieldsSet.HasFlag(FieldsSet.Performer))
                 {
                     // performer is not set, cannot set global
                     return;
@@ -438,7 +441,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
             string? p = null;
             foreach (CueTrack track in Tracks)
             {
-                if (!track.CommonFieldsSet.HasFlag(FieldSetFlags.Composer))
+                if (!track.CommonFieldsSet.HasFlag(FieldsSet.Composer))
                 {
                     // Composer is not set, cannot set global
                     return;
@@ -484,8 +487,8 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
         bool data = false;
         foreach (var track in Tracks)
         {
-            audio |=track.Type.ContainsAudioData;
-            data |=!track.Type.ContainsAudioData;
+            audio |= track.Type.ContainsAudioData;
+            data |= !track.Type.ContainsAudioData;
             simgaps |= track.PreGap != default || track.PostGap != default;
         }
         if (audio) { type |= CueType.Audio; }

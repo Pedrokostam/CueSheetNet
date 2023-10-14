@@ -1,14 +1,6 @@
 ﻿using CueSheetNet.FileHandling;
 using CueSheetNet.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using System.Xml.Linq;
 
 namespace CueSheetNet.NameParsing;
 public static partial class CueTreeFormatter
@@ -90,5 +82,5 @@ public static partial class CueTreeFormatter
 
         }
     }
-  
+
 }

@@ -24,7 +24,7 @@ public readonly record struct CueSource
     }
     internal static CueSource FromStringContent(string content)
     {
-        return new CueSource() { Type=SourceType.String, Data=content};
+        return new CueSource() { Type = SourceType.String, Data = content };
     }
     public override string ToString()
     {

@@ -1,12 +1,9 @@
-﻿using CueSheetNet.FileReaders;
-using CueSheetNet.Internal;
+﻿using CueSheetNet.Internal;
 using CueSheetNet.Logging;
 using CueSheetNet.Reading;
 using CueSheetNet.Syntax;
 using CueSheetNet.TextParser;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Text;
 using System.Text.RegularExpressions;
 namespace CueSheetNet;

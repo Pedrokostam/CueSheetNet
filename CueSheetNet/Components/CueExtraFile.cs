@@ -9,7 +9,7 @@ public class CueExtraFile : ICueFile
         ParentSheet = parent;
         SourceFile = source;
     }
-    public CueExtraFile(string path, CueSheet sheet) : this(new FileInfo(path),sheet)
+    public CueExtraFile(string path, CueSheet sheet) : this(new FileInfo(path), sheet)
     {
     }
     public static implicit operator FileInfo(CueExtraFile file) => file.SourceFile;

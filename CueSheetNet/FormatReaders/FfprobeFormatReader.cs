@@ -1,7 +1,6 @@
-﻿using System.Diagnostics;
+﻿using CueSheetNet.Logging;
+using System.Diagnostics;
 using System.Globalization;
-using System.Reflection.Metadata.Ecma335;
-using CueSheetNet.Logging;
 
 namespace CueSheetNet.FileReaders;
 

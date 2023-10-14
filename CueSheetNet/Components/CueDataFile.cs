@@ -1,13 +1,8 @@
-﻿using CueSheetNet.FileReaders;
-using CueSheetNet.FileHandling;
+﻿using CueSheetNet.FileHandling;
+using CueSheetNet.FileReaders;
 using CueSheetNet.Internal;
-using CueSheetNet.Logging;
-using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
-using System.Reflection;
-using static System.Net.WebRequestMethods;
 
 namespace CueSheetNet;
 
@@ -24,17 +19,11 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
             "mp3" or "bit" => FileType.MP3,
             "aiff" or "aif" or "aifc" => FileType.AIFF,
             "wav" or "wave" => FileType.WAVE,
-            "bin" or "mm2" or  "iso" or  "img" => FileType.BINARY,
+            "bin" or "mm2" or "iso" or "img" => FileType.BINARY,
             "mot" => FileType.MOTOROLA,
             _ => FileType.WAVE
         };
     }
-    public static bool IsAudioFile(FileType type)
-    {
-
-        return type.HasFlag(FileType.WAVE);
-    }
-    private FileSystemWatcher? watcher;
     public int Index { get; internal set; }
     public CueDataFile(CueSheet parent, string filePath, FileType type) : base(parent)
     {
@@ -45,6 +34,7 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
         return new(newOwner, SourceFile.FullName, Type);
     }
     public FileType Type { get; internal set; }
+    private FileMetadata? meta;
     public FileMetadata? Meta
     {
         get
@@ -54,13 +44,9 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
         }
         private set => meta = value;
     }
-  
+
     private bool NeedsRefresh { get; set; }
     public long FileSize => SourceFile.Exists ? SourceFile.Length : -1;
-
-    private FileInfo _file;
-    private FileMetadata? meta;
-    private string? normalizedPath;
 
     private void RefreshIfNeeded()
     {
@@ -81,13 +67,14 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
         NeedsRefresh = false;
     }
 
-    private bool IsAudio() => (AudioTypes & Type) != FileType.Unknown;
+    public bool IsAudio() => (AudioTypes & Type) != FileType.Unknown;
 
+    private FileInfo _file;
     public FileInfo SourceFile => _file;
 
 
     [MemberNotNull(nameof(_file))]
-    public void SetFile(string value,FileType? newType=null)
+    public void SetFile(string value, FileType? newType = null)
     {
         string absPath = Path.Combine(ParentSheet.SourceFile?.DirectoryName ?? ".", value);
         if (absPath == _file?.FullName)
@@ -99,12 +86,63 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
         Debug.WriteLine($"Setting file to {absPath}");
         CreateWatcher(absPath);
         _file = new FileInfo(absPath);
-        Type  = newType ?? Type;
+        Type = newType ?? Type;
         NeedsRefresh = true;
         RefreshIfNeeded();
-
     }
 
+    public CueIndex[] CueIndexes => ParentSheet.GetIndexesOfFile(Index);
+
+    public override string ToString()
+    {
+        return "File " + Index.ToString("D2") + " \"" + SourceFile.FullName + "\" " + Type;
+    }
+    public void RefreshFileInfo()
+    {
+        string name = SourceFile.Name;
+        string absPath = Path.Combine(ParentSheet.SourceFile?.DirectoryName ?? ".", name);
+        SetFile(absPath);
+    }
+
+    private string? normalizedPath;
+    public string NormalizedPath
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(normalizedPath))
+            {
+                normalizedPath = PathComparer.NormalizePath(_file);
+            }
+            return normalizedPath;
+        }
+    }
+
+    public bool Equals(CueDataFile? other)
+    {
+        if (ReferenceEquals(this, other)) return true;
+        if (other is null) return false;
+        if (GetRelativePath() != other.GetRelativePath()) return false;
+        if (Type != other.Type) return false;
+        if (Index != other.Index) return false;
+        return true;
+    }
+
+    public string GetRelativePath()
+    {
+        string cueBase = ParentSheet.SourceFile?.DirectoryName ?? ".";
+        return Path.GetRelativePath(cueBase, NormalizedPath);
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return Equals(obj as CueDataFile);
+    }
+    static public implicit operator FileInfo(CueDataFile file) => file.SourceFile;
+    public override int GetHashCode() => HashCode.Combine(NormalizedPath, Index);
+    public bool Exists => _file.Exists;
+
+    #region Watcher
+    private FileSystemWatcher? watcher;
     private void CreateWatcher(string absPath)
     {
         string? parentDir = Path.GetDirectoryName(absPath);
@@ -164,55 +202,6 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
         Meta = null;
         Debug.WriteLine($"{e.Name} deleted");
     }
-
-    public CueIndex[] CueIndexes => ParentSheet.GetIndexesOfFile(Index);
-
-    public override string ToString()
-    {
-        return "File " + Index.ToString("D2") + " \"" + SourceFile.FullName + "\" " + Type;
-    }
-    public void RefreshFileInfo()
-    {
-        string name = SourceFile.Name;
-        string absPath = Path.Combine(ParentSheet.SourceFile?.DirectoryName ?? ".", name);
-        SetFile(absPath);
-    }
-
-
-    public string NormalizedPath
-    {
-        get
-        {
-            if (string.IsNullOrWhiteSpace(normalizedPath))
-            {
-                normalizedPath = PathComparer.NormalizePath(_file);
-            }
-            return normalizedPath;
-        }
-    }
-
-    public bool Equals(CueDataFile? other)
-    {
-        if (ReferenceEquals(this, other)) return true;
-        if (other is null) return false;
-        if (GetRelativePath() != other.GetRelativePath()) return false;
-        if (Type != other.Type) return false;
-        if (Index != other.Index) return false;
-        return true;
-    }
-
-    public string GetRelativePath()
-    {
-        string cueBase = ParentSheet.SourceFile?.DirectoryName ?? ".";
-        return Path.GetRelativePath(cueBase, NormalizedPath);
-    }
-
-    public override bool Equals(object? obj)
-    {
-        return Equals(obj as CueDataFile);
-    }
-    static public implicit operator FileInfo(CueDataFile file) => file.SourceFile;
-    public override int GetHashCode() => HashCode.Combine(NormalizedPath, Index);
-    public bool Exists => _file.Exists;
+    #endregion
 }
 

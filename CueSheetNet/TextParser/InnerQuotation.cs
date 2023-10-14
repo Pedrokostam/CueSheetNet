@@ -8,9 +8,10 @@ namespace CueSheetNet.TextParser;
 /// </summary>
 public readonly record struct InnerQuotation
 {
+    private const char DoubleQuote = '"';
+
     public const char DefaultOpening = '“';
     public const char DefaultClosing = '”';
-    private const char DoubleQuote = '"';
 
     /// <summary>
     /// No replacement is done. Strings returned as is. (Replacement quotes set to '"').
@@ -39,6 +40,7 @@ public readonly record struct InnerQuotation
 
     private readonly char openingQuote;
     private readonly char closingQuote;
+
     public readonly bool Symmetrical => closingQuote == openingQuote;
     /// <summary>
     /// Return whether this quotation replacement is redundant, i.e. replaces '"' with '"'
@@ -83,14 +85,15 @@ public readonly record struct InnerQuotation
     public InnerQuotation(char symmetricalQuote) : this(symmetricalQuote, symmetricalQuote) { }
 
     /// <summary>
-    /// Replaces any double quotes in the string with <see cref="OpeningQuote"/> and <see cref="ClosingQuote"/>. If replacement quotes are set to duble quotes, string is returned as is.
+    /// Replaces any double standard quotes ( " ) in the string with <see cref="OpeningQuote"/> and <see cref="ClosingQuote"/>.
+    /// If replacement quotes are set to double quotes, string is returned as is.
     /// </summary>
     /// <param name="input">Input string to replace double quotes in.</param>
     /// <returns>The input string with double quotes replaced by <see cref="OpeningQuote"/> and <see cref="ClosingQuote"/>.</returns>
     [return: NotNullIfNotNull(nameof(input))]
     public string? ReplaceQuotes(string? input)
     {
-        if (input == null || Redundant) 
+        if (input == null || Redundant)
             return input;
         if (Symmetrical)
             return input.Replace(DoubleQuote, OpeningQuote);
@@ -116,13 +119,13 @@ public readonly record struct InnerQuotation
         //For the first half of the list
         for (int i = 0; i < ints.Count / 2; i++)
         {
-            //take left and right extrema
-            int openingIndex = ints[i];//opening index (from left)
+            // take left and right extrema
+            int openingIndex = ints[i]; // opening index (from left)
             inter[openingIndex] = OpeningQuote;
-            int closingIndex = ints[^(i + 1)];//closing index (from right) - +1 because ^0 is outside collection
+            int closingIndex = ints[^(i + 1)]; // closing index (from right) - +1 because ^0 is outside collection
             inter[closingIndex] = ClosingQuote;
         }
-        if (ints.Count % 2 == 1)//if there was an odd number of quotations, the middle one will be an opening
+        if (ints.Count % 2 == 1) // if there was an odd number of quotations, the middle one will be an opening
         {
             inter[j / 2 + 1] = OpeningQuote;
         }

@@ -1,14 +1,12 @@
-﻿using System.Text;
-using CueSheetNet.TextParser;
+﻿using CueSheetNet.TextParser;
+using System.Text;
 
 namespace CueSheetNet;
 
 public sealed record CueWriterSettings
 {
-    public static readonly Encoding DefaultEncoding = new UTF8Encoding(false, true);
-    /// <summary>
-    /// 
-    /// </summary>
+    public static readonly Encoding DefaultEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false,
+                                                                       throwOnInvalidBytes: true);
     public enum RedundantFieldBehaviors
     {
         KeepAsIs,
@@ -27,9 +25,14 @@ public sealed record CueWriterSettings
 
     public string Newline { get; set; } = Environment.NewLine;
 
-    public int IndentationDepth { get; set; } = 2;
-
+    private int _indentationDepth = 2;
+    public int IndentationDepth
+    {
+        get => _indentationDepth;
+        set => _indentationDepth = Math.Max(value, 0);
+    }
     public RedundantFieldBehaviors RedundantFieldsBehavior { get; set; } = RedundantFieldBehaviors.KeepAsIs;
+
 
     private char _indentationCharacter = ' ';
     public char IndentationCharacter

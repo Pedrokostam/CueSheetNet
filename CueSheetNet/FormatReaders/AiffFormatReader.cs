@@ -1,14 +1,5 @@
 ﻿using CueSheetNet.FileReaders;
 using CueSheetNet.Logging;
-using System;
-using System.Buffers.Binary;
-using System.Collections;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Reflection.Metadata.Ecma335;
-using System.Text;
-using System.Threading.Tasks;
 using static System.Buffers.Binary.BinaryPrimitives;
 namespace CueSheetNet.FormatReaders;
 public sealed class AiffFormatReader : IAudioFileFormatReader
@@ -88,11 +79,11 @@ public sealed class AiffFormatReader : IAudioFileFormatReader
         {
             Duration = TimeSpan.FromSeconds(seconds),
             SampleRate = sampleRate,
-            Channels=numChannels,
-            BitDepth=bitDepth,
-            FormatName=FormatName
+            Channels = numChannels,
+            BitDepth = bitDepth,
+            FormatName = FormatName
         };
-        return true;    
+        return true;
     }
     private static decimal ReadAppleExtended80(ReadOnlySpan<byte> bytes)
     {

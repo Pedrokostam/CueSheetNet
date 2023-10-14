@@ -14,7 +14,6 @@ internal record class TransFile
         Extra
     }
 
-    private string? newName;
     public string Subfolder { get; }
     public FileInfo SourceFile { get; }
     public GeneralFileType Type { get; }
@@ -26,15 +25,17 @@ internal record class TransFile
         get => extension ?? SourceFile.Extension;
         set
         {
-            if(value is not null)
+            if (value is not null)
             {
-                if (!value.StartsWith('.')){
+                if (!value.StartsWith('.'))
+                {
                     value = "." + value;
                 }
             }
             extension = value;
         }
     }
+    private string? newName;
     /// <summary>
     /// NewName of the file. No extension. If set to null, the old name will be used
     /// </summary>

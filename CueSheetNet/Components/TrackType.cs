@@ -1,4 +1,6 @@
-﻿namespace CueSheetNet;
+﻿using System.ComponentModel;
+
+namespace CueSheetNet;
 
 public record TrackType
 {
@@ -20,7 +22,7 @@ public record TrackType
     public bool CdSpecification { get; }
     public string Description { get; }
     public int SectorSize { get; }
-    public Modes Mode{ get; }
+    public Modes Mode { get; }
     private TrackType(string identifier,
                       int sectorSize,
                       Modes mode,
@@ -53,56 +55,93 @@ public record TrackType
             "MODE2/2352" => TrackType.MODE2_2352,
             "CDI/2336" => TrackType.CDI_2336,
             "CDI/2352" => TrackType.CDI_2352,
-            _ => new TrackType(s, -1,Modes.None, false,false, "Unknown")
+            _ => new TrackType(s, -1, Modes.None, false, false, "Unknown")
         };
     }
-    public static readonly TrackType AUDIO = new TrackType("AUDIO",
-                                                           CdSectorSize,
-                                                           Modes.NonCd,
-                                                           true,false,
-                                                           "Audio (sector size: 2352)");
+    public static readonly TrackType AUDIO =
+        new(identifier: "AUDIO",
+            sectorSize: CdSectorSize,
+            mode: Modes.NonCd,
+            audio: true,
+            cdspec: false,
+            description: "Audio (sector size: 2352)");
 
-    public static readonly TrackType CDG = new TrackType("CDG", CdSectorSize + 96,Modes.CDG,
-                                                         false,true,
-                                                         "Karaoke CD+G (sector size: 2448)");
+    public static readonly TrackType CDG =
+        new(identifier: "CDG",
+            sectorSize: CdSectorSize + 96,
+            mode: Modes.CDG,
+            audio: false,
+            cdspec: true,
+            description: "Karaoke CD+G (sector size: 2448)");
 
-    //public static readonly TrackType MODE1_RAW = new TrackType("MODE1_RAW", false, "CD-ROM Mode 1 data (raw) (sector size: 2352), used by cdrdao");
 
-    public static readonly TrackType MODE1_2048 = new TrackType("MODE1/2048", 2048,Modes.Mode1,
-                                                                false, true,
-                                                                "CD-ROM Mode 1 data (cooked) (sector size: 2048)",
-                                                                "MODE1_RAW", "ISO/2048");
+    public static readonly TrackType MODE1_2048 =
+        new(identifier: "MODE1/2048",
+            sectorSize: 2048,
+            mode: Modes.Mode1,
+            audio: false,
+            cdspec: true,
+            description: "CD-ROM Mode 1 data (cooked) (sector size: 2048)",
+            "MODE1_RAW", "ISO/2048"
+            );
 
-    public static readonly TrackType MODE1_2352 = new TrackType("MODE1/2352", CdSectorSize, Modes.Mode1,
-                                                                false, true,
-                                                                "CD-ROM Mode 1 data (raw) (sector size: 2352)");
+    public static readonly TrackType MODE1_2352 =
+        new(identifier: "MODE1/2352",
+            sectorSize: CdSectorSize,
+            mode: Modes.Mode1,
+            audio: false,
+            cdspec: true,
+            description: "CD-ROM Mode 1 data (raw) (sector size: 2352)");
 
-    //public static readonly TrackType MODE2_RAW = new TrackType("MODE2_RAW", false, "CD-ROM Mode 2 data (raw) (sector size: 2352), used by cdrdao");
 
-    public static readonly TrackType MODE2_2048 = new TrackType("MODE2/2048", 2048, Modes.Mode2,
-                                                                false, true,
-                                                                "CD-ROM Mode 2 XA form-1 data (sector size: 2048)");
+    public static readonly TrackType MODE2_2048 =
+        new(identifier: "MODE2/2048",
+            sectorSize: 2048,
+            mode: Modes.Mode2,
+            audio: false,
+            cdspec: true,
+            description: "CD-ROM Mode 2 XA form-1 data (sector size: 2048)");
 
-    public static readonly TrackType MODE2_2324 = new TrackType("MODE2/2324", 2324, Modes.Mode2,
-                                                                false, true,
-                                                                "CD-ROM Mode 2 XA form-2 data (sector size: 2324)");
+    public static readonly TrackType MODE2_2324 =
+        new(identifier: "MODE2/2324",
+            sectorSize: 2324,
+            mode: Modes.Mode2,
+            audio: false,
+            cdspec: true,
+            description: "CD-ROM Mode 2 XA form-2 data (sector size: 2324)");
 
-    public static readonly TrackType MODE2_2336 = new TrackType("MODE2/2336", 2336, Modes.Mode2,
-                                                                false, true,
-                                                                "CD-ROM Mode 2 data (sector size: 2336)");
+    public static readonly TrackType MODE2_2336 =
+        new(identifier: "MODE2/2336",
+            sectorSize: 2336,
+            mode: Modes.Mode2,
+            audio: false,
+            cdspec: true,
+            description: "CD-ROM Mode 2 data (sector size: 2336)");
 
-    public static readonly TrackType MODE2_2352 = new TrackType("MODE2/2352", CdSectorSize, Modes.Mode2,
-                                                                false, true,
-                                                                "CD-ROM Mode 2 data (raw) (sector size: 2352)",
-                                                                "MODE2_RAW");
+    public static readonly TrackType MODE2_2352 =
+        new(identifier: "MODE2/2352",
+            sectorSize: CdSectorSize,
+            mode: Modes.Mode2,
+            audio: false,
+            cdspec: true,
+            description: "CD-ROM Mode 2 data (raw) (sector size: 2352)",
+            alternates: "MODE2_RAW");
 
-    public static readonly TrackType CDI_2336 = new TrackType("CDI/2336", 2336, Modes.CDI,
-                                                              false, true,
-                                                              "CDI Mode 2 data");
+    public static readonly TrackType CDI_2336 =
+        new(identifier: "CDI/2336",
+            sectorSize: 2336,
+            mode: Modes.CDI,
+            audio: false,
+            cdspec: true,
+            description: "CDI Mode 2 data");
 
-    public static readonly TrackType CDI_2352 = new TrackType("CDI/2352", CdSectorSize, Modes.CDI,
-                                                              false, true,
-                                                              "CDI Mode 2 data");
+    public static readonly TrackType CDI_2352 =
+        new(identifier: "CDI/2352",
+            sectorSize: CdSectorSize,
+            mode: Modes.CDI,
+            audio: false,
+            cdspec: true,
+            description: "CDI Mode 2 data");
     public override string ToString() => Identifier;
 }
 

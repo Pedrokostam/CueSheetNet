@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace CueSheetNet.FileReaders;
+﻿namespace CueSheetNet.FileReaders;
 internal sealed class FlacFormatReader : IAudioBinaryStreamFormatReader
 {
     public string FormatName { get; } = "Flac";

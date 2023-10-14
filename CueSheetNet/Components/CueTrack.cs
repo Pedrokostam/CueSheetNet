@@ -1,13 +1,11 @@
 ﻿using CueSheetNet.Internal;
 using CueSheetNet.Syntax;
 using System.Collections.ObjectModel;
-using System.Security.Cryptography;
-using System.Xml.Linq;
 
 namespace CueSheetNet;
 public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemarkableCommentable
 {
-    internal FieldSetFlags CommonFieldsSet { get; private set; }
+    public FieldsSet CommonFieldsSet { get; private set; }
     /// <summary>
     /// Absolute index for the whole CueSheet
     /// </summary>
@@ -45,12 +43,12 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemarkableCommentabl
             if (string.IsNullOrEmpty(value))
             {
                 _Title = null;
-                CommonFieldsSet &= ~FieldSetFlags.Title;
+                CommonFieldsSet &= ~FieldsSet.Title;
             }
             else
             {
                 _Title = value;
-                CommonFieldsSet |= FieldSetFlags.Title;
+                CommonFieldsSet |= FieldsSet.Title;
             }
         }
     }
@@ -63,12 +61,12 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemarkableCommentabl
             if (string.IsNullOrEmpty(value))
             {
                 _Performer = null;
-                CommonFieldsSet &= ~FieldSetFlags.Performer;
+                CommonFieldsSet &= ~FieldsSet.Performer;
             }
             else
             {
                 _Performer = value;
-                CommonFieldsSet |= FieldSetFlags.Performer;
+                CommonFieldsSet |= FieldsSet.Performer;
             }
         }
     }
@@ -81,12 +79,12 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemarkableCommentabl
             if (string.IsNullOrEmpty(value))
             {
                 _Composer = null;
-                CommonFieldsSet &= ~FieldSetFlags.Composer;
+                CommonFieldsSet &= ~FieldsSet.Composer;
             }
             else
             {
                 _Composer = value;
-                CommonFieldsSet |= FieldSetFlags.Composer;
+                CommonFieldsSet |= FieldsSet.Composer;
             }
         }
     }
@@ -150,7 +148,7 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemarkableCommentabl
         }
     }
 
-    public CueTrack(CueDataFile parentFile,TrackType type) : base(parentFile.ParentSheet)
+    public CueTrack(CueDataFile parentFile, TrackType type) : base(parentFile.ParentSheet)
     {
         _ParentFile = parentFile;
         Type = type;
@@ -160,7 +158,7 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemarkableCommentabl
         return "Track " + Number.ToString("D2") + ": " + Title;
     }
     #region Rem
-    public readonly List<CueRemark> RawRems = new();
+    private readonly List<CueRemark> RawRems = new();
     public ReadOnlyCollection<CueRemark> Remarks => RawRems.AsReadOnly();
     public void ClearRemarks() => RawRems.Clear();
 
@@ -182,7 +180,7 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemarkableCommentabl
 
     internal CueTrack ClonePartial(CueDataFile newOwner)
     {
-        CueTrack newTrack = new(newOwner,Type)
+        CueTrack newTrack = new(newOwner, Type)
         {
             CommonFieldsSet = CommonFieldsSet,
             Composer = Composer,
@@ -210,7 +208,7 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemarkableCommentabl
     }
     #endregion
     #region Comments
-    public readonly List<string> RawComments = new();
+    private readonly List<string> RawComments = new();
     public ReadOnlyCollection<string> Comments => RawComments.AsReadOnly();
     public void AddComment(IEnumerable<string> comments)
     {

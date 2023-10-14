@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace CueSheetNet.Logging;
+﻿namespace CueSheetNet.Logging;
 /// <summary>
 /// Enumeration with possible log levels. The more important/severe the level is, the higher value it has.
 /// </summary>
@@ -15,16 +9,16 @@ public enum LogLevel
     /// <summary>
     /// Information about current state of step/sub-step
     /// </summary>
-    Warning = 1,
+    Warning = 1 << 0,
 
     /// <summary>
     /// Information about finishing of an important step
     /// </summary>
-    Information = 2,
+    Information = 1 << 1,
     /// <summary>
     /// Requested operation was performed, but with problems
     /// </summary>
-    Debug = 4,
+    Debug = 1 << 2,
 
 
 

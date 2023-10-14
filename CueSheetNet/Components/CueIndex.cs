@@ -1,5 +1,4 @@
-﻿using System.Security.Cryptography;
-using CueSheetNet.Internal;
+﻿using CueSheetNet.Internal;
 
 namespace CueSheetNet;
 
@@ -26,25 +25,29 @@ public readonly record struct CueIndex
                iimpl.Index,
                iimpl.File,
                iimpl.Track,
-               iimpl.Time) { }
+               iimpl.Time)
+    { }
     public CueIndex(int number, int absoluteIndex, CueDataFile file, CueTrack track, int minutes, int seconds, int frames)
         : this(number,
                absoluteIndex,
                file,
                track,
-               new CueTime(minutes,seconds,frames)) { }
+               new CueTime(minutes, seconds, frames))
+    { }
     public CueIndex(int number, int absoluteIndex, CueDataFile file, CueTrack track, CueTime cueTime)
         : this(number,
                absoluteIndex,
                file,
                track,
-               cueTime.TotalFrames) { }
+               cueTime.TotalFrames)
+    { }
     public CueIndex(int number, int absoluteIndex, CueDataFile file, CueTrack track, TimeSpan timeSpan)
         : this(number,
                absoluteIndex,
                file,
                track,
-               CueTime.FromTimeSpan(timeSpan)) { }
+               CueTime.FromTimeSpan(timeSpan))
+    { }
     public CueIndex(int number,
                     int absoluteIndex,
                     CueDataFile file,
