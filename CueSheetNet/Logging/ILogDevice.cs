@@ -6,8 +6,10 @@
 /// </summary>
 public interface ILogDevice
 {
+    public Guid InstanceId { get; }
     /// <summary>
-    /// Processes the given entry, for example by displaying it in the Console, or storing in a collection
+    /// Writes a log to this device. Called by <see cref="Logger"/>.
+    /// Processes the given entry, for example by displaying it in the Console, or storing in a collection.
     /// </summary>
     /// <param name="entry"></param>
     void WriteLog(LogEntry entry);

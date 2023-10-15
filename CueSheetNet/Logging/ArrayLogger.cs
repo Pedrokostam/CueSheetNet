@@ -9,15 +9,17 @@ public class ArrayLogger : ILogDevice
         _LogEntries.Add(entry);
     }
 
-    private List<LogEntry> _LogEntries = new();
+    private readonly List<LogEntry> _LogEntries = new();
     public ReadOnlyCollection<LogEntry> LogEntries => _LogEntries.AsReadOnly();
 
-    private LogLevel _RequestedLogLevels;
+    protected LogLevel _RequestedLogLevels;
     public LogLevel RequestedLogLevels => _RequestedLogLevels;
+
+    public Guid InstanceId { get; }
 
     public ArrayLogger(LogLevel requested)
     {
+        InstanceId = Guid.NewGuid();
         _RequestedLogLevels = requested;
-
     }
 }

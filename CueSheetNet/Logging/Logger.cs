@@ -1,13 +1,17 @@
 ﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Net.NetworkInformation;
 
 namespace CueSheetNet.Logging;
+
 public class Logger
 {
     private delegate void LogDelegateType(LogEntry entry);
 
-    private readonly static List<ILogDevice> logDevices = new();
-    public static ReadOnlyCollection<ILogDevice> LogDevices => logDevices.AsReadOnly();
+    private readonly static Dictionary<Guid, ILogDevice> _logDevices = new();
+    //private readonly static Dictionary<Guid,ILogDevice> _logDevices = new();
+    public static ReadOnlyDictionary<Guid, ILogDevice> LogDevices => _logDevices.AsReadOnly();
 
     /// <summary>
     /// The minimum value of LogLevel that can be reported by at least one LogDevice
@@ -21,10 +25,10 @@ public class Logger
     /// <returns>Number of registered log devices after the operation</returns>
     public static int Register(ILogDevice device)
     {
-        logDevices.Add(device);
-        RequestedLogLevels = logDevices.Min(x => x.RequestedLogLevels);
+        _logDevices.Add(device.InstanceId, device);
+        RequestedLogLevels |= device.RequestedLogLevels;
         Logger.LogDebug("Registered new logger with LogLevel: {Level}", device.RequestedLogLevels);
-        return logDevices.Count;
+        return _logDevices.Count;
     }
     /// <summary>
     /// Unregisters the specified <paramref name="device"/> removeing it from log consumers. Updates <see cref="RequestedLogLevels"/> if necessary.
@@ -33,16 +37,19 @@ public class Logger
     /// <returns>Number of registered log devices after the operation</returns>
     public static int Unregister(ILogDevice device)
     {
-        int index = LogDevices.IndexOf(device);
-        if (index == -1)
-            return logDevices.Count;
-        LogDebug("Unregistering device {device} at index {index}", device, index);
-        logDevices.RemoveAt(index);
-        if (logDevices.Count == 0)
-            RequestedLogLevels = LogLevel.None;
-        else
-            RequestedLogLevels = logDevices.Min(x => x.RequestedLogLevels);
-        return logDevices.Count;
+        bool removed = _logDevices.Remove(device.InstanceId);
+        if (removed)
+        {
+            LogDebug("Device {device} was not registered", device);
+            return _logDevices.Count;
+        }
+        LogDebug("Unregistered device {device}", device);
+        RequestedLogLevels = LogLevel.None;
+        foreach (var item in _logDevices)
+        {
+            RequestedLogLevels |= item.Value.RequestedLogLevels;
+        }
+        return _logDevices.Count;
     }
 
     /// <summary>
@@ -58,17 +65,6 @@ public class Logger
             Debug.WriteLine("Skipped log due to level");
 #endif
         return logIgnored;
-    }
-    private static void LogErrorBase(string message, Exception? errors, params object?[] args)
-    {
-        //if(errors is null)
-        //{
-
-        //    errors=Enumerable.Empty<Exception>();   
-        //}
-        //message += " Error: {Error}";
-        //Log(LogLevel.Error, message, errors);
-
     }
     public static void LogWarning(string message) => Log(LogLevel.Warning, message);
     public static void LogWarning<T1>(string messageTemplate, T1 arg1) => Log(LogLevel.Warning, messageTemplate, arg1);
@@ -152,15 +148,29 @@ public class Logger
             return;
         Log(level, messageTemplate, args.Cast<object?>().ToArray());
     }
+    private static readonly object Locker = new();
     public static void Log(LogLevel level, string messageTemplate, params object?[] args)
     {
         if (CheckLogLevelIgnored(level))
             return;
-        LogEntry meeting = new(level, messageTemplate, args);
-        foreach (ILogDevice diwajs in logDevices)
+        Task.Run(() =>
         {
-            if (diwajs.RequestedLogLevels.HasFlag(meeting.Level))
-                diwajs.WriteLog(meeting);
-        }
+            lock (Locker)
+            {
+                try
+                {
+                    LogEntry meeting = new(level, messageTemplate, args);
+                    foreach (var diwajs in _logDevices)
+                    {
+                        if (diwajs.Value.RequestedLogLevels.HasFlag(meeting.Level))
+                            diwajs.Value.WriteLog(meeting);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(ex.ToString());
+                }
+            }
+        });
     }
 }
