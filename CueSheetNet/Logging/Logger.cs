@@ -153,6 +153,21 @@ public class Logger
     {
         if (CheckLogLevelIgnored(level))
             return;
+#if true
+        try
+        {
+            LogEntry meeting = new(level, messageTemplate, args);
+            foreach (var diwajs in _logDevices)
+            {
+                if (diwajs.Value.RequestedLogLevels.HasFlag(meeting.Level))
+                    diwajs.Value.WriteLog(meeting);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex.ToString());
+        }
+#else
         Task.Run(() =>
         {
             lock (Locker)
@@ -172,5 +187,6 @@ public class Logger
                 }
             }
         });
+#endif
     }
 }

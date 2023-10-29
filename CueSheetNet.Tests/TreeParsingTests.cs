@@ -37,9 +37,9 @@ public class TreeParsingTests
         string expected = "Jethro Tull" + Path.DirectorySeparatorChar + "1971" + Path.DirectorySeparatorChar + "Aqualung";
         Assert.AreEqual(expected, P(sheet, "%artist%/%date%/%title%"));
         Assert.AreEqual(expected, P(sheet, "%ARtist%/%DAte%/%tItLE%"));
-        ArrayLogger arlog = new(LogLevel.Warning);
         sheet.Date = null;
         sheet.DiscID = null;
+        ArrayLogger arlog = new(LogLevel.Warning);
         Logger.Register(arlog);
         Assert.AreEqual(oldName, P(sheet, "%Discid%/%Year%"));
         var log = arlog.LogEntries.Where(x => x.Level == LogLevel.Warning).FirstOrDefault();
