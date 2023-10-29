@@ -1,7 +1,7 @@
 ﻿using CueSheetNet.FileReaders;
 using CueSheetNet.Logging;
 using static System.Buffers.Binary.BinaryPrimitives;
-namespace CueSheetNet.FormatReaders;
+namespace CueSheetNet.FileReaders;
 public sealed class AiffFormatReader : IAudioFileFormatReader
 {
     private static readonly string[] extensions = new string[] { ".AIFF", ".AIF", ".AIFC." };
@@ -19,6 +19,7 @@ public sealed class AiffFormatReader : IAudioFileFormatReader
         return extensions.Contains(ext, StringComparer.OrdinalIgnoreCase);
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "MA0060:The value returned by Stream.Read/Stream.ReadAsync is not used", Justification = "Length of stream is ensured in calling method")]
     public bool FileSignatureMatches(Stream stream)
     {
         /*
@@ -37,6 +38,7 @@ public sealed class AiffFormatReader : IAudioFileFormatReader
         return four.SequenceEqual(AIFF) || four.SequenceEqual(AIFC);
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "MA0060:The value returned by Stream.Read/Stream.ReadAsync is not used", Justification = "Length of stream is ensured at the start of method")]
     public bool ReadMetadata(Stream stream, out FileMetadata metadata)
     {
         /*
@@ -53,13 +55,18 @@ public sealed class AiffFormatReader : IAudioFileFormatReader
            [28..38] [224..304]  big   	ext		sampleRate
         */
         metadata = default;
+        if(stream.Length < 38)
+        {
+            return false;
+        }
         if (!FileSignatureMatches(stream))
             return false;
         stream.Seek(4, SeekOrigin.Begin); // Positioned at filesize
         Span<byte> four = stackalloc byte[4];
         Span<byte> two = stackalloc byte[2];
         Span<byte> ten = stackalloc byte[10];
-        stream.Read(four);
+        _ = stream.Read(four);
+
         Int32 size = ReadInt32BigEndian(four);
         if (size + 8 != stream.Length)
         {
@@ -87,7 +94,7 @@ public sealed class AiffFormatReader : IAudioFileFormatReader
     }
     private static decimal ReadAppleExtended80(ReadOnlySpan<byte> bytes)
     {
-        if (bytes.Length != 10) throw new ArgumentException("Expected 10 bytes for Apple Extended");
+        if (bytes.Length != 10) throw new ArgumentException("Expected 10 bytes for Apple Extended",nameof(bytes));
 
         Span<byte> workingBytes = stackalloc byte[bytes.Length];
         bytes.CopyTo(workingBytes);

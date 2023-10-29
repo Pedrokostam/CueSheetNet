@@ -14,7 +14,7 @@ namespace CueSheetNet.Internal
                 return _ParentSheet;
             }
         }
-        public CueItemBase(CueSheet parent)
+        protected CueItemBase(CueSheet parent)
         {
             Orphaned = false;
             _ParentSheet = parent;

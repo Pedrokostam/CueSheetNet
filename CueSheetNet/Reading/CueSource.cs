@@ -14,7 +14,7 @@ public readonly record struct CueSource
             string => SourceType.File,
             IEnumerable<byte> => SourceType.Bytes,
             Stream => SourceType.Stream,
-            _ => throw new ArgumentException($"Incorrect type of source data: {data.GetType()}")
+            _ => throw new ArgumentException($"Incorrect type of source data: {data.GetType()}",nameof(data))
         };
         Data = Type switch
         {

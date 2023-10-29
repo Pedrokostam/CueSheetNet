@@ -1,4 +1,5 @@
 ﻿namespace CueSheetNet.FileReaders;
+#pragma warning disable MA0048 // File name must match type name
 public interface IFileFormatReader
 {
     string[] Extensions { get; }
@@ -46,3 +47,4 @@ public interface IBinaryStreamFormatReader : IBinaryFileFormatReader
     /// <returns>Duration in seconds</returns>
     bool ReadMetadata(Stream stream, IEnumerable<TrackType> trackTypes, out FileMetadata metadata);
 }
+#pragma warning restore MA0048 // File name must match type name

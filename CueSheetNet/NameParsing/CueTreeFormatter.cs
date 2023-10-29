@@ -5,12 +5,12 @@ using System.Text.RegularExpressions;
 namespace CueSheetNet.NameParsing;
 public static partial class CueTreeFormatter
 {
-    [GeneratedRegex(@"%(?<property>[\w\s]+)%")]
+    [GeneratedRegex(@"%(?<property>[\w\s]+)%",RegexOptions.Compiled, 500)]
     private static partial Regex PropertyParser();
-    [GeneratedRegex(@"^[\\/]+$")]
+    [GeneratedRegex(@"^[\\/]+$",RegexOptions.Compiled, 500)]
     private static partial Regex SeparatorChecker();
 
-    [GeneratedRegex(@"[\\/]+")]
+    [GeneratedRegex(@"[\\/]+",RegexOptions.Compiled,500)]
     private static partial Regex SeparatorNormalizer();
     /// <summary>
     /// Parse the format for output filepath. E.g. %Artist%/%DATE%/%Album% can result in

@@ -1,4 +1,4 @@
-﻿using CueSheetNet.FormatReaders;
+﻿using CueSheetNet.FileReaders;
 using CueSheetNet.Logging;
 using CueSheetNet.Reading;
 using System.Diagnostics.CodeAnalysis;
@@ -210,33 +210,37 @@ internal class CueEncodingTester
         Span<byte> titleBuff = stackalloc byte[TitleUppercase.Length];
         Span<byte> fileBuff = stackalloc byte[FileUppercase.Length];
         int intReading;
-        
+
         while ((intReading = fs.ReadByte()) >= 0)// -1 means end of stream
         {
             byte readByte = (byte)intReading;
-            if (byteCaseComparer.Equals(readByte, (byte)'R'))// last letter R or r =>? Rem Comment
+            scoped ReadOnlySpan<byte> templateSpan;
+            scoped Span<byte> dataBuffer;
+            switch (readByte)
             {
-                fs.Read(remCommentBuff);
-                if (remCommentBuff.SequenceEqual(RemCommentUppercase, byteCaseComparer))
-                    AddUntilNewLine(fs, bytes);
+                case (byte)'R' or (byte)'r':
+                    templateSpan = RemCommentUppercase;
+                    dataBuffer = remCommentBuff;
+                    break;
+                case (byte)'P' or (byte)'p':
+                    templateSpan = PerformerUppercase;
+                    dataBuffer = performerBuff;
+                    break;
+                case (byte)'F' or (byte)'f':
+                    templateSpan = FileUppercase;
+                    dataBuffer = fileBuff;
+                    break;
+                case (byte)'T' or (byte)'t':
+                    templateSpan = TitleUppercase;
+                    dataBuffer = titleBuff;
+                    break;
+                default:
+                    continue;
             }
-            else if (byteCaseComparer.Equals(readByte, (byte)'P'))// last letter P or p =>? Performer
+            int read = fs.Read(dataBuffer);
+            if (read == dataBuffer.Length && dataBuffer.SequenceEqual(templateSpan, byteCaseComparer))
             {
-                fs.Read(performerBuff);
-                if (performerBuff.SequenceEqual(PerformerUppercase, byteCaseComparer))
-                    AddUntilNewLine(fs, bytes);
-            }
-            else if (byteCaseComparer.Equals(readByte, (byte)'F'))// last letter F or f =>? file
-            {
-                fs.Read(fileBuff);
-                if (fileBuff.SequenceEqual(FileUppercase, byteCaseComparer))
-                    AddUntilNewLine(fs, bytes);
-            }
-            else if (byteCaseComparer.Equals(readByte, (byte)'T'))// last letter T or t =>? title
-            {
-                fs.Read(titleBuff);
-                if (titleBuff.SequenceEqual(TitleUppercase, byteCaseComparer))
-                    AddUntilNewLine(fs, bytes);
+                AddUntilNewLine(fs, bytes);
             }
         }
         Logger.LogDebug("Found {Keyword count} bytes of keyword lines. Source: {Source}", bytes.Count, Source);
@@ -253,15 +257,17 @@ internal class CueEncodingTester
         {
             // Theoretically we need to check only 4 bytes for utf32, 3 for utf8 and 2 for utf16.
             // But we know that the first characters of the sheet should be standard ASCII characters
-            [0xEF, 0xBB, 0xBF, > 00, > 00] => Encoding.UTF8,// the last 2 bytes have to be anything but null
-            [0xFF, 0xFE, 0x00, 0x00, > 00] => Encoding.UTF32,// the first byte of second character will be larger than zero since it is its start (little-end)
+            [0xEF, 0xBB, 0xBF, > 00, > 00] => Encoding.UTF8, // the last 2 bytes have to be anything but null
+            [0xFF, 0xFE, 0x00, 0x00, > 00] => Encoding.UTF32, // the first byte of second character will be larger than zero since it is its start (little-end)
             [0x00, 0x00, 0xFE, 0xFF, 0x00] => EncodingUTF32BE, // the first byte of second character will be be zero since it is its start (big-end)
             [0xFF, 0xFE, > 00, 0x00, > 00] => Encoding.Unicode, // We get 1.5 characters, so bytes 3 and 5 will have to be larger than zero (little-end)
-            [0xFE, 0xFF, 0x00, > 00, 0x00] => Encoding.BigEndianUnicode,// We get 1.5 characters, so bytes 3 and 5 will have to be zero (big-end)
+            [0xFE, 0xFF, 0x00, > 00, 0x00] => Encoding.BigEndianUnicode, // We get 1.5 characters, so bytes 3 and 5 will have to be zero (big-end)
             _ => null,
         };
         if (encoding is not null)
+        {
             Logger.LogInformation("Encoding {Encoding.EncodingName} detected from preamble. Source: {Source}", encoding, Source);
+        }
         return encoding;
     }
     /// <summary>
@@ -292,7 +298,7 @@ internal class CueEncodingTester
         };
         return naiveApproach;
     }
-   
+
     static CueEncodingTester()
     {
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);

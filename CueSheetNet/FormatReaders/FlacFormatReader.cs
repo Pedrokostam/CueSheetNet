@@ -9,6 +9,7 @@ internal sealed class FlacFormatReader : IAudioBinaryStreamFormatReader
         string ext = Path.GetExtension(fileName);
         return Extensions.Contains(ext, StringComparer.OrdinalIgnoreCase);
     }
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "MA0060:The value returned by Stream.Read/Stream.ReadAsync is not used", Justification = "Length of stream is ensured in calling method")]
     public bool FileSignatureMatches(Stream stream)
     {
         stream.Seek(0, SeekOrigin.Begin);
@@ -19,6 +20,10 @@ internal sealed class FlacFormatReader : IAudioBinaryStreamFormatReader
     public bool ReadMetadata(Stream stream, out FileMetadata metadata)
     {
         metadata = default;
+        if(stream.Length < 22)
+        {
+            return false;
+        }
         if (!FileSignatureMatches(stream))
             return false;
         /*
@@ -38,11 +43,11 @@ internal sealed class FlacFormatReader : IAudioBinaryStreamFormatReader
         */
         stream.Seek(4, SeekOrigin.Begin);
         if (stream.ReadByte() != 0)
-            throw new InvalidFileFormatException("Invalid FLAC metadata block header");
+            throw new InvalidDataFormatException("Invalid FLAC metadata block header");
         Span<byte> bytes = stackalloc byte[8];
         stream.Seek(18, SeekOrigin.Begin);
         if (stream.Read(bytes) != 8)
-            throw new InvalidFileFormatException("FLAC file cut short");
+            throw new InvalidDataFormatException("FLAC file cut short");
         // SHIFT OPERATORS ARE DONE AFTER ADDING!!!
         // ________ ____0000 00001111 11112222
         int samples = (bytes[0] << 12)//12 insted of 16, because it spans only 2.5 bytes (20 bits)

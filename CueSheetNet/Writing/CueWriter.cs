@@ -54,7 +54,7 @@ public sealed class CueWriter
     [return: NotNullIfNotNull(nameof(str))]
     private string? Replace(string? str) => Settings.InnerQuotationReplacement.ReplaceQuotes(str);
     private bool AppendRemark(CueRemark rem, int depth) => AppendStringify("REM " + rem.Field, Replace(rem.Value), depth, true);
-    private bool AppendIndex(CueIndexImpl cim) => AppendStringify("INDEX " + cim.Number.ToString("D2"), cim.Time.ToString(), 2, false);
+    private bool AppendIndex(CueIndexImpl cim) => AppendStringify("INDEX " +  cim.Number.Pad(2), cim.Time.ToString(), 2, false);
     [return: NotNullIfNotNull(nameof(s))]
     private static string? Enquote(string? s)
     {
@@ -100,7 +100,7 @@ public sealed class CueWriter
             FieldsSet.Title => (track.Title, null),
             FieldsSet.Performer => (track.Performer, track.ParentSheet.Performer),
             FieldsSet.Composer => (track.Composer, track.ParentSheet.Composer),
-            _ => throw new NotImplementedException($"{key} is not implemented"),
+            _ => throw new NotSupportedException($"{key} is not supported."),
         };
         bool write = Settings.RedundantFieldsBehavior switch
         {
@@ -171,7 +171,7 @@ public sealed class CueWriter
             AppendIndex(ind);
             var s = Builder.ToString();
         }
-        if (Settings.NewLine != Environment.NewLine)
+        if (!string.Equals(Settings.NewLine, Environment.NewLine, StringComparison.Ordinal))
         {
             Builder.Replace(Environment.NewLine, Settings.NewLine);
         }

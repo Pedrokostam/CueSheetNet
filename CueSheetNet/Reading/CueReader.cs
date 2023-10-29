@@ -437,7 +437,7 @@ public partial class CueReader
             type = m.Groups["TYPE"].Value;
             return (path, type);
         }
-        // COuld not properly parse Path Type. Return Line as path, no type
+        // Could not properly parse Path Type. Return Line as path, no type
         return (emer, "");
     }
     /// <summary>
@@ -494,6 +494,6 @@ public partial class CueReader
         return string.Empty;
     }
 
-    [GeneratedRegex(@"(?<PATH>\w+)\s+(?<TYPE>\w*)", RegexOptions.Compiled)]
+    [GeneratedRegex(@"(?<PATH>\w+)\s+(?<TYPE>\w*)", RegexOptions.Compiled,500)]
     private static partial Regex NonQuotedFileRegex();
 }

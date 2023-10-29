@@ -54,11 +54,11 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
         Debug.WriteLine($"Refreshing file meta: {_file}");
         if (_file.Exists)
         {
-            var meta = FormatReader.ReadMetadata(_file.FullName,
+            FileMetadata? resMeta = FormatReader.ReadMetadata(_file.FullName,
                                            ParentSheet
                                            .GetTracksOfFile_IEnum(Index)
                                            .Select(x => x.Type));
-            Meta = meta;
+            Meta = resMeta;
         }
         else
         {
@@ -80,6 +80,7 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
         if (string.Equals(absPath, _file?.FullName, StringComparison.OrdinalIgnoreCase))
         {
             Debug.WriteLine($"Skipped setting to the same file {_file}");
+            _file??=new FileInfo(absPath);
             return;
         }
         Debug.WriteLine($"Setting file to {absPath}");

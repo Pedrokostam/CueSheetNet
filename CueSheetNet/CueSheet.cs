@@ -4,7 +4,7 @@ using System.Collections.ObjectModel;
 using System.Text;
 
 namespace CueSheetNet;
-public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
+public class CueSheet : IEquatable<CueSheet>, IRemCommentable
 {
     #region Rem
 

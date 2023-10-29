@@ -3,7 +3,7 @@ using CueSheetNet.Syntax;
 using System.Collections.ObjectModel;
 
 namespace CueSheetNet;
-public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemarkableCommentable
+public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemCommentable
 {
     public FieldsSet CommonFieldsSet { get; private set; }
     /// <summary>
@@ -232,7 +232,7 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemarkableCommentabl
     public void ClearComments() => RawComments.Clear();
 
     #endregion
-    public bool Equals(CueTrack? other) => Equals(other, StringComparison.CurrentCulture);
+    public bool Equals(CueTrack? other) => Equals(other, StringComparison.InvariantCulture);
     public bool Equals(CueTrack? other, StringComparison stringComparison)
     {
         if (ReferenceEquals(this, other)) return true;
@@ -264,7 +264,7 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemarkableCommentabl
 
     public override bool Equals(object? obj)
     {
-        return Equals(obj as CueTrack);
+        return Equals(obj as CueTrack,StringComparison.InvariantCulture);
     }
 
     public override int GetHashCode()

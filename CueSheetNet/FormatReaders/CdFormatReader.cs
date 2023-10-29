@@ -22,8 +22,8 @@ internal class CdFormatReader : IBinaryStreamFormatReader
         }
         stream.Seek(0, SeekOrigin.Begin);
         Span<byte> twelve = stackalloc byte[12];
-        stream.Read(twelve);
-        if (!twelve.SequenceEqual(Header))
+        int read =stream.Read(twelve);
+        if (read == twelve.Length && !twelve.SequenceEqual(Header))
             return false;
         stream.Seek(4, SeekOrigin.Current);
         int modeByte = stream.ReadByte();
@@ -44,7 +44,7 @@ internal class CdFormatReader : IBinaryStreamFormatReader
             throw new ArgumentException("No track type specified", nameof(trackTypes));
         var t = trackTypes.Select(x => x.SectorSize).Distinct().Count();
         if (t > 1)
-            throw new InvalidFileFormatException("Differing sector sizes specified");
+            throw new InvalidDataFormatException("Differing sector sizes specified");
 
         int size = trackType.SectorSize;
         if (!FileSignatureMatches(stream, size, trackType.Mode))
@@ -55,7 +55,7 @@ internal class CdFormatReader : IBinaryStreamFormatReader
         }
         (long numberOfSectors, long Remainder) = Math.DivRem(stream.Length, size);
         if (Remainder > 0)
-            throw new InvalidFileFormatException("Length of data is not a multiple of specified sector size");
+            throw new InvalidDataFormatException("Length of data is not a multiple of specified sector size");
         // each sector corresponds to 1 cue frame, so 75 of them is 1 second
         TimeSpan duration = TimeSpan.FromSeconds(numberOfSectors / 75.0);
         bool hasAudio = trackTypes.Where(x => x.ContainsAudioData).Any();

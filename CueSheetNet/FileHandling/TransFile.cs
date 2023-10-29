@@ -63,16 +63,17 @@ internal record class TransFile
     }
     public TransFile(ICueFile source, DirectoryInfo? cueFolder, GeneralFileType type)
     {
-        if (cueFolder is null)
+        string? cueDir = source.SourceFile?.DirectoryName;
+        if (cueFolder is null || cueDir is null)
         {
             Subfolder = ".";
         }
         else
         {
-            Subfolder = Path.GetRelativePath(cueFolder.FullName, source.SourceFile?.DirectoryName);
+            Subfolder = Path.GetRelativePath(cueFolder.FullName, cueDir);
         }
         Type = type;
-        SourceFile = source.SourceFile;
+        SourceFile = source.SourceFile!;
     }
 
     public virtual FileInfo Copy(DirectoryInfo destination)

@@ -1,6 +1,7 @@
 ﻿using CueSheetNet.Logging;
 using CueSheetNet.NameParsing;
 using System.Collections.Immutable;
+using System.Globalization;
 using System.Text.RegularExpressions;
 
 namespace CueSheetNet.FileHandling;
@@ -63,7 +64,7 @@ public static partial class CuePackage
     private static HashSet<string> GetMatchStringHashset(CueSheet sheet)
     {
         string baseName = GetBaseNameForSearching(sheet);
-        string noSpaceName = baseName.Replace(" ",string.Empty,StringComparison.Ordinal);
+        string noSpaceName = baseName.Replace(" ", string.Empty, StringComparison.Ordinal);
         string underscoreName = baseName.Replace(' ', '_');
         HashSet<string> hs = new(StringComparer.InvariantCultureIgnoreCase)
         {
@@ -98,7 +99,7 @@ public static partial class CuePackage
         return name;
     }
 
-    [GeneratedRegex(@"%(?<property>[\w\s]+)%")]
+    [GeneratedRegex(@"%(?<property>[\w\s]+)%", RegexOptions.Compiled, 500)]
     private static partial Regex PropertyParser();
 
 
@@ -116,7 +117,7 @@ public static partial class CuePackage
         return immediateParentDir;
     }
 
-    private static void SaveModifiedCueSheet(CueSheet sheet, string filename, DirectoryInfo immediateParentDir, CueWriterSettings settings)
+    private static void SaveModifiedCueSheet(CueSheet sheet, string filename, DirectoryInfo immediateParentDir, CueWriterSettings? settings)
     {
         string sheetPath = Path.Join(immediateParentDir.FullName, filename);
         sheetPath = Path.ChangeExtension(sheetPath, "cue");
@@ -193,40 +194,22 @@ public static partial class CuePackage
             else
             {
                 int count = 1;
-                int digits = GetNumberOfDigits(ExtGroups[ext].Count);
+                int digits = NumberExtensions.GetNumberOfDigits(ExtGroups[ext].Count);
                 foreach (var tf in ExtGroups[ext])
                 {
-                    string countstr = count.ToString($"d{digits}");
-                    tf.NewName = $"{baseFilename} {GetPaddedNumber(count, digits)}";
+                    tf.NewName = $"{baseFilename} {count.Pad(digits)}";
                     count++;
                 }
             }
         }
         IEnumerable<TransFile> additionals = from key in ExtGroups.Keys
-                                             orderby key.ToUpperInvariant()
+                                             orderby StringComparer.OrdinalIgnoreCase
                                              from list in ExtGroups[key]
                                              select list;
         return additionals;
     }
 
-    /// <summary>
-    /// Gets the number of digits (in base 10) needed to represent the number
-    /// </summary>
-    /// <param name="maxCount"></param>
-    /// <returns>How many digits the number takes in base 10</returns>
-    private static int GetNumberOfDigits(int maxCount) => (int)Math.Log10(maxCount) + 1;
 
-    /// <summary>
-    /// Converts number to string with the specified width
-    /// </summary>
-    /// <param name="number"></param>
-    /// <param name="digitCount"></param>
-    /// <returns></returns>
-    private static string GetPaddedNumber(int number, int digitCount)
-    {
-        return number.ToString().PadRight(digitCount, '0');
-        // apparently fewer JIT instruction than creating dynamic formatting string -- x.ToString($"d{w}")
-    }
 
     private static IEnumerable<TransFile> GetAudioTransFiles(CueSheet sheet, string filename, DirectoryInfo? relativeBase)
     {
@@ -239,10 +222,10 @@ public static partial class CuePackage
         }
         else
         {
-            int numOfDigits = GetNumberOfDigits(sheet.Files.Count);
+            int numOfDigits = NumberExtensions.GetNumberOfDigits(sheet.Files.Count);
             foreach (CueDataFile cueFile in sheet.Files)
             {
-                string audiofilename = $"{filename} - {GetPaddedNumber(cueFile.Index, numOfDigits)}";// add index if file to filename
+                string audiofilename = $"{filename} - {cueFile.Index.Pad(numOfDigits)}";// add index if file to filename
                 var trackOfFile = sheet.GetTracksOfFile(cueFile.Index);
                 if (trackOfFile.Length == 1)// If the file has one song, add the song title to filename
                 {
@@ -433,7 +416,6 @@ public static partial class CuePackage
         filename = PathStringNormalization.RemoveInvalidNameCharacters(filename);
         transFiles = GetTransFiles(activeSheet, filename, preserveSubfolders, newAudioExtension);
         CheckForNameCollisions(immediateParentDir, transFiles);
-        CueWriter writer = new(settings ?? new());
         SaveModifiedCueSheet(activeSheet, filename, immediateParentDir, settings);
         // At this point we saved a sheet referencing file that do not exist yet
     }

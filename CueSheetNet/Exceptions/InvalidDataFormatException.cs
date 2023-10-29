@@ -1,4 +1,4 @@
-﻿namespace CueSheetNet.FormatReaders;
+﻿namespace CueSheetNet.FileReaders;
 
 /// <summary>
 /// Thrown when format is corrupted or otherwise invalid for the format reader

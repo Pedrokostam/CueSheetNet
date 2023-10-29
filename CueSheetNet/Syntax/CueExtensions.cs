@@ -1,5 +1,5 @@
 ﻿namespace CueSheetNet.Syntax;
-
+#pragma warning disable MA0048 // File name must match type name
 public static class Parser
 {
     public static TrackFlags Parse(string flagstring)
@@ -43,3 +43,4 @@ public static class Parser
         return string.Join(' ', strs);
     }
 }
+#pragma warning restore MA0048 // File name must match type name

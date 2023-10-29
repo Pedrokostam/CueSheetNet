@@ -10,7 +10,7 @@ internal record PropertyParseToken : ParseToken
                               string description,
                               params string[] alternatives) : base(name, description, alternatives)
     {
-        Property = typeof(CueSheet).GetProperty(Name, _propertyBindingFlags) ?? throw new NotImplementedException();
+        Property = typeof(CueSheet).GetProperty(Name, _propertyBindingFlags) ?? throw new NotSupportedException($"Property {Name} is not supported for parsing.");
     }
     public override string GetValue(CueSheet sheet)
     {

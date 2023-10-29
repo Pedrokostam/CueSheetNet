@@ -6,7 +6,7 @@ internal abstract record ParseToken
     public string Description { get; }
     public string[] Alternatives { get; }
     public abstract string GetValue(CueSheet sheet);
-    public ParseToken(string name,
+    protected ParseToken(string name,
                       string description,
                       params string[] alternatives)
     {

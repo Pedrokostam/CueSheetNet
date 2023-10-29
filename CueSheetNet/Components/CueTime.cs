@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
 using System.Text;
@@ -40,12 +41,16 @@ public readonly record struct CueTime
         TotalFrames = totalFrames;
     }
 
+    [SuppressMessage("Usage", "MA0015:Specify the parameter name in ArgumentException",
+        Justification = "There are many combinations of the three parameters that can result in the warning and it is not necessary to know precisely which parameter is wrong.")]
     public CueTime(int minutes, int seconds, int frames)
     {
         bool allNonNegative = minutes >= 0 && seconds >= 0 && frames >= 0;
         bool allNonPositive = minutes <= 0 && seconds <= 0 && frames <= 0;
         if (!(allNonNegative || allNonPositive))
+        {
             throw new ArgumentException($"Parameters must all be either be all non-negative or all non-positive");
+        }
 
         TotalFrames = CalculateTotalFrames(minutes, seconds, frames);
     }
@@ -216,9 +221,9 @@ public readonly record struct CueTime
     public static CueTime Parse(ReadOnlySpan<char> span)
     {
         ReadOnlySpan<char> spanTrimmed = span.Trim();
-        if (spanTrimmed.Length == 0) throw new ArgumentException("Empty CueTime string");
+        if (spanTrimmed.Length == 0) throw new ArgumentException("Empty CueTime string", nameof(span));
         List<int> inds = SeekSeparator(spanTrimmed);
-        if (inds.Count < 4) throw new ArgumentException($"CueTime string has less than 3 parts ({span})");
+        if (inds.Count < 4) throw new ArgumentException($"CueTime string has less than 3 parts ({span})", nameof(span));
         Span<int> nums = stackalloc int[3];
         int numCount = 0;
         for (int i = 1; i < inds.Count; i++)
@@ -381,7 +386,7 @@ public readonly record struct CueTime
     /// <exception cref="DivideByZeroException">Thrown if parameter <paramref name="divisor"/> is zero</exception>
     public CueTime Divide(double divisor)
     {
-        if (double.IsNaN(divisor)) throw new ArgumentException("Divisor must be a number");
+        if (double.IsNaN(divisor)) throw new ArgumentException("Divisor must be a number", nameof(divisor));
         if (divisor == 0) throw new DivideByZeroException();
         return new((int)(TotalFrames / divisor));
     }
@@ -399,7 +404,7 @@ public readonly record struct CueTime
     /// <returns>CueTime equivalent to the number frames of input CueTime multiplied by the <paramref name="multiplier"/>, truncated towards zero</returns>
     public CueTime Multiply(double multiplier)
     {
-        if (double.IsNaN(multiplier)) throw new ArgumentException("Multiplier must be a number");
+        if (double.IsNaN(multiplier)) throw new ArgumentException("Multiplier must be a number", nameof(multiplier));
         return new((int)(TotalFrames * multiplier));
     }
     /// <summary>
@@ -525,55 +530,84 @@ public readonly record struct CueTime
         StringBuilder strb = new();
         while (i < spanLength)
         {
-            char c = span[i];
-            if (c == '\\')
+            char character = span[i];
+            switch (character)
             {
-                if (i < spanLength - 1)
-                {
-                    strb.Append(c);
-                    i += 2;
-                }
-            }
-            else if (c is '+' or '-')
-            {
-                i++;
-                if (!(c == '-' && !Negative))
-                {
-                    strb.Append(Negative ? '-' : '+');
-                }
-            }
-            else if (c is 'm' or 's' or 'f')
-            {
-                int charLength = ParseRepeat(span, i);
-                if (charLength > 2)
-                {
-                    throw new FormatException();
-                }
-                i += charLength;
-                int num = c switch
-                {
-                    'm' => Math.Abs(Minutes),
-                    's' => Math.Abs(Seconds),
-                    'f' => Math.Abs(Frames),
-                    _ => 0
-                };
-                strb.Append(num.ToString().PadRight(charLength, '0'));
-            }
-            else if (c == 'D')
-            {
-                int charLength = ParseRepeat(span, i);
-                i += charLength;
-                string fmt = "." + new string('0', charLength);
-                strb.Append((Math.Abs(Milliseconds) / 1000).ToString(fmt)[1..]);
-            }
-            else
-            {
-                strb.Append(c);
-                i++;
+                case '\\':
+                    if (i < spanLength - 1)
+                    {
+                        strb.Append(character);
+                        i += 2;
+                    }
+                    break;
+                case '+' or '-':
+                    i++;
+                    if (!(character == '-' && !Negative))
+                    {
+                        strb.Append(Negative ? '-' : '+');
+                    }
+                    break;
+                case 'm' or 's' or 'f':
+                    {
+                        int charLength = ParseRepeat(span, i);
+                        if (charLength > 2)
+                        {
+                            throw new FormatException();
+                        }
+                        i += charLength;
+                        int num = GetTimeValueByChar(character);
+                        strb.Append(num.ToString().PadRight(charLength, '0'));
+                        break;
+                    }
+                case 'D':
+                    {
+                        int charLength = ParseRepeat(span, i);
+                        i += charLength;
+                        string fmt = "." + new string('0', charLength);
+                        strb.Append((Math.Abs(Milliseconds) / 1000).ToString(fmt)[1..]);
+                        break;
+                    }
+
+                default:
+                    strb.Append(character);
+                    i++;
+                    break;
             }
         }
         return strb.ToString();
-
+    }
+    /// <summary>
+    /// Returns the value of one of the time properties, depending on the <paramref name="character"/>:
+    /// <list type="table">
+    ///    <item>
+    ///        <term>m</term>
+    ///        <description>Minutes</description>
+    ///    </item>
+    ///     <item>
+    ///        <term>s</term>
+    ///        <description>Seconds</description>
+    ///    </item>
+    ///     <item>
+    ///        <term>f</term>
+    ///        <description>Frames</description>
+    ///    </item>
+    ///    <item>
+    ///        <term>other</term>
+    ///        <description>0</description>
+    ///    </item>
+    ///</list>
+    /// </summary>
+    /// <param name="character"></param>
+    /// <returns></returns>
+    private int GetTimeValueByChar(char character)
+    {
+        return character switch
+        {
+            'm' => Math.Abs(Minutes),
+            's' => Math.Abs(Seconds),
+            'f' => Math.Abs(Frames),
+            _ => 0
+        };
     }
 
     private static int ParseRepeat(ReadOnlySpan<char> format, int pos)

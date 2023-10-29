@@ -12,6 +12,7 @@ internal sealed class WaveFormatReader : IAudioFileFormatReader
         string ext = Path.GetExtension(fileName);
         return Extensions.Contains(ext, StringComparer.OrdinalIgnoreCase);
     }
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "MA0060:The value returned by Stream.Read/Stream.ReadAsync is not used", Justification = "Length of stream is ensured in calling method")]
     public bool FileSignatureMatches(Stream stream)
     {
         /*
@@ -33,6 +34,10 @@ internal sealed class WaveFormatReader : IAudioFileFormatReader
     public bool ReadMetadata(Stream stream, out FileMetadata metadata)
     {
         metadata = default;
+        if(stream.Length < 44)
+        {
+            return false;
+        }
         if (!FileSignatureMatches(stream))
             return false;
 
@@ -54,15 +59,15 @@ internal sealed class WaveFormatReader : IAudioFileFormatReader
         using BinaryReader binaryReader = new(stream, Encoding.Default, true);
         uint fileSize = binaryReader.ReadUInt32() + 8;
         if (fileSize != stream.Length)
-            throw new InvalidFileFormatException($"Specified file length in WAVE file ({fileSize}) does not equal actual length ({stream.Length})");
+            throw new InvalidDataFormatException($"Specified file length in WAVE file ({fileSize}) does not equal actual length ({stream.Length})");
 
         binaryReader.BaseStream.Seek(16, SeekOrigin.Begin);
         uint chunkSize = binaryReader.ReadUInt32();
         ushort format = binaryReader.ReadUInt16();
         if (format != 1)
-            throw new InvalidFileFormatException($"Only PCM WAVE files with are supported (format {format})");
+            throw new InvalidDataFormatException($"Only PCM WAVE files with are supported (format {format})");
         if (chunkSize != 16)
-            throw new InvalidFileFormatException($"Only PCM WAVE files with format chunk size of 16 are supported (chunk size: {chunkSize})");
+            throw new InvalidDataFormatException($"Only PCM WAVE files with format chunk size of 16 are supported (chunk size: {chunkSize})");
         ushort numChannels = binaryReader.ReadUInt16();
         uint sampleRate = binaryReader.ReadUInt32();
         uint byteRate = binaryReader.ReadUInt32();
@@ -73,10 +78,10 @@ internal sealed class WaveFormatReader : IAudioFileFormatReader
 
         uint calculatedBlockAlign = (uint)numChannels * bitsPerSample / 8;
         if (blockAlign != calculatedBlockAlign)
-            throw new InvalidFileFormatException($"Written BlockAlign rate does not match calculated one ({blockAlign} vs {calculatedBlockAlign})");
+            throw new InvalidDataFormatException($"Written BlockAlign rate does not match calculated one ({blockAlign} vs {calculatedBlockAlign})");
         uint calculatedByteRate = sampleRate * calculatedBlockAlign;
         if (byteRate != calculatedByteRate)
-            throw new InvalidFileFormatException($"Written ByteRate does not match calculated one ({byteRate} vs {calculatedByteRate})");
+            throw new InvalidDataFormatException($"Written ByteRate does not match calculated one ({byteRate} vs {calculatedByteRate})");
         var numberSamples = 8D * dataChunkSize / (numChannels * bitsPerSample);
         double durationSec = numberSamples / sampleRate;
         metadata = new()

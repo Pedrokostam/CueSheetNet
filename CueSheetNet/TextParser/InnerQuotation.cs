@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 
 namespace CueSheetNet.TextParser;
 
@@ -6,6 +7,7 @@ namespace CueSheetNet.TextParser;
 /// Used to replace all occurences of double quotes in the field's value.
 /// Quotation parsing is not standardized and some music players may ignore everything after the seconds occurence of a double quote.
 /// </summary>
+[StructLayout(LayoutKind.Sequential)]
 public readonly record struct InnerQuotation
 {
     private const char DoubleQuote = '"';
@@ -90,7 +92,7 @@ public readonly record struct InnerQuotation
     /// </summary>
     /// <param name="input">Input string to replace double quotes in.</param>
     /// <returns>The input string with double quotes replaced by <see cref="OpeningQuote"/> and <see cref="ClosingQuote"/>.</returns>
-    [return: NotNullIfNotNull(nameof(input))]
+    //[return: NotNullIfNotNull(nameof(input))]
     public string? ReplaceQuotes(string? input)
     {
         if (input == null || Redundant)

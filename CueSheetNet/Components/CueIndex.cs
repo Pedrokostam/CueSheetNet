@@ -11,8 +11,8 @@ public readonly record struct CueIndex
         get => _Number;
         init
         {
-            if (value < 0) throw new ArgumentOutOfRangeException(nameof(Number), $"Index must not be negative");
-            if (value > MaxNumber) throw new ArgumentOutOfRangeException(nameof(Number), "Index must be less than 100");
+            if (value < 0) throw new ArgumentOutOfRangeException(nameof(value), $"Index must not be negative");
+            if (value > MaxNumber) throw new ArgumentOutOfRangeException(nameof(value), "Index must be less than 100");
             _Number = value;
         }
     }

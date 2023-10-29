@@ -41,7 +41,7 @@ public sealed record CueWriterSettings
         set
         {
             if (!char.IsWhiteSpace(value))
-                throw new ArgumentException($"Indentation character must be whitespace (is: '{value}' - 0x{(int)value:X})");
+                throw new ArgumentException($"Indentation character must be whitespace (is: '{value}' - 0x{(int)value:X})",nameof(value));
             _indentationCharacter = value;
         }
     }
