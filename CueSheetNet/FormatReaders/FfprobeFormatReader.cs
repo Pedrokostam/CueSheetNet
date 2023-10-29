@@ -85,7 +85,7 @@ public sealed class FfprobeFormatReader : IAudioFileFormatReader
     public void ParseFfprobeOutput(StreamReader sreader, out FileMetadata data)
     {
         string content = sreader.ReadToEnd();
-        Dictionary<string, string> ini = new Dictionary<string, string>();
+        Dictionary<string, string> ini = new Dictionary<string, string>(StringComparer.Ordinal);
         var lines = content.Split(Separators, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
         foreach (string line in lines)
         {

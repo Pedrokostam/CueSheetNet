@@ -113,7 +113,7 @@ public readonly record struct InnerQuotation
             }
         }
         if (ints.Count == 0)
-            return input; ;
+            return input;
         Span<char> inter = stackalloc char[input.Length];
         input.CopyTo(inter);
         //For the first half of the list

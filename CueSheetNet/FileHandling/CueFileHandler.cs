@@ -63,7 +63,7 @@ public static partial class CuePackage
     private static HashSet<string> GetMatchStringHashset(CueSheet sheet)
     {
         string baseName = GetBaseNameForSearching(sheet);
-        string noSpaceName = baseName.Replace(" ", "");
+        string noSpaceName = baseName.Replace(" ",string.Empty,StringComparison.Ordinal);
         string underscoreName = baseName.Replace(' ', '_');
         HashSet<string> hs = new(StringComparer.InvariantCultureIgnoreCase)
         {
@@ -116,10 +116,11 @@ public static partial class CuePackage
         return immediateParentDir;
     }
 
-    private static void SaveModifiedCueSheet(CueSheet sheet, string filename, DirectoryInfo immediateParentDir, CueWriter writer)
+    private static void SaveModifiedCueSheet(CueSheet sheet, string filename, DirectoryInfo immediateParentDir, CueWriterSettings settings)
     {
         string sheetPath = Path.Join(immediateParentDir.FullName, filename);
         sheetPath = Path.ChangeExtension(sheetPath, "cue");
+        CueWriter writer = new(settings);
         writer.SaveCueSheet(sheet, sheetPath);//If we can't save the sheet there, IOException happens and we stop without needing to reverse anything.
         Logger.LogInformation("Saved {CueSheet} to {Destination}", sheet, sheetPath);
     }
@@ -155,8 +156,8 @@ public static partial class CuePackage
         int fileIndex = 0;
         foreach (TransFile transAudio in transAudios)
         {
-            FileType t = CueDataFile.GetFileTypeFromPath("." + newAudioExtension);
             transAudio.Extension = newAudioExtension;
+            FileType t = CueDataFile.GetFileTypeFromPath("." + transAudio.Extension);
             sheet.ChangeFile(fileIndex, transAudio.NewNameWithExtension, t);
             transFiles.Add(transAudio);
             fileIndex++;
@@ -285,7 +286,7 @@ public static partial class CuePackage
         if (sheet.SourceFile is FileInfo main)
         {
             allFiles.Append(main);
-        };
+        }
         HashSet<string> h = new(StringComparer.InvariantCulture);
         foreach (var file in allFiles)
         {
@@ -433,7 +434,7 @@ public static partial class CuePackage
         transFiles = GetTransFiles(activeSheet, filename, preserveSubfolders, newAudioExtension);
         CheckForNameCollisions(immediateParentDir, transFiles);
         CueWriter writer = new(settings ?? new());
-        SaveModifiedCueSheet(activeSheet, filename, immediateParentDir, writer);
+        SaveModifiedCueSheet(activeSheet, filename, immediateParentDir, settings);
         // At this point we saved a sheet referencing file that do not exist yet
     }
 

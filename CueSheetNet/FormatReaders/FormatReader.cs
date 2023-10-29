@@ -1,4 +1,5 @@
-﻿using CueSheetNet.Logging;
+﻿using CueSheetNet.FormatReaders;
+using CueSheetNet.Logging;
 
 
 namespace CueSheetNet.FileReaders;
@@ -55,7 +56,7 @@ static public class FormatReader
                             return meta;
                         }
                     }
-                    catch (Exception x) when (x is InvalidFileFormatException)
+                    catch (Exception x) when (x is InvalidDataFormatException)
                     {
                         Logger.Log(LogLevel.Warning, "Could not read audio file metadata of \"{File}\". Error: {Error}", filePath, x);
                     }

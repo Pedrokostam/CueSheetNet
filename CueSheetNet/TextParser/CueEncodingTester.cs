@@ -1,4 +1,5 @@
-﻿using CueSheetNet.Logging;
+﻿using CueSheetNet.FormatReaders;
+using CueSheetNet.Logging;
 using CueSheetNet.Reading;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
@@ -209,6 +210,7 @@ internal class CueEncodingTester
         Span<byte> titleBuff = stackalloc byte[TitleUppercase.Length];
         Span<byte> fileBuff = stackalloc byte[FileUppercase.Length];
         int intReading;
+        
         while ((intReading = fs.ReadByte()) >= 0)// -1 means end of stream
         {
             byte readByte = (byte)intReading;
@@ -245,7 +247,7 @@ internal class CueEncodingTester
         Logger.LogDebug("Preamble encoding detection started. Source: {Source}", Source);
         Span<byte> bomArea = stackalloc byte[5];
         fs.Seek(0, SeekOrigin.Begin);
-        fs.Read(bomArea);
+        _ = fs.Read(bomArea); // No need to check how many were read, since we require the stream to be at least 35 bytes long
         //test for encoding with BOM
         Encoding? encoding = bomArea switch
         {
@@ -290,71 +292,7 @@ internal class CueEncodingTester
         };
         return naiveApproach;
     }
-    [Obsolete("Method gives too much leeway for mixed encoding (UTF16 followed by UTF32, etc.). Also is too complicated for its own good.")]
-    public Encoding? DetectFixedWidthEncoding(Stream fs)
-    {
-        Logger.LogDebug("UTF16/32 encoding detection started. Source: {Source}", Source);
-        // first 512 byte should contain many English keyword of cuesheet
-        int length = 512;
-        var sample = new byte[length];
-        fs.Seek(0, SeekOrigin.Begin);
-        fs.Read(sample);
-        Span<int> counters = new int[]
-        {
-            0,// UTF 16 LE
-            0,// UTF 16 BE
-            0,// UTF 32 LE
-            0,// UTF 32 BE
-        };
-        for (int i = 0; i < length; i += 4)
-        {
-            //if middle 2 bytes are zero, it points to one of utf32
-            if (sample[i + 1] == 0 && sample[i + 2] == 0)
-            {
-                //zero at beginning, value at end - big endian
-                if (sample[i] == 0 && sample[i + 3] > 0)
-                    counters[3]++;
-                //zero at end, value at beginning - big endian
-                else if (sample[i] > 0 && sample[i + 3] == 0)
-                    counters[2]++;
-            }
-            // non-zero middle, could be utf 16
-            else
-            {
-                //zero at beginning, value at end - big endian
-                if (sample[i] == 0 && sample[i + 1] > 0 && sample[i + 2] == 0 && sample[i + 3] > 0)
-                    counters[1]++;
-                //zero at end, value at beginning - big endian
-                else if (sample[i] > 0 && sample[i + 1] == 0 && sample[i + 2] > 0 && sample[i + 3] == 0)
-                    counters[0]++;
-            }
-        }
-        int maxIndex = -1;
-        int maximum = -1;
-        for (int i = 0; i < 4; i++)
-        {
-            if (counters[i] > maximum)
-            {
-                maximum = counters[i];
-                maxIndex = i;
-            }
-        }
-        Logger.LogDebug("UTF16/32 encoding detection results: 16LE - {16LE Count}, 16BE - {16BE Count}, 32LE - {32LE Count}, 32BE - {32BE Count}. Source: {Source}", counters[0], counters[1], counters[2], counters[3], Source); ;
-        //if no encoding had more than 33 % hit rate - return null
-        if (maximum < length / 3)
-        {
-            return null;
-        }
-        return maxIndex switch
-        {
-            0 => Encoding.Unicode,
-            1 => Encoding.BigEndianUnicode,
-            2 => Encoding.UTF32,
-            3 => Encoding.GetEncoding("utf-32BE"),
-            _ => null
-        };
-
-    }
+   
     static CueEncodingTester()
     {
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);

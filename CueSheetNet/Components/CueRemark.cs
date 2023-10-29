@@ -19,7 +19,7 @@ namespace CueSheetNet
         {
             if (ReferenceEquals(other, this)) return true;
             if (other == null) return false;
-            if (Field != other.Field) return false;
+            if (!string.Equals(Field, other.Field, StringComparison.Ordinal)) return false; // Fields are always uppercase
             return Value.Equals(other.Value, valueComparisonType);
         }
         public bool Equals(CueRemark? other)

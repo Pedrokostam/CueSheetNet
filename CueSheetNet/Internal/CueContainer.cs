@@ -94,14 +94,14 @@ internal class CueContainer
     {
         if (Tracks.Count == 0) throw new InvalidOperationException("Cannot add index without any tracks");
         if (time < CueTime.Zero)
-            throw new ArgumentOutOfRangeException("Cannot add negative index");
+            throw new ArgumentOutOfRangeException(nameof(time),"Cannot add negative time index");
         if (fileIndex < 0) fileIndex = Files.Count - 1;
         if (trackIndex < 0) trackIndex = Tracks.Count - 1;
         CueTrack track = Tracks[trackIndex];
         CueDataFile file = Files[fileIndex];
         if (track.ParentFile != file) throw new InvalidOperationException("Specified track does not belong to specified file");
         if (!ParsingMode && file.Meta?.CueDuration is CueTime maxTime && time > maxTime)
-            throw new ArgumentOutOfRangeException("Specified time occurs after the file ends");
+            throw new ArgumentOutOfRangeException(nameof(time),"Specified time occurs after the file ends");
 
         //No indices at all
         if (Indexes.Count == 0)

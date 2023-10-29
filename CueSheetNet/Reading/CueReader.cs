@@ -4,6 +4,7 @@ using CueSheetNet.Reading;
 using CueSheetNet.Syntax;
 using CueSheetNet.TextParser;
 using System.Diagnostics;
+using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 namespace CueSheetNet;
@@ -134,7 +135,10 @@ public partial class CueReader
             CurrentLineIndex++;
             CurrentLine = line;
             string value = GetKeyword(line).ToUpperInvariant();
-            if (!Enum.TryParse(value, out Keywords key)) continue;
+            if (!Enum.TryParse(value, out Keywords key))
+            {
+                throw new InvalidDataException("Invalid Cuesheet");
+            }
             switch (key)
             {
                 case Keywords.REM:
@@ -216,7 +220,7 @@ public partial class CueReader
     private void ParseTrack(string line)
     {
         string num = GetKeyword(line, 6);// TRACK_
-        if (!int.TryParse(num, out int number))
+        if (!int.TryParse(num, CultureInfo.InvariantCulture, out int number))
         {
             number = Sheet!.LastTrack?.Number + 1 ?? 1;
             Logger.LogWarning("Invalid TRACK number at line {Line number}: \\\"{Line}\\\"\". Substituting {Substitute number:d2}", CurrentLineIndex, CurrentLine, number);
@@ -309,7 +313,7 @@ public partial class CueReader
             return;
         }
         string number = GetKeyword(line, 6);// INDEX_
-        if (!int.TryParse(number, out int num))
+        if (!int.TryParse(number, CultureInfo.InvariantCulture, out int num))
         {
             //Logger.LogError("Incorrect Index number format at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
             throw new FormatException($"Incorrect Index number format at line {CurrentLineIndex}: {line}");
@@ -382,7 +386,7 @@ public partial class CueReader
                     Sheet.Composer = value;
                     break;
                 case "DATE":
-                    Sheet.Date = int.TryParse(value, out int d) ? d : null;
+                    Sheet.Date = int.TryParse(value, CultureInfo.InvariantCulture, out int d) ? d : null;
                     break;
                 case "DISCID":
                     Sheet.DiscID = value;

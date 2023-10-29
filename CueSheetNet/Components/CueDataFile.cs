@@ -77,10 +77,9 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
     public void SetFile(string value, FileType? newType = null)
     {
         string absPath = Path.Combine(ParentSheet.SourceFile?.DirectoryName ?? ".", value);
-        if (absPath == _file?.FullName)
+        if (string.Equals(absPath, _file?.FullName, StringComparison.OrdinalIgnoreCase))
         {
             Debug.WriteLine($"Skipped setting to the same file {_file}");
-
             return;
         }
         Debug.WriteLine($"Setting file to {absPath}");
@@ -121,7 +120,7 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
     {
         if (ReferenceEquals(this, other)) return true;
         if (other is null) return false;
-        if (GetRelativePath() != other.GetRelativePath()) return false;
+        if (!string.Equals(GetRelativePath(), other.GetRelativePath(), StringComparison.OrdinalIgnoreCase)) return false;
         if (Type != other.Type) return false;
         if (Index != other.Index) return false;
         return true;
@@ -184,7 +183,7 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
     private void Watcher_Renamed(object sender, RenamedEventArgs e)
     {
         //If new name is different, treat it as deletion
-        if (e.Name != SourceFile.Name)
+        if (!string.Equals(e.Name, SourceFile.Name, StringComparison.OrdinalIgnoreCase))
         {
             NeedsRefresh = true;
             Debug.WriteLine($"{e.OldName} renamed to {e.Name}");

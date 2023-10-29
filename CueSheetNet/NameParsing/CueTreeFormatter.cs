@@ -32,7 +32,7 @@ public static partial class CueTreeFormatter
         MatchCollection matches = formatter.Matches(treeFormat);
         foreach (Match match in matches.Cast<Match>())
         {
-            string groupVal = match.Groups["property"].Value.Replace(" ", "").ToLower(); // No properties contain space in the name, so we remove them
+            string groupVal = match.Groups["property"].Value.Replace(" ", "").ToLowerInvariant(); // No properties contain space in the name, so we remove them
             string val = match.Value;
             if (TagDict.TryGetValue(groupVal, out ParseToken? tag))
             {
@@ -47,7 +47,7 @@ public static partial class CueTreeFormatter
         //replace all invalid path chars with underscore
         string normalized = PathStringNormalization.RemoveInvalidPathCharacters(treeFormat);
         normalized = SeparatorNormalizer().Replace(normalized, Path.DirectorySeparatorChar.ToString());
-        if (String.IsNullOrWhiteSpace(normalized) || normalized == Path.DirectorySeparatorChar.ToString())
+        if (String.IsNullOrWhiteSpace(normalized) || string.Equals(normalized, Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal))
         {
             string old = Path.GetFileNameWithoutExtension(sheet.SourceFile?.Name) ?? sheet.DefaultFilename;
             Logger.LogWarning("Name parsing for pattern {Pattern} resulted in empty string - replacing with old name {OldName}", treeFormat, old);
@@ -73,10 +73,10 @@ public static partial class CueTreeFormatter
         TagDict = new Dictionary<string, ParseToken>(StringComparer.Ordinal);
         foreach (var ptoken in Tags)
         {
-            TagDict.Add(ptoken.Name.ToLower(), ptoken);
+            TagDict.Add(ptoken.Name.ToLowerInvariant(), ptoken);
             foreach (string alternative in ptoken.Alternatives)
             {
-                TagDict.Add(alternative.ToLower(), ptoken);
+                TagDict.Add(alternative.ToLowerInvariant(), ptoken);
             }
 
 

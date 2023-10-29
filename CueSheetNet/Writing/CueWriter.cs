@@ -4,6 +4,7 @@ using CueSheetNet.NameParsing;
 using CueSheetNet.Syntax;
 using CueSheetNet.TextParser;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Text;
 
 namespace CueSheetNet;
@@ -13,16 +14,17 @@ public sealed class CueWriter
     /// <summary>
     /// Based on personal collection, where most of the sheets were well under 2000 characters long, with the longest being ~7500
     /// </summary>
-    readonly StringBuilder Builder = new(2000);
-    public CueWriterSettings Settings { get; set; } = new CueWriterSettings();
+    readonly StringBuilder Builder;
+    public CueWriterSettings Settings { get; set; }
 
     public CueWriter() : this(null)
     {
     }
     public CueWriter(CueWriterSettings? settings)
     {
-        Logger.LogDebug("CueWriter created");
         Settings = settings ?? new();
+        Builder = new(2000);
+        Logger.LogDebug("CueWriter created");
     }
     private bool HasWhitespace(string? val)
     {
@@ -105,10 +107,10 @@ public sealed class CueWriter
             // if it was set, write it down
             CueWriterSettings.RedundantFieldBehaviors.KeepAsIs => isSet,
             // if both values are the same (no matter, if track is not set) don't write it
-            CueWriterSettings.RedundantFieldBehaviors.RemoveRedundant => trackValue != sheetValue,
+            CueWriterSettings.RedundantFieldBehaviors.RemoveRedundant => !string.Equals(trackValue, sheetValue, StringComparison.OrdinalIgnoreCase),
             // does not matter, if its not set, take sheet value instead
-            CueWriterSettings.RedundantFieldBehaviors.AlwaysWrite => true, 
-            _ => throw new NotImplementedException(),
+            CueWriterSettings.RedundantFieldBehaviors.AlwaysWrite => true,
+            _ => throw new NotSupportedException(),
         };
         if (write) //if both track and sheet value are null, next method will skip it
             AppendStringify(keyName.ToUpperInvariant(), Replace(trackValue), 2, true);
@@ -169,9 +171,9 @@ public sealed class CueWriter
             AppendIndex(ind);
             var s = Builder.ToString();
         }
-        if (Settings.Newline != Environment.NewLine)
+        if (Settings.NewLine != Environment.NewLine)
         {
-            Builder.Replace(Environment.NewLine, Settings.Newline);
+            Builder.Replace(Environment.NewLine, Settings.NewLine);
         }
     }
 
@@ -195,7 +197,7 @@ public sealed class CueWriter
     {
         AppendIndentation(1);
         Builder.Append("TRACK ");
-        Builder.Append(track.Number.ToString("D2"));
+        Builder.Append(track.Number.ToString("D2", CultureInfo.InvariantCulture));
         Builder.AppendLine(" AUDIO");
     }
 

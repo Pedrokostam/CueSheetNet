@@ -423,7 +423,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
                     // set performer to current track's
                     p = track.Performer;
                 }
-                else if (p != track.Performer)
+                else if (!string.Equals(p, track.Performer, StringComparison.OrdinalIgnoreCase))
                 {
                     // tracks have different performers
                     // cannot set global
@@ -451,7 +451,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemarkableCommentable
                     // set performer to current track's
                     p = track.Composer;
                 }
-                else if (p != track.Composer)
+                else if (!string.Equals(p, track.Composer, StringComparison.OrdinalIgnoreCase))
                 {
                     // tracks have different Composers
                     // cannot set global

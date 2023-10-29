@@ -19,22 +19,22 @@ public sealed record CueWriterSettings
     /// </summary>
     public bool ForceQuoting { get; set; } = true;
 
-    public InnerQuotation InnerQuotationReplacement { get; set; } = InnerQuotation.CurvedDoubleTopQuotation;
+    public InnerQuotation InnerQuotationReplacement { get; set; }
 
-    public Encoding? Encoding { get; set; } = DefaultEncoding;
+    public Encoding? Encoding { get; set; }
 
-    public string Newline { get; set; } = Environment.NewLine;
+    public string NewLine { get; set; }
 
-    private int _indentationDepth = 2;
+    private int _indentationDepth;
     public int IndentationDepth
     {
         get => _indentationDepth;
         set => _indentationDepth = Math.Max(value, 0);
     }
-    public RedundantFieldBehaviors RedundantFieldsBehavior { get; set; } = RedundantFieldBehaviors.KeepAsIs;
+    public RedundantFieldBehaviors RedundantFieldsBehavior { get; set; }
 
 
-    private char _indentationCharacter = ' ';
+    private char _indentationCharacter;
     public char IndentationCharacter
     {
         get => _indentationCharacter;
@@ -44,5 +44,14 @@ public sealed record CueWriterSettings
                 throw new ArgumentException($"Indentation character must be whitespace (is: '{value}' - 0x{(int)value:X})");
             _indentationCharacter = value;
         }
+    }
+    public CueWriterSettings()
+    {
+        _indentationDepth = 2;
+        _indentationCharacter = ' ';
+        NewLine = Environment.NewLine;
+        Encoding = DefaultEncoding;
+        InnerQuotationReplacement = InnerQuotation.CurvedDoubleTopQuotation;
+        RedundantFieldsBehavior = RedundantFieldBehaviors.KeepAsIs;
     }
 }

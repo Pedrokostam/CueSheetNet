@@ -44,7 +44,7 @@ internal record class TransFile
     {
         get
         {
-            return newName ?? Path.GetFileNameWithoutExtension(SourceFile.Name); ;
+            return newName ?? Path.GetFileNameWithoutExtension(SourceFile.Name);
         }
         set
         {
