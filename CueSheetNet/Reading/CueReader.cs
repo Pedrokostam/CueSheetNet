@@ -5,11 +5,13 @@ using CueSheetNet.Syntax;
 using CueSheetNet.TextParser;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 namespace CueSheetNet;
 public partial class CueReader
 {
+    public const char DefaultQuotation = '"';
     public int CurrentLineIndex { get; private set; } = -1;
 
     public CueSource Source { get; private set; }
@@ -19,9 +21,11 @@ public partial class CueReader
     CueSheet? Sheet { get; set; }
 
     /// <summary>
-    /// Character used to enclose text when it contains whitespace
+    /// Character used to enclose text when it contains whitespace.
+    /// <para/>
+    /// Usually all fields are enclosed in double quotes.
     /// </summary>
-    public char Quotation { get; set; } = '"';
+    public char Quotation { get; set; } = DefaultQuotation;
     private Encoding? Encoding { get; set; }
 
     readonly List<bool> TrackHasZerothIndex = new();
@@ -97,6 +101,7 @@ public partial class CueReader
         LogParseSource();
         LogParseStart();
         using TextReader txt = new StringReader(cueContent);
+        Sheet = new();
         return ReadImpl(txt);
     }
     /// <summary>

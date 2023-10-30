@@ -174,7 +174,7 @@ internal class CueEncodingTester
         else
         {
             // Quite difficult if not impossible to guess which regional encoding is being used.
-            // We're assuming it codepage 1252, as it is quite common for english text. It's actually the most common encoding in the net, safe for utf
+            // We're assuming it codepage 1252, as it is quite common for english text. It's actually the most common encoding in the net, save for utf
             Encoding enc = Encoding.GetEncoding(1252);
             return enc;
         }

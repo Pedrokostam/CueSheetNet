@@ -73,7 +73,7 @@ public static partial class CuePackage
             noSpaceName,
             PathStringNormalization.NormalizeString(noSpaceName),
             underscoreName,
-            PathStringNormalization.NormalizeString(underscoreName)
+            PathStringNormalization.NormalizeString(underscoreName),
         };
         return hs;
     }
@@ -428,7 +428,7 @@ public static partial class CuePackage
                                    bool preserveSubfolders = true,
                                    IAudioConverter? converter = null)
     {
-        ArgumentException.ThrowIfNullOrEmpty(format, nameof(format));
+        ArgumentException.ThrowIfNullOrEmpty(format);
         format = format.Trim().Trim('.').ToLowerInvariant();
         converter ??= new RecipeConverter(sheet.SourceFile?.DirectoryName ?? destinationDirectory, "converted.txt");
         CueSheet activeSheet = sheet.Clone();
