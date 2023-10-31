@@ -402,6 +402,7 @@ public readonly record struct CueTime
     /// </summary>
     /// <param name="multiplier"></param>
     /// <returns>CueTime equivalent to the number frames of input CueTime multiplied by the <paramref name="multiplier"/>, truncated towards zero</returns>
+    /// <exception cref="ArgumentException">When <paramref name="multiplier"/> is Not A Number</exception>
     public CueTime Multiply(double multiplier)
     {
         if (double.IsNaN(multiplier)) throw new ArgumentException("Multiplier must be a number", nameof(multiplier));
