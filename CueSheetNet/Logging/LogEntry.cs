@@ -1,9 +1,11 @@
 ﻿using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 
 namespace CueSheetNet.Logging;
-
+[DebuggerDisplay("{Level}: {Message} - {Timestamp}")]
 public partial class LogEntry
 {
     public DateTime Timestamp { get; init; }
@@ -27,7 +29,7 @@ public partial class LogEntry
         Timestamp = DateTime.Now;
         MessageTemplate = messageTemplate;
         Identifiers = new List<string>();
-        if (args.Length == 0 && !messageTemplate.Contains('{'))
+        if (args.Length == 0 && !messageTemplate.Contains('{', StringComparison.Ordinal))
         {
             //No objects, no curly brackets - no identifiers -- no need to check
             Message = messageTemplate;
@@ -39,14 +41,14 @@ public partial class LogEntry
         FormattingTemplate = Tokenize();
         if (args.Length < Identifiers.Count)
         {
-            throw new ArgumentException("Not enough arguments for the specified message template");
+            throw new ArgumentException("Not enough arguments for the specified message template", nameof(args));
         }
         object?[] objects = new object?[Identifiers.Count];
         List<Argument> temp = new(Identifiers.Count);
         for (int i = 0; i < Identifiers.Count; i++)
         {
             objects[i] = args[i];
-            if (Identifiers[i].Contains('.'))
+            if (Identifiers[i].Contains('.', StringComparison.OrdinalIgnoreCase))
             {
                 string[] namePropMeth = Identifiers[i].Split('.');
                 string name = namePropMeth[0];
@@ -60,7 +62,7 @@ public partial class LogEntry
             }
         }
         Elements = temp.AsReadOnly();
-        Message = string.Format(FormattingTemplate, Elements.Select(x => x.Get()).ToArray());
+        Message = string.Format(CultureInfo.InvariantCulture, FormattingTemplate, Elements.Select(x => x.Get()).ToArray());
     }
 
     private string Tokenize()
@@ -110,7 +112,7 @@ public partial class LogEntry
         {
 
             identifier = MessageTemplate[i..end];
-            int ind = Identifiers.FindIndex(x => x == identifier);
+            int ind = Identifiers.FindIndex(x => string.Equals(x, identifier, StringComparison.OrdinalIgnoreCase));
             if (ind == -1)
             {
                 ind = Identifiers.Count;
@@ -125,6 +127,6 @@ public partial class LogEntry
         }
     }
 
-    [GeneratedRegex(@"\(.*\)", RegexOptions.Compiled)]
+    [GeneratedRegex(@"\(.*\)", RegexOptions.Compiled, 500)]
     private static partial Regex ParenthesisRegex();
 }
