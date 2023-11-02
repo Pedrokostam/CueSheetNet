@@ -103,6 +103,8 @@ public readonly record struct InnerQuotation
             return ReplaceNonsymmetricalQuotes(input);
     }
 
+    public static implicit operator InnerQuotation(char symmetricalQuotation) => new(symmetricalQuotation);
+
     private string ReplaceNonsymmetricalQuotes(string input)
     {
         List<int> ints = new();
