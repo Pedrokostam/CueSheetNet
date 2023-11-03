@@ -17,7 +17,7 @@ public sealed record CueWriterSettings
     /// <summary>
     /// If true, every suitable field will be enclosed in quotes, even if it does not contain whitespace
     /// </summary>
-    public bool ForceQuoting { get; set; } = true;
+    public bool ForceQuoting { get; set; }
 
     public InnerQuotation InnerQuotationReplacement { get; set; }
 
@@ -47,10 +47,11 @@ public sealed record CueWriterSettings
     }
     public CueWriterSettings()
     {
-        _indentationDepth = 2;
-        _indentationCharacter = ' ';
+        ForceQuoting = true;
+        IndentationDepth = 2;
+        IndentationCharacter = ' ';
         NewLine = Environment.NewLine;
-        Encoding = DefaultEncoding;
+        Encoding = null;
         InnerQuotationReplacement = InnerQuotation.CurvedDoubleTopQuotation;
         RedundantFieldsBehavior = RedundantFieldBehaviors.KeepAsIs;
     }
