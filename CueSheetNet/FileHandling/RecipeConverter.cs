@@ -23,7 +23,7 @@ public class RecipeConverter : IAudioConverter
         Separator = separator;
     }
    
-    public RecipeConverter(string recipePath) : this(Path.GetDirectoryName(recipePath), Path.GetFileName(recipePath), false, Encoding.UTF8, ";")
+    public RecipeConverter(string recipePath) : this(Path.GetDirectoryName(recipePath)!, Path.GetFileName(recipePath)!, false, Encoding.UTF8, ";")
     {
 
     }
