@@ -12,6 +12,8 @@ public readonly record struct CueTime
     : IComparable<CueTime>
     , IComparable
     , IFormattable
+#if NET7_0_OR_GREATER
+// Static interface members were introduces in NET7.0
     , IParsable<CueTime>
     , ISpanParsable<CueTime>
     , IDecrementOperators<CueTime>
@@ -33,6 +35,7 @@ public readonly record struct CueTime
     , IModulusOperators<CueTime, CueTime, CueTime>
     , IEqualityOperators<CueTime, CueTime, bool>
     , IComparisonOperators<CueTime, CueTime, bool>
+#endif
 {
     public int TotalFrames { get; } // Int is sufficient - it can describe up to 331 days of continuous playback (or about 4.5 TB of WAVE)
 
@@ -68,10 +71,7 @@ public readonly record struct CueTime
         {
             return $"-{-Minutes:d2}:{-Seconds:d2}:{-Frames:d2}";
         }
-        else
-        {
-            return $"{Minutes:d2}:{Seconds:d2}:{Frames:d2}";
-        }
+        return $"{Minutes:d2}:{Seconds:d2}:{Frames:d2}";
     }
 
     public override int GetHashCode() => TotalFrames.GetHashCode();
@@ -179,7 +179,7 @@ public readonly record struct CueTime
     }
 
     /// <summary>
-    /// Calculates total frames from the specified components. Operation is checked - <see cref="OverflowException"/> is thrown if overflow happens. Components don't have to have the same sign.
+    /// Calculates total frames from the specified components. Operation is checked - <see cref="OverflowException"/> is thrown if overflow happens. Components don'spanTrimmedSliced have to have the same sign.
     /// </summary>
     /// <param name="minutes"></param>
     /// <param name="seconds"></param>
@@ -189,7 +189,7 @@ public readonly record struct CueTime
     public static int CalculateTotalFrames(int minutes, int seconds, int frames) => checked(frames + FramesPerSecond * seconds + FramesPerMinute * minutes);
 
     /// <summary>
-    /// Calculates total frames from the specified components. Operation is unchecked - overflow can cause incorrect results. Components don't have to have the same sign.
+    /// Calculates total frames from the specified components. Operation is unchecked - overflow can cause incorrect results. Components don'spanTrimmedSliced have to have the same sign.
     /// </summary>
     /// <param name="minutes"></param>
     /// <param name="seconds"></param>
@@ -223,7 +223,7 @@ public readonly record struct CueTime
         ReadOnlySpan<char> spanTrimmed = span.Trim();
         if (spanTrimmed.Length == 0) throw new ArgumentException("Empty CueTime string", nameof(span));
         List<int> inds = SeekSeparator(spanTrimmed);
-        if (inds.Count < 4) throw new ArgumentException($"CueTime string has less than 3 parts ({span})", nameof(span));
+        if (inds.Count < 4) throw new ArgumentException($"CueTime string has less than 3 parts ({span.ToString()})", nameof(span));
         Span<int> nums = stackalloc int[3];
         int numCount = 0;
         for (int i = 1; i < inds.Count; i++)
@@ -232,7 +232,7 @@ public readonly record struct CueTime
             //That';'s why the SeekSeparator add -1 as the first element
             //so that the first rangeStart will be equal to 0
             int rangeEnd = inds[i];
-            int x = int.Parse(spanTrimmed[rangeStart..rangeEnd], NumberStyles.Integer, CultureInfo.InvariantCulture);
+            int x = int.Parse(Slice(spanTrimmed, rangeStart, rangeEnd), NumberStyles.Integer, CultureInfo.InvariantCulture);
             nums[numCount] = x;
             if (++numCount > 2)
                 break;
@@ -274,9 +274,23 @@ public readonly record struct CueTime
     /// <exception cref="ArgumentException">If string is null</exception>
     public static CueTime Parse([NotNull] string? str)
     {
-        ArgumentNullException.ThrowIfNull(str);
+        if (str is null) throw new ArgumentNullException(nameof(str));
         return Parse(str.AsSpan());
     }
+
+    /// <summary>
+    /// Helper function that return either string or span sliced to given range, depending on target framework.
+    /// </summary>
+    /// <param name="span">Span to slice</param>
+    /// <param name="start">Inclusive start of slice</param>
+    /// <param name="end">Exclusive end of slice</param>
+    /// <returns>String for NetStandard2.0, ReadOnlySpan elsewhere</returns>
+#if NET7_0_OR_GREATER
+    private static ReadOnlySpan<char> Slice(ReadOnlySpan<char> span,int start, int end) => span[start..end];
+#else
+    private static string Slice(ReadOnlySpan<char> span, int start, int end) => span[start..end].ToString();
+    // While System.Memory adds range slices, we still need to a return string, because int.TryParse requires it.
+#endif
 
     /// <summary>
     /// Tries to parse string (±mm:ss:ff). The parsed time is negative, only if the minute part is negative.
@@ -300,7 +314,7 @@ public readonly record struct CueTime
             //That's why the SeekSeparator add -1 as the first element
             //so that the first rangeStart will be equal to 0
             int rangeEnd = inds[i];
-            if (!int.TryParse(spanTrimmed[rangeStart..rangeEnd], NumberStyles.Integer, CultureInfo.InvariantCulture, out int x))
+            if (!int.TryParse(Slice(spanTrimmed, rangeStart, rangeEnd), NumberStyles.Integer, CultureInfo.InvariantCulture, out int x))
                 return false;
             nums[numCount] = x;
             if (++numCount > 2)
@@ -504,7 +518,7 @@ public readonly record struct CueTime
     #endregion
 
     #region Explicit Interfaces
-
+#if NET7_0_OR_GREATER
     static CueTime IParsable<CueTime>.Parse(string s, IFormatProvider? provider) => Parse(s);
 
     static bool IParsable<CueTime>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out CueTime result) => TryParse(s, out result);
@@ -512,7 +526,9 @@ public readonly record struct CueTime
     static CueTime ISpanParsable<CueTime>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s);
 
     static bool ISpanParsable<CueTime>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, [MaybeNullWhen(false)] out CueTime result) => TryParse(s, out result);
+
     static CueTime IAdditiveIdentity<CueTime, CueTime>.AdditiveIdentity => CueTime.Zero;
+#endif
     #endregion
     #region String
     public string ToString(string? format) => ToString(format, CultureInfo.CurrentCulture);
@@ -525,7 +541,7 @@ public readonly record struct CueTime
             default:
                 break;
         }
-        ReadOnlySpan<char> span = format;
+        ReadOnlySpan<char> span = format.AsSpan();
         int spanLength = span.Length;
         int i = 0;
         StringBuilder strb = new();
