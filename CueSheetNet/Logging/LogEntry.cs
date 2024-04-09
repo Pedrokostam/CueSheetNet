@@ -121,12 +121,14 @@ public partial class LogEntry
             strb.Append(ind);
             return end;
         }
-        else
-        {
-            return i;
-        }
-    }
 
+        return i;
+    }
+#if NET7_0_OR_GREATER
     [GeneratedRegex(@"\(.*\)", RegexOptions.Compiled, 500)]
     private static partial Regex ParenthesisRegex();
+#else
+    private static readonly Regex ParenthesisRegexImpl = new Regex(@"\(.*\)", RegexOptions.Compiled, TimeSpan.FromMilliseconds(500));
+    private static Regex ParenthesisRegex() => ParenthesisRegexImpl;
+#endif
 }
