@@ -58,5 +58,29 @@ internal static class StringExtensions
     {
         return input.IndexOf(value.ToString(), comparison) != -1;
     }
+
+    /// <summary>
+    /// Extension method for below NETCORE 2.0 (StringComparison parameter was missing).
+    /// <para/>
+    /// Returns the hash code for this string using the specified rules.
+    /// </summary>
+    /// <param name="input"></param>
+    /// <param name="value"></param>
+    /// <param name="comparison"></param>
+    /// <returns></returns>
+    public static int GetHashCode(this string input, StringComparison comparison)
+    {
+        var comparer = comparison switch
+        {
+            StringComparison.CurrentCulture => StringComparer.CurrentCulture,
+            StringComparison.CurrentCultureIgnoreCase => StringComparer.CurrentCultureIgnoreCase,
+            StringComparison.InvariantCulture => StringComparer.InvariantCulture,
+            StringComparison.InvariantCultureIgnoreCase => StringComparer.InvariantCultureIgnoreCase,
+            StringComparison.Ordinal => StringComparer.Ordinal,
+            StringComparison.OrdinalIgnoreCase => StringComparer.OrdinalIgnoreCase,
+            _ => throw new NotSupportedException(),
+        };
+        return comparer.GetHashCode(input);
+    }
 #endif
 }
