@@ -17,6 +17,6 @@ public class CueExtraFile : ICueFile
     public long FileSize => SourceFile.Length;
     public bool Exists => SourceFile.Exists;
 
-    public string GetRelativePath() => PathHelper.GetRelativePath(SourceFile, ParentSheet.SourceFile?.DirectoryName);
+    public string GetRelativePath() => PathHelper.GetRelativePath(SourceFile, ParentSheet.SourceFile);
 }
 

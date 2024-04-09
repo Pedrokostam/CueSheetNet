@@ -63,14 +63,13 @@ internal record class TransFile
     }
     public TransFile(ICueFile source, DirectoryInfo? cueFolder, GeneralFileType type)
     {
-        string? cueDir = source.SourceFile?.DirectoryName;
-        if (cueFolder is null || cueDir is null)
+        if (cueFolder is null || source.SourceFile is null)
         {
             Subfolder = ".";
         }
         else
         {
-            Subfolder = PathHelper.GetRelativePath(cueDir, cueFolder.FullName);
+            Subfolder = PathHelper.GetRelativePath(source.SourceFile.Directory, cueFolder);
         }
         Type = type;
         SourceFile = source.SourceFile!;
