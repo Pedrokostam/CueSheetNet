@@ -120,7 +120,7 @@ public sealed class CueWriter
     {
         FillStringBuilder(sheet);
         char[] tablicaCzarów = new char[Builder.Length];
-        Builder.CopyTo(0, tablicaCzarów, Builder.Length);
+        Builder.CopyTo(0, tablicaCzarów, 0,Builder.Length);
         return tablicaCzarów;
     }
 
