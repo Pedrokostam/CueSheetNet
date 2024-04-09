@@ -1,6 +1,7 @@
 ﻿using CueSheetNet.Logging;
 using System.Diagnostics;
 using System.Globalization;
+using System.Text;
 
 namespace CueSheetNet.FileReaders;
 
@@ -33,16 +34,10 @@ public sealed class FfprobeFormatReader : IAudioFileFormatReader
         {
             Process proc = new();
             ProcessStartInfo startInfo = new(FFProbePath);
-            startInfo.ArgumentList.Add(path);
-            startInfo.ArgumentList.Add(@"-hide_banner");
-            startInfo.ArgumentList.Add(@"-v");
-            startInfo.ArgumentList.Add(@"error");
-            startInfo.ArgumentList.Add(@"-select_streams");
-            startInfo.ArgumentList.Add(@"a:0");
-            startInfo.ArgumentList.Add(@"-of");
-            startInfo.ArgumentList.Add(@"default=noprint_wrappers=1");
-            startInfo.ArgumentList.Add(@"-show_entries");
-            startInfo.ArgumentList.Add(@"stream=duration,bit_rate,channels,sample_rate,bits_per_raw_sample,bits_per_sample:format=size,format_name");
+            StringBuilder argumentBuilder = new();
+            string formatString = "\"{0}\" -hide_banner -v error -select_streams a:0 -of default=noprint_wrappers=1 -show_entries stream=duration,bit_rate,channels,sample_rate,bits_per_raw_sample,bits_per_sample:format=size,format_name";
+            string arguments = string.Format(CultureInfo.InvariantCulture, formatString, path);
+            startInfo.Arguments = arguments;
             startInfo.RedirectStandardOutput = true;
             startInfo.UseShellExecute = false;
             proc.StartInfo = startInfo;
