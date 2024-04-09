@@ -52,7 +52,6 @@ public partial class CueReader
     /// <returns>Parsed <see cref="CueSheet"/></returns>
     public CueSheet ParseCueSheet(string cuePath, Encoding? encoding)
     {
-        var t = Path.GetFullPath(cuePath);
         Reset(encoding);
         if (!File.Exists(cuePath))
         {
@@ -111,7 +110,12 @@ public partial class CueReader
     /// <returns>Parsed <see cref="CueSheet"/></returns>
     public CueSheet ParseCueSheet(ReadOnlySpan<char> cueContentChars)
     {
-        return ParseCueSheetFromStringContent(new string(cueContentChars));
+#if NETCOREAPP2_1_OR_GREATER
+        string s = new string(cueContentChars);
+#else
+        string s = new string(cueContentChars.ToArray());
+#endif
+        return ParseCueSheetFromStringContent(s);
     }
 
     private CueSheet ParseCueSheet_Impl(Stream fs, string? path)
@@ -271,8 +275,8 @@ public partial class CueReader
         }
         TrackFlags flags = TrackFlags.None;
         string[] parts = line[6..] // FLAGS_
-            .Replace("\"", "")
-            .Replace("'", "")
+            .Replace("\"", "",StringComparison.Ordinal)
+            .Replace("'", "", StringComparison.Ordinal)
             .Split(' ', StringSplitOptions.RemoveEmptyEntries);
         foreach (var part in parts)
         {
@@ -318,7 +322,7 @@ public partial class CueReader
             return;
         }
         string number = GetKeyword(line, 6);// INDEX_
-        if (!int.TryParse(number, CultureInfo.InvariantCulture, out int num))
+        if (!int.TryParse(number,NumberStyles.Integer, CultureInfo.InvariantCulture, out int num))
         {
             //Logger.LogError("Incorrect Index number format at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
             throw new FormatException($"Incorrect Index number format at line {CurrentLineIndex}: {line}");
@@ -504,6 +508,6 @@ public partial class CueReader
     private static partial Regex NonQuotedFileRegex();
 #else
     private static readonly Regex NonQuotedFileRegexImpl = new(@"(?<PATH>\w+)\s+(?<TYPE>\w*)", RegexOptions.Compiled, TimeSpan.FromMilliseconds(500));
-    private static Regex NonQuotedFileRegex()=> NonQuotedFileRegexImpl;
+    private static Regex NonQuotedFileRegex() => NonQuotedFileRegexImpl;
 #endif
 }

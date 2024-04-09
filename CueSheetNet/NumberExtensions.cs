@@ -44,6 +44,9 @@ internal static class NumberExtensions
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int Clamp(this int number, int min, int max)
     {
+#if NET5_0_OR_GREATER
+        return Math.Clamp(number, min, max);
+#else
         if (min > max)
         {
             throw new ArgumentException("Minimum cannot be greater than maximum");
@@ -57,5 +60,6 @@ internal static class NumberExtensions
             return max;
         }
         return number;
+#endif
     }
 }
