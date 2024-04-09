@@ -107,15 +107,20 @@ internal class CueEncodingTester
     private Encoding DetectUtf8Heuristically(List<byte> bajtos)
     {
         // The list will not be modified so it is safe to access it as span
-        Span<byte> s = CollectionsMarshal.AsSpan(bajtos);
+#if NET5_0_OR_GREATER
+        Span<byte> allBytes = CollectionsMarshal.AsSpan(bajtos);
+        int length = allBytes.Length - 4;
+#else
+        List<byte> allBytes = bajtos;
+        int length = allBytes.Count - 4;
+#endif
         Logger.LogDebug("Heuristic encoding detection started. Source: {Source}", Source);
-        int length = s.Length - 4;
         bool utf8 = false;
         for (int i = 0; i < length; i++)
         {
             // One byte
             // U+0000..U+007F      00..7F
-            if (s[i] <= 0x7F)
+            if (allBytes[i] <= 0x7F)
             {
                 continue;
                 // not setting utf8 to true, because ASCII also meets this criterion, and if you can work in ASCII, why not?
@@ -124,8 +129,8 @@ internal class CueEncodingTester
             // U+0080..U+07FF       C2..DF     80..BF
             // Range                C2..DF     80..BF
             // skipping C0, C1 - non-minimal
-            else if (CheckRange(s[i], 0xC2, 0xDF)
-              && CheckRange(s[i + 1], 0x80, 0xBF))
+            else if (CheckRange(allBytes[i], 0xC2, 0xDF)
+              && CheckRange(allBytes[i + 1], 0x80, 0xBF))
             {
                 utf8 = true;
                 i += 1; // skip next character
@@ -139,9 +144,9 @@ internal class CueEncodingTester
             // skipping U+D800..U+DBFF - not valid UTF8
             // slightly simplified, as with first byte equal to E0 second has to be greater than A0, not 80...
             // but the third byte is consistent
-            else if (CheckRange(s[i], 0xE0, 0xEF)
-              && CheckRange(s[i + 1], 0x80, 0xBF)
-              && CheckRange(s[i + 2], 0x80, 0xBF))
+            else if (CheckRange(allBytes[i], 0xE0, 0xEF)
+              && CheckRange(allBytes[i + 1], 0x80, 0xBF)
+              && CheckRange(allBytes[i + 2], 0x80, 0xBF))
             {
                 utf8 = true;
                 i += 2;// skip next 2 characters
@@ -153,17 +158,17 @@ internal class CueEncodingTester
             // Range                F0..F4     80..BF      80..BF     80..BF
             // slightly simplified, as with first byte equal to F0 second has to be greater than 90, not 80...
             // but the third and forth bytes are consistent
-            else if (CheckRange(s[i], 0xF0, 0xF4)
-              && CheckRange(s[i + 1], 0x80, 0xBF)
-              && CheckRange(s[i + 2], 0x80, 0xBF)
-              && CheckRange(s[i + 3], 0x80, 0xBF))
+            else if (CheckRange(allBytes[i], 0xF0, 0xF4)
+              && CheckRange(allBytes[i + 1], 0x80, 0xBF)
+              && CheckRange(allBytes[i + 2], 0x80, 0xBF)
+              && CheckRange(allBytes[i + 3], 0x80, 0xBF))
             {
                 utf8 = true;
                 i += 3; //skip next 3 characters
             }
             else
             {
-                Logger.LogInformation("Non-UTF8 bytes detected. Last 4 bytes: 0x{Byte1:X2}, 0x{Byte2:X2}, 0x{Byte3:X2}, 0x{Byte4:X2}", s[i], s[i + 1], s[i + 2], s[i + 3]);
+                Logger.LogInformation("Non-UTF8 bytes detected. Last 4 bytes: 0x{Byte1:X2}, 0x{Byte2:X2}, 0x{Byte3:X2}, 0x{Byte4:X2}", allBytes[i], allBytes[i + 1], allBytes[i + 2], allBytes[i + 3]);
                 // most probably something from 0x7F up - some regional codepage.
                 utf8 = false;
                 break;
@@ -176,7 +181,7 @@ internal class CueEncodingTester
         else
         {
             // Quite difficult if not impossible to guess which regional encoding is being used.
-            // We're assuming it codepage 1252, as it is quite common for english text. It's actually the most common encoding in the net, save for utf
+            // We're assuming it codepage 1252, as it is quite common for english text. It'allBytes actually the most common encoding in the net, save for utf
             Encoding enc = Encoding.GetEncoding(1252);
             return enc;
         }
@@ -240,7 +245,20 @@ internal class CueEncodingTester
                     continue;
             }
             int read = fs.Read(dataBuffer);
-            if (read == dataBuffer.Length && dataBuffer.SequenceEqual(templateSpan, byteCaseComparer))
+#if NET6_0_OR_GREATER
+            bool sequenceEqual = dataBuffer.SequenceEqual(templateSpan, byteCaseComparer);
+#else
+            bool sequenceEqual = dataBuffer.Length == templateSpan.Length;
+            if (sequenceEqual)
+            {
+                for (int i = 0; i < dataBuffer.Length; i++)
+                {
+                    sequenceEqual = byteCaseComparer.Equals(dataBuffer[i], templateSpan[i]);
+                    if (!sequenceEqual) break;
+                }
+            }
+#endif
+            if (read == dataBuffer.Length && sequenceEqual)
             {
                 AddUntilNewLine(fs, bytes);
             }
@@ -257,13 +275,13 @@ internal class CueEncodingTester
         //test for encoding with BOM
         Encoding? encoding = bomArea switch
         {
-            // Theoretically we need to check only 4 bytes for utf32, 3 for utf8 and 2 for utf16.
-            // But we know that the first characters of the sheet should be standard ASCII characters
-            [0xEF, 0xBB, 0xBF, > 00, > 00] => Encoding.UTF8, // the last 2 bytes have to be anything but null
-            [0xFF, 0xFE, 0x00, 0x00, > 00] => Encoding.UTF32, // the first byte of second character will be larger than zero since it is its start (little-end)
-            [0x00, 0x00, 0xFE, 0xFF, 0x00] => EncodingUTF32BE, // the first byte of second character will be be zero since it is its start (big-end)
-            [0xFF, 0xFE, > 00, 0x00, > 00] => Encoding.Unicode, // We get 1.5 characters, so bytes 3 and 5 will have to be larger than zero (little-end)
-            [0xFE, 0xFF, 0x00, > 00, 0x00] => Encoding.BigEndianUnicode, // We get 1.5 characters, so bytes 3 and 5 will have to be zero (big-end)
+        // Theoretically we need to check only 4 bytes for utf32, 3 for utf8 and 2 for utf16.
+        // But we know that the first characters of the sheet should be standard ASCII characters
+        [0xEF, 0xBB, 0xBF, > 00, > 00] => Encoding.UTF8, // the last 2 bytes have to be anything but null
+        [0xFF, 0xFE, 0x00, 0x00, > 00] => Encoding.UTF32, // the first byte of second character will be larger than zero since it is its start (little-end)
+        [0x00, 0x00, 0xFE, 0xFF, 0x00] => EncodingUTF32BE, // the first byte of second character will be be zero since it is its start (big-end)
+        [0xFF, 0xFE, > 00, 0x00, > 00] => Encoding.Unicode, // We get 1.5 characters, so bytes 3 and 5 will have to be larger than zero (little-end)
+        [0xFE, 0xFF, 0x00, > 00, 0x00] => Encoding.BigEndianUnicode, // We get 1.5 characters, so bytes 3 and 5 will have to be zero (big-end)
             _ => null,
         };
         if (encoding is not null)
@@ -291,11 +309,11 @@ internal class CueEncodingTester
         // First letter of a cuesheet should be a standard ASCII letter (one byte of data and whatever padding)
         Encoding? naiveApproach = bomArea switch
         {
-            [0, 0, 0, > 1/**/, 0, 0, 0, > 1/**/, 0, 0, 0, > 1/**/, 0, 0, 0, > 1/**/] => new UTF32Encoding(bigEndian: true, byteOrderMark: false), // 3 nulls, followed by a non-zero bytes
-            [> 1, 0, 0, 0/**/, > 1, 0, 0, 0/**/, > 1, 0, 0, 0/**/, > 1, 0, 0, 0/**/] => new UTF32Encoding(bigEndian: false, byteOrderMark: false),// non-zero bytes followed by 3 nulls
-            [> 1, 0/**/, > 1, 0/**/, > 1, 0/**/, > 1, 0/**/, ..] => new UnicodeEncoding(bigEndian: false, byteOrderMark: false), // non-zero bytes, null, ignore everything past 12 byte
-            [0, > 1/**/, 0, > 1/**/, 0, > 1/**/, 0, > 1/**/, ..] => new UnicodeEncoding(bigEndian: true, byteOrderMark: false),// null, non-zero byte, ignore everything past 12 byte
-            [0, 0, 0, 0, ..] => throw new InvalidDataException($"Four consecutive null bytes at the beginning of {Source}"),
+        [0, 0, 0, > 1/**/, 0, 0, 0, > 1/**/, 0, 0, 0, > 1/**/, 0, 0, 0, > 1/**/] => new UTF32Encoding(bigEndian: true, byteOrderMark: false), // 3 nulls, followed by a non-zero bytes
+        [> 1, 0, 0, 0/**/, > 1, 0, 0, 0/**/, > 1, 0, 0, 0/**/, > 1, 0, 0, 0/**/] => new UTF32Encoding(bigEndian: false, byteOrderMark: false),// non-zero bytes followed by 3 nulls
+        [> 1, 0/**/, > 1, 0/**/, > 1, 0/**/, > 1, 0/**/, ..] => new UnicodeEncoding(bigEndian: false, byteOrderMark: false), // non-zero bytes, null, ignore everything past 12 byte
+        [0, > 1/**/, 0, > 1/**/, 0, > 1/**/, 0, > 1/**/, ..] => new UnicodeEncoding(bigEndian: true, byteOrderMark: false),// null, non-zero byte, ignore everything past 12 byte
+        [0, 0, 0, 0, ..] => throw new InvalidDataException($"Four consecutive null bytes at the beginning of {Source}"),
             _ => null,
         };
         return naiveApproach;
