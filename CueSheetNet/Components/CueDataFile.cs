@@ -113,7 +113,7 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
             {
                 normalizedPath = PathComparer.NormalizePath(_file);
             }
-            return normalizedPath;
+            return normalizedPath!;
         }
     }
 
