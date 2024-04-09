@@ -2,6 +2,7 @@
 using CueSheetNet.Logging;
 using CueSheetNet.Reading;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -53,6 +54,7 @@ internal class CueEncodingTester
     /// <param name="minInclusive">Inclusive minimum</param>
     /// <param name="maxInclusive">Inclusive maximum</param>
     /// <returns></returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool CheckRange(byte input, byte minInclusive, byte maxInclusive)
     {
         return input >= minInclusive && input <= maxInclusive;
@@ -71,7 +73,7 @@ internal class CueEncodingTester
     }
     public static bool CompareBytes(ReadOnlySpan<byte> input, Encoding encoding)
     {
-        ReadOnlySpan<byte> preamble = encoding.Preamble;
+        ReadOnlySpan<byte> preamble = encoding.GetPreamble();
         if (input.Length < preamble.Length)
             return false;
         for (int i = 0; i < preamble.Length; i++)

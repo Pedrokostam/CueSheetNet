@@ -255,7 +255,7 @@ public static partial class CuePackage
     private static string GetNotNullName(string? path)
     {
         string? name = Path.GetFileNameWithoutExtension(path);
-        if (string.IsNullOrEmpty(name)) throw new ArgumentException(name, nameof(path));
+        ExceptionHelper.ThrowIfNullOrEmpty(name);
         return name;
     }
 
@@ -267,7 +267,7 @@ public static partial class CuePackage
     private static string GetNotNullDestination(string? path)
     {
         string destination = Path.GetDirectoryName(path)!;
-        if (string.IsNullOrEmpty(destination)) throw new ArgumentException(destination, nameof(path));
+        ExceptionHelper.ThrowIfNullOrEmpty(destination);
         return destination;
     }
 
@@ -438,7 +438,7 @@ public static partial class CuePackage
                                    bool preserveSubfolders = true,
                                    IAudioConverter? converter = null)
     {
-        if (string.IsNullOrEmpty(format)) throw new ArgumentNullException(format, nameof(format));
+        ExceptionHelper.ThrowIfNullOrEmpty(format);
         format = format.Trim().Trim('.').ToLowerInvariant();
         converter ??= new RecipeConverter(sheet.SourceFile?.DirectoryName ?? destinationDirectory, "converted.txt");
         CueSheet activeSheet = sheet.Clone();

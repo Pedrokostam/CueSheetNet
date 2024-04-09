@@ -147,7 +147,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
     {
 
         //if (directory is not null)
-        ArgumentNullException.ThrowIfNull(SourceFile);
+        ExceptionHelper.ThrowIfNull(SourceFile);
         CueWriter writer = new();
         writer.SaveCueSheet(this);
     }

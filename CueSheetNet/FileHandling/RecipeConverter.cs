@@ -13,8 +13,8 @@ public class RecipeConverter : IAudioConverter
     readonly List<(string input, string output)> Elements;
     public RecipeConverter(string outputFolder, string fileName, bool append, Encoding encoding, string separator)
     {
-        ArgumentNullException.ThrowIfNull(outputFolder, nameof(outputFolder));
-        ArgumentNullException.ThrowIfNull(fileName, nameof(fileName));
+        ExceptionHelper.ThrowIfNull(outputFolder);
+        ExceptionHelper.ThrowIfNull(fileName );
         RecipeOutputFolder = outputFolder;
         OutputName = fileName;
         Elements = new();

@@ -274,7 +274,7 @@ public readonly record struct CueTime
     /// <exception cref="ArgumentException">If string is null</exception>
     public static CueTime Parse([NotNull] string? str)
     {
-        if (str is null) throw new ArgumentNullException(nameof(str));
+        ExceptionHelper.ThrowIfNull(str);
         return Parse(str.AsSpan());
     }
 
