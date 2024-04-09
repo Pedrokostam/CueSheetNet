@@ -27,6 +27,25 @@ public class RelativePathTests
                 [D(@"c:\foo\bar\mun\bun"), F(@"c:\foo\bar\baz\bom.mp3"), "../mun/bun/"],
                 [D(@"c:\foo\bar\mun\bun"), D(@"c:\foo\bar\baz\"), "../mun/bun/"],
                 [D(@"c:\foo\bar\mun\bun"), D(@"c:\foo\bar\baz"), "../mun/bun/"],
+                
+                [D(@".\bar\mun\bun"), null!, "bar/mun/bun/"],
+                [D(@"bar\mun\bun"), null!, "bar/mun/bun/"],
+                [F(@".\bar\mun\bun.mp3"), null!, "bar/mun/bun.mp3"],
+                [F(@"bar\mun\bun.mp3"), null!, "bar/mun/bun.mp3"],
+                
+                [F(@"c:\foo\bar\baz\bom.mp3"), F(@"c:\goo\bar\baz\bom.mp3"), "../../../foo/bar/baz/bom.mp3"],
+
+                [F(@"c:\foo\bar\baz\bom.mp3"), D(@"c:\goo\bar\baz\bom"), "../../../foo/bar/baz/bom.mp3"],
+                [F(@"c:\foo\bar\baz\bom.mp3"), D(@"c:\goo\bar\baz\bom\"), "../../../foo/bar/baz/bom.mp3"],
+                [F(@"c:\foo\bar/baz\bom.mp3"), D(@"c:\goo\bar\baz\bom/"), "../../../foo/bar/baz/bom.mp3"],
+
+                [D(@"c:\foo\bar\baz\bom"), F(@"c:\goo\bar\baz\bom.mp3"), "../../../../foo/bar/baz/bom/"],
+                [D(@"c:\foo\bar\baz\bom"), F(@"c:\goo\bar\baz\bom.mp3"), "../../../foo/bar/baz/bom/"],
+                [D(@"c:\foo\bar/baz\bom"), F(@"c:\goo\bar\baz\bom.mp3"), "../../../foo/bar/baz/bom/"],
+
+                [D(@"c:\foo\bar\baz\bom\"), F(@"c:\goo\bar\baz\bom.mp3"), "../../../../foo/bar/baz/bom/"],
+                [D(@"c:\foo\bar\baz\bom\"), F(@"c:\goo\bar\baz\bom.mp3\"), "../../../../foo/bar/baz/bom/"],
+                [D(@"c:\foo\bar/baz\bom/"), F(@"c:\goo\bar\baz\bom.mp3/"), "../../../../foo/bar/baz/bom/"],
                 ];
         }
     }
