@@ -82,5 +82,11 @@ internal static class StringExtensions
         };
         return comparer.GetHashCode(input);
     }
+
+    public static bool StartsWith(this string input, char character)
+    {
+        if (input.Length == 0) return false;
+        return input[0] == character;
+    }
 #endif
 }

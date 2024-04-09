@@ -85,7 +85,7 @@ internal record class TransFile
     }
     public string DestinationPath(DirectoryInfo destination)
     {
-        return Path.GetFullPath(Path.Join(destination.FullName, Subfolder, NewNameWithExtension));
+        return Path.GetFullPath(Path.Combine(destination.FullName, Subfolder, NewNameWithExtension));
     }
     public virtual MovedFile Move(DirectoryInfo destination)
     {
@@ -106,7 +106,7 @@ internal record class TransFile
     /// <returns>True if such file exists, False if not</returns>
     public bool CheckNewNameExists(DirectoryInfo directory)
     {
-        string checker = Path.Join(directory.FullName, NewNameWithExtension);
+        string checker = Path.Combine(directory.FullName, NewNameWithExtension);
         return Path.Exists(checker);
     }
 
