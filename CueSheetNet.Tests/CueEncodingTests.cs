@@ -15,10 +15,14 @@ public partial class CueEncodingTests
     {
         System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
     }
-    CueReader reader { get; }= new CueReader();
-    private record EncodingType(Encoding Enc,bool Bom) { }
+    CueReader reader { get; } = new CueReader();
+#if NET7_0_OR_GREATER
     [GeneratedRegex(@"UTF-(?<BIT>\d+)")]
     public static partial Regex UtfBitFinder();
+#else
+    private static readonly Regex UtfBitFinderImpl = new(@"UTF-(?<BIT>\d+)");
+    public static Regex UtfBitFinder() => UtfBitFinderImpl;
+#endif
     private static bool IsBigEndian(string input) => input.Contains(" BE");
     private static bool HasBom(string input) => input.Contains(" BOM");
     private static Encoding ParseEncodingFromName(string name)
@@ -36,7 +40,7 @@ public partial class CueEncodingTests
                 _ => throw new NotImplementedException(bitString),
             };
             return en;
-            
+
         }
         else
         {
@@ -45,19 +49,19 @@ public partial class CueEncodingTests
     }
     private void TestParsing(string filepath)
     {
-        Encoding target =ParseEncodingFromName(filepath);
-        var cue =reader.ParseCueSheet(filepath);
+        Encoding target = ParseEncodingFromName(filepath);
+        var cue = reader.ParseCueSheet(filepath);
         Encoding cueEnc = cue.SourceEncoding;
-        bool match=target.Preamble.SequenceEqual(cueEnc.Preamble)
+        bool match = target.GetPreamble().SequenceEqual(cueEnc.GetPreamble())
             && target.EncodingName == cueEnc.EncodingName;
         var a = cueEnc.GetPreamble();
-        Assert.IsTrue(match,$"Target: {target.EncodingName}, actual: {cueEnc.EncodingName}, actual preamble: {string.Join(", ",a)}-{Path.GetFileNameWithoutExtension(filepath)}");
+        Assert.IsTrue(match, $"Target: {target.EncodingName}, actual: {cueEnc.EncodingName}, actual preamble: {string.Join(", ", a)}-{Path.GetFileNameWithoutExtension(filepath)}");
     }
-    
+
     [TestMethod]
     public void TestEncodingDetection()
     {
-        var files= Utils.GetFiles("*.cue", "EncodingDetection");
+        var files = Utils.GetFiles("*.cue", "EncodingDetection");
         foreach (var file in files)
         {
             TestParsing(file);
@@ -66,7 +70,7 @@ public partial class CueEncodingTests
     [TestMethod]
     public void TestParsingMinimum()
     {
-        string minimalPath =Utils.GetFile( "Parsing", "MinimalFoobarCue.cue");
+        string minimalPath = Utils.GetFile("Parsing", "MinimalFoobarCue.cue");
         var cue = reader.ParseCueSheet(minimalPath);
         Assert.AreEqual(cue.Files[0].SourceFile.Name, "A");
         Assert.AreEqual(cue.Tracks[0].Title, "A");

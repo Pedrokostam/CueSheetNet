@@ -63,8 +63,10 @@ public class CueTimeTests
             (2137F,typeof(float)),
             (2137M,typeof(decimal)),
             ("2137",typeof(string)),
-            (DateOnly.FromDayNumber(1),typeof(DateOnly)),
             (DateTime.Now,typeof(DateTime)),
+#if NET6_0_OR_GREATER
+            (DateOnly.FromDayNumber(1),typeof(DateOnly)),
+#endif
         };
     }
     [TestMethod("Convert CueTime to TimeSpan and back to CueTime")]
