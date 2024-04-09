@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 namespace CueSheetNet.NameParsing;
 public static partial class CueTreeFormatter
 {
+#if NET7_0_OR_GREATER
     [GeneratedRegex(@"%(?<property>[\w\s]+)%",RegexOptions.Compiled, 500)]
     private static partial Regex PropertyParser();
     [GeneratedRegex(@"^[\\/]+$",RegexOptions.Compiled, 500)]
@@ -12,6 +13,15 @@ public static partial class CueTreeFormatter
 
     [GeneratedRegex(@"[\\/]+",RegexOptions.Compiled,500)]
     private static partial Regex SeparatorNormalizer();
+#else
+    private static readonly Regex PropertyParserImpl = new(@"%(?<property>[\w\s]+)%", RegexOptions.Compiled, TimeSpan.FromMilliseconds(500));
+    private static Regex PropertyParser() => PropertyParserImpl;
+    private static readonly Regex SeparatorCheckerImpl = new(@"^[\\/]+$", RegexOptions.Compiled, TimeSpan.FromMilliseconds(500));
+    private static Regex SeparatorChecker() => SeparatorCheckerImpl;
+
+    private static readonly Regex SeparatorNormalizerImpl = new(@"[\\/]+", RegexOptions.Compiled, TimeSpan.FromMilliseconds(500));
+    private static Regex SeparatorNormalizer() => SeparatorNormalizerImpl;
+#endif
     /// <summary>
     /// Parse the format for output filepath. E.g. %Artist%/%DATE%/%Album% can result in
     /// ./Artist/2001/Album.
@@ -27,17 +37,19 @@ public static partial class CueTreeFormatter
     public static string ParseFormatPattern(CueSheet sheet, string? treeFormat)
     {
         if (string.IsNullOrWhiteSpace(treeFormat))
+        {
             return Path.GetFileNameWithoutExtension(sheet.SourceFile?.Name) ?? sheet.DefaultFilename;
+        }
         Regex formatter = PropertyParser();
         MatchCollection matches = formatter.Matches(treeFormat);
         foreach (Match match in matches.Cast<Match>())
         {
-            string groupVal = match.Groups["property"].Value.Replace(" ", "").ToLowerInvariant(); // No properties contain space in the name, so we remove them
+            string groupVal = match.Groups["property"].Value.Replace(" ", "", StringComparison.Ordinal).ToLowerInvariant(); // No properties contain space in the name, so we remove them
             string val = match.Value;
             if (TagDict.TryGetValue(groupVal, out ParseToken? tag))
             {
                 string newVal = tag.GetValue(sheet);
-                treeFormat = treeFormat.Replace(val, newVal);
+                treeFormat = treeFormat!.Replace(val, newVal,StringComparison.Ordinal);
             }
             else
             {
@@ -45,7 +57,7 @@ public static partial class CueTreeFormatter
             }
         }
         //replace all invalid path chars with underscore
-        string normalized = PathStringNormalization.RemoveInvalidPathCharacters(treeFormat);
+        string normalized = PathStringNormalization.RemoveInvalidPathCharacters(treeFormat!);
         normalized = SeparatorNormalizer().Replace(normalized, Path.DirectorySeparatorChar.ToString());
         if (String.IsNullOrWhiteSpace(normalized) || string.Equals(normalized, Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal))
         {
@@ -60,16 +72,16 @@ public static partial class CueTreeFormatter
     public static CueProperty[] AvailableProperties => Tags.Select(x => new CueProperty(x)).ToArray();
     static CueTreeFormatter()
     {
-        Tags = new ParseToken[]
-        {
+        Tags =
+        [
             new PropertyParseToken("Title","Title of the album","Album","AlbumTitle","AlbumName"),
             new PropertyParseToken("Performer","Name of the performer (artist/band)","Artist", "AlbumArtist"),
             new PropertyParseToken("Date","Release data of the album","Year"),
             new PropertyParseToken("Composer","Name of the composer"),
             new PropertyParseToken("Catalog","Catalog number of the CD"),
             new PropertyParseToken("DiscID","ID of the CD"),
-            new MethodParseToken ("Filename",(s)=>Path.GetFileNameWithoutExtension(s.SourceFile!.Name),"Name of the Cue file, sans extension","Current","Old","Name")
-        };
+            new MethodParseToken ("Filename",(s)=>Path.GetFileNameWithoutExtension(s.SourceFile!.Name),"Name of the Cue file, sans extension","Current","Old","Name"),
+        ];
         TagDict = new Dictionary<string, ParseToken>(StringComparer.Ordinal);
         foreach (var ptoken in Tags)
         {
