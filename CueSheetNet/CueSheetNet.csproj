@@ -19,12 +19,8 @@
 		</PackageReference>
 		<PackageReference Include="System.Memory" Version="4.5.5" Condition="'$(TargetFramework)' == 'netstandard2.0'" />
 		<PackageReference Include="Microsoft.Bcl.HashCode " Version="1.1.1" Condition="'$(TargetFramework)' == 'netstandard2.0'" />
-		<PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.5.3" Condition="'$(TargetFramework)' == 'netstandard2.0'" />
 		<PackageReference Include="System.Text.Encoding" Version="4.3.0" />
 		<PackageReference Include="System.Text.Encoding.CodePages" Version="8.0.0" />
 	</ItemGroup>
-	<PropertyGroup>
-		<FindDependenciesOfExternallyResolvedReferences>true</FindDependenciesOfExternallyResolvedReferences>
-	</PropertyGroup>
 	
 </Project>
