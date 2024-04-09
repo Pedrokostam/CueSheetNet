@@ -9,10 +9,8 @@ public class Logger
 {
     private delegate void LogDelegateType(LogEntry entry);
 
-    private readonly static Dictionary<Guid, ILogDevice> _logDevices = new();
-    //private readonly static Dictionary<Guid,ILogDevice> _logDevices = new();
-    public static ReadOnlyDictionary<Guid, ILogDevice> LogDevices => _logDevices.AsReadOnly();
-
+    private readonly static Dictionary<Guid, ILogDevice> _logDevices = [];
+    public static ReadOnlyDictionary<Guid, ILogDevice> LogDevices => new(_logDevices );
     /// <summary>
     /// The minimum value of LogLevel that can be reported by at least one LogDevice
     /// </summary>
