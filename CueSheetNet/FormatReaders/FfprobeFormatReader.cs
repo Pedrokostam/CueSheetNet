@@ -66,6 +66,7 @@ public sealed class FfprobeFormatReader : IAudioFileFormatReader
     }
     private static readonly char[] Separators = new char[] { '\r', '\n' };
 
+#if NET7_0_OR_GREATER
     private static T GetValue<T>(Dictionary<string, string> dict, string key, T default_val) where T : IParsable<T>
     {
         if (dict.TryGetValue(key, out var value))
@@ -77,19 +78,35 @@ public sealed class FfprobeFormatReader : IAudioFileFormatReader
             return result;
 
         }
-        else
-        {
-            return default_val;
-        }
+        return default_val;
     }
+#else
+    private static T GetValue<T>(Dictionary<string, string> dict, string key, T default_val)
+    {
+        if (dict.TryGetValue(key, out var value))
+        {
+            try
+            {
+                return (T)Convert.ChangeType(value, typeof(T), CultureInfo.InvariantCulture);
+            }
+            catch (Exception e) when (e is FormatException || e is InvalidCastException || e is OverflowException || e is ArgumentNullException)
+            {
+                return default_val;
+            }
+        }
+
+        return default_val;
+    }
+#endif
+
     public void ParseFfprobeOutput(StreamReader sreader, out FileMetadata data)
     {
         string content = sreader.ReadToEnd();
         Dictionary<string, string> ini = new Dictionary<string, string>(StringComparer.Ordinal);
-        var lines = content.Split(Separators, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        var lines = content.Split(Separators, StringSplitOptions.RemoveEmptyEntries);
         foreach (string line in lines)
         {
-            var parts = line.Split('=');
+            var parts = line.Trim().Split('=');
             ini.Add(parts[0], parts[1]);
         }
         int bit_depth = GetValue(ini, "bit_per_sample", -1);
@@ -97,13 +114,17 @@ public sealed class FfprobeFormatReader : IAudioFileFormatReader
         {
             bit_depth = GetValue(ini, "bits_per_raw_sample", -1);
         }
+        if (!ini.TryGetValue("format_name", out string? formatName))
+        {
+            formatName = FormatName;
+        }
         data = new FileMetadata(
             TimeSpan.FromSeconds(GetValue(ini, "duration", -1.0)),
             false,
             GetValue(ini, "sample_rate", -1),
             GetValue(ini, "channels", -1),
             bit_depth,
-            ini.GetValueOrDefault("format_name", FormatName));
+            formatName);
     }
 }
 
