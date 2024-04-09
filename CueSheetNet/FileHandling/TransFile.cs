@@ -70,7 +70,7 @@ internal record class TransFile
         }
         else
         {
-            Subfolder = Path.GetRelativePath(cueFolder.FullName, cueDir);
+            Subfolder = PathHelper.GetRelativePath(cueDir, cueFolder.FullName);
         }
         Type = type;
         SourceFile = source.SourceFile!;

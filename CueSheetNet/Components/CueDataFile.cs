@@ -80,7 +80,7 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
         if (string.Equals(absPath, _file?.FullName, StringComparison.OrdinalIgnoreCase))
         {
             Debug.WriteLine($"Skipped setting to the same file {_file}");
-            _file??=new FileInfo(absPath);
+            _file ??= new FileInfo(absPath);
             return;
         }
         Debug.WriteLine($"Setting file to {absPath}");
@@ -130,7 +130,7 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
     public string GetRelativePath()
     {
         string cueBase = ParentSheet.SourceFile?.DirectoryName ?? ".";
-        return Path.GetRelativePath(cueBase, NormalizedPath);
+        return PathHelper.GetRelativePath(NormalizedPath, cueBase);
     }
 
     public override bool Equals(object? obj)
