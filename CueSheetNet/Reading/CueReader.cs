@@ -225,7 +225,7 @@ public partial class CueReader
     private void ParseTrack(string line)
     {
         string num = GetKeyword(line, 6);// TRACK_
-        if (!int.TryParse(num, CultureInfo.InvariantCulture, out int number))
+        if (!int.TryParse(num, NumberStyles.Integer, CultureInfo.InvariantCulture, out int number))
         {
             number = Sheet!.LastTrack?.Number + 1 ?? 1;
             Logger.LogWarning("Invalid TRACK number at line {Line number}: \\\"{Line}\\\"\". Substituting {Substitute number:d2}", CurrentLineIndex, CurrentLine, number);
@@ -357,7 +357,8 @@ public partial class CueReader
             //Logger.LogError("Incorrect Gap format at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
             throw new FormatException($"Incorrect Gap format at line {CurrentLineIndex}: {line}");
         }
-        if (gapType.StartsWith("PRE"))
+        // the whole line is guarentedd to be uppercase
+        if (gapType.StartsWith("PRE", StringComparison.Ordinal))
             track.PreGap = cueTime;
         else
             track.PostGap = cueTime;
@@ -391,7 +392,7 @@ public partial class CueReader
                     Sheet.Composer = value;
                     break;
                 case "DATE":
-                    Sheet.Date = int.TryParse(value, CultureInfo.InvariantCulture, out int d) ? d : null;
+                    Sheet.Date = int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int d) ? d : null;
                     break;
                 case "DISCID":
                     Sheet.DiscID = value;
@@ -474,7 +475,7 @@ public partial class CueReader
     private static string GetKeyword(string s, int startIndex = 0, int maxSearchLength = -1)
     {
         if (maxSearchLength <= 0) maxSearchLength = s.Length;
-        maxSearchLength = Math.Clamp(maxSearchLength, 0, s.Length - startIndex);
+        maxSearchLength = maxSearchLength.Clamp(0, s.Length - startIndex);
         ReadOnlySpan<char> spanish = s.AsSpan(startIndex, maxSearchLength).TrimStart();
         for (int i = 0; i < spanish.Length; i++)
         {
@@ -498,7 +499,11 @@ public partial class CueReader
         }
         return string.Empty;
     }
-
+#if NET7_0_OR_GREATER
     [GeneratedRegex(@"(?<PATH>\w+)\s+(?<TYPE>\w*)", RegexOptions.Compiled,500)]
     private static partial Regex NonQuotedFileRegex();
+#else
+    private static readonly Regex NonQuotedFileRegexImpl = new(@"(?<PATH>\w+)\s+(?<TYPE>\w*)", RegexOptions.Compiled, TimeSpan.FromMilliseconds(500));
+    private static Regex NonQuotedFileRegex()=> NonQuotedFileRegexImpl;
+#endif
 }
