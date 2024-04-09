@@ -107,7 +107,7 @@ internal record class TransFile
     public bool CheckNewNameExists(DirectoryInfo directory)
     {
         string checker = Path.Combine(directory.FullName, NewNameWithExtension);
-        return Path.Exists(checker);
+        return File.Exists(checker);
     }
 
 }

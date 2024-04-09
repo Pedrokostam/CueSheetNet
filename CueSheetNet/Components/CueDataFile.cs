@@ -148,7 +148,7 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
         string? parentDir = Path.GetDirectoryName(absPath);
         watcher?.Dispose();
         watcher = null;
-        if (!Path.Exists(parentDir))
+        if (!Directory.Exists(parentDir))
         {
             return;
         }
