@@ -13,7 +13,8 @@ public class RelativePathTests
     {
         if (Environment.OSVersion.Platform != PlatformID.Win32NT)
         {
-            return Regex.Replace(path, @"^[a-zA-Z]:", "/opt");
+            var s = Regex.Replace(path, @"^[a-zA-Z]:", "/opt");
+            return s.Replace('\\', Path.DirectorySeparatorChar);
         }
         return path;
     }
