@@ -119,7 +119,14 @@ public readonly record struct InnerQuotation
         if (ints.Count == 0)
             return input;
         Span<char> inter = stackalloc char[input.Length];
+#if NET6_0_OR_GREATER
         input.CopyTo(inter);
+#else
+        for (int i = 0; i < input.Length; i++)
+        {
+            inter[i] = input[i];
+        }
+#endif
         //For the first half of the list
         for (int i = 0; i < ints.Count / 2; i++)
         {

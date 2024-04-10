@@ -9,7 +9,12 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CueSheetNet.Prototyper", "C
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CueSheetNet.Benchmark", "CueSheetNet.Benchmark\CueSheetNet.Benchmark.csproj", "{01FA9897-CE1D-4A1A-BC03-DCC278821634}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CueSheetNet.Tests", "CueSheetNet.Tests\CueSheetNet.Tests.csproj", "{B670AB5D-3CEA-4267-9A44-60DD50BA105A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CueSheetNet.Tests", "CueSheetNet.Tests\CueSheetNet.Tests.csproj", "{B670AB5D-3CEA-4267-9A44-60DD50BA105A}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{6D96E1D3-1A2E-41A6-A8C2-489DC5D14CFE}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -80,7 +80,7 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
         if (string.Equals(absPath, _file?.FullName, StringComparison.OrdinalIgnoreCase))
         {
             Debug.WriteLine($"Skipped setting to the same file {_file}");
-            _file??=new FileInfo(absPath);
+            _file ??= new FileInfo(absPath);
             return;
         }
         Debug.WriteLine($"Setting file to {absPath}");
@@ -113,7 +113,7 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
             {
                 normalizedPath = PathComparer.NormalizePath(_file);
             }
-            return normalizedPath;
+            return normalizedPath!;
         }
     }
 
@@ -121,7 +121,9 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
     {
         if (ReferenceEquals(this, other)) return true;
         if (other is null) return false;
-        if (!string.Equals(GetRelativePath(), other.GetRelativePath(), StringComparison.OrdinalIgnoreCase)) return false;
+        string thisRelativePath = GetRelativePath();
+        string otherRelativePath = other.GetRelativePath();
+        if (!string.Equals(thisRelativePath, otherRelativePath, StringComparison.OrdinalIgnoreCase)) return false;
         if (Type != other.Type) return false;
         if (Index != other.Index) return false;
         return true;
@@ -129,8 +131,7 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
 
     public string GetRelativePath()
     {
-        string cueBase = ParentSheet.SourceFile?.DirectoryName ?? ".";
-        return Path.GetRelativePath(cueBase, NormalizedPath);
+        return PathHelper.GetRelativePath(NormalizedPath, ParentSheet.SourceFile);
     }
 
     public override bool Equals(object? obj)
@@ -148,7 +149,7 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
         string? parentDir = Path.GetDirectoryName(absPath);
         watcher?.Dispose();
         watcher = null;
-        if (!Path.Exists(parentDir))
+        if (!Directory.Exists(parentDir))
         {
             return;
         }

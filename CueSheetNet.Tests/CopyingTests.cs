@@ -61,7 +61,9 @@ public class CopyingTests
 
     private static string CreateTempDirectory(params string[] parts)
     {
-        string[] p = parts.Prepend(Path.GetTempPath()).ToArray();
+        List<string> pp = new List<string>(parts);
+        pp.Insert(0, Path.GetTempPath());
+        string[] p = pp.ToArray();
         string output = Path.Combine(p);
         if (Directory.Exists(output))
         {
@@ -75,9 +77,9 @@ public class CopyingTests
     public void ConvertTest()
     {
         CueSheet sheet = CueSheet.Read(Utils.GetFile("CopyingTests", "Spandau Ballet - True.cue"));
-        string output= CreateTempDirectory("ConversionTest");
-        CuePackage.Convert(sheet, output,null,".Wav");
-        string converted =File.ReadAllText(Utils.GetFile("CopyingTests", "converted.txt"));
+        string output = CreateTempDirectory("ConversionTest");
+        CuePackage.Convert(sheet, output, null, ".Wav");
+        string converted = File.ReadAllText(Utils.GetFile("CopyingTests", "converted.txt"));
         string[] parts = converted.Split(';');
         string old = parts[0];
         string @new = parts[1].Trim();

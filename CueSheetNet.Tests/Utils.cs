@@ -16,8 +16,8 @@ internal static class Utils
     /// <returns></returns>
     public static IEnumerable<string> GetFiles(string pattern, params string[] subfolder)
     {
-        var p = subfolder.Prepend("TestItems").Prepend(Directory.GetCurrentDirectory());
-        string dir = Path.Join(p.ToArray());
+        var p = subfolder.Prepend("TestItems", Directory.GetCurrentDirectory());
+        string dir = Path.Combine(p);
         return Directory.EnumerateFiles(dir, pattern);
     }
     /// <summary>
@@ -27,7 +27,7 @@ internal static class Utils
     /// <returns></returns>
     public static string GetFile(params string[] parts)
     {
-        var p = parts.Prepend("TestItems").Prepend(Directory.GetCurrentDirectory());
-        return Path.Join(p.ToArray());
+        var p = parts.Prepend("TestItems", Directory.GetCurrentDirectory());
+        return Path.Combine(p);
     }
 }

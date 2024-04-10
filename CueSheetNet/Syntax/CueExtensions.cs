@@ -40,7 +40,11 @@ public static class Parser
         {
             strs.Add("SCMS");
         }
+#if NETCOREAPP2_0_OR_GREATER
         return string.Join(' ', strs);
+#else
+        return string.Join(" ", strs);
+#endif
     }
 }
 #pragma warning restore MA0048 // File name must match type name

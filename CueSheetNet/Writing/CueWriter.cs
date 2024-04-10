@@ -120,7 +120,7 @@ public sealed class CueWriter
     {
         FillStringBuilder(sheet);
         char[] tablicaCzarów = new char[Builder.Length];
-        Builder.CopyTo(0, tablicaCzarów, Builder.Length);
+        Builder.CopyTo(0, tablicaCzarów, 0,Builder.Length);
         return tablicaCzarów;
     }
 
@@ -241,7 +241,7 @@ public sealed class CueWriter
             encodingBaza = (Encoding)encodingBaza.Clone();
             encodingBaza.EncoderFallback = EncoderFallback.ExceptionFallback;
         }
-        if (encodingBaza.Preamble.Length == 0 && (encodingBaza is UTF32Encoding || encodingBaza is UnicodeEncoding))
+        if (encodingBaza.GetPreamble().Length == 0 && (encodingBaza is UTF32Encoding || encodingBaza is UnicodeEncoding))
         {
             Logger.LogWarning("Using non-standard encoding multi-byte encoding without byte order mark: {Encoding.BodyName}", encodingBaza);
         }
@@ -249,7 +249,7 @@ public sealed class CueWriter
     }
     public void SaveCueSheet(CueSheet sheet)
     {
-        ArgumentNullException.ThrowIfNull(sheet.SourceFile);
+        ExceptionHelper.ThrowIfNull(sheet.SourceFile);
         string textData = WriteToString(sheet);
         sheet.SourceFile.Directory!.Create();
         Encoding encoding = GetProperEncoding(sheet);

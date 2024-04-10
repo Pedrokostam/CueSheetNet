@@ -53,7 +53,7 @@ internal class CdFormatReader : IBinaryStreamFormatReader
             metadata = default;
             return false;
         }
-        (long numberOfSectors, long Remainder) = Math.DivRem(stream.Length, size);
+        long numberOfSectors = Math.DivRem(stream.Length, size, out long Remainder);
         if (Remainder > 0)
             throw new InvalidDataFormatException("Length of data is not a multiple of specified sector size");
         // each sector corresponds to 1 cue frame, so 75 of them is 1 second

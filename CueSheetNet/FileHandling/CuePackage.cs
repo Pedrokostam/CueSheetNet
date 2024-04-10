@@ -1,6 +1,5 @@
 ﻿using CueSheetNet.Logging;
 using CueSheetNet.NameParsing;
-using System.Collections.Immutable;
 using System.Globalization;
 using System.Text.RegularExpressions;
 
@@ -54,7 +53,11 @@ public static partial class CuePackage
                 compareNames.Add(new(file, sheet));
             }
         }
-        return compareNames.Order(PathComparer.Instance);//.Select((file, index) => new IndexedFile(FileType.Additional, index, (FileInfo)file)).ToArray();
+#if NET7_0_OR_GREATER
+        return compareNames.Order(PathComparer.Instance);
+#else
+        return compareNames.OrderBy(e => e.SourceFile, PathComparer.Instance);
+#endif
     }
 
     /// <summary>
@@ -64,7 +67,11 @@ public static partial class CuePackage
     private static HashSet<string> GetMatchStringHashset(CueSheet sheet)
     {
         string baseName = GetBaseNameForSearching(sheet);
+#if NET7_0_OR_GREATER
         string noSpaceName = baseName.Replace(" ", string.Empty, StringComparison.Ordinal);
+#else
+        string noSpaceName = baseName.Replace(" ", string.Empty);
+#endif
         string underscoreName = baseName.Replace(' ', '_');
         HashSet<string> hs = new(StringComparer.InvariantCultureIgnoreCase)
         {
@@ -98,10 +105,13 @@ public static partial class CuePackage
         }
         return name;
     }
-
+#if NET7_0_OR_GREATER
     [GeneratedRegex(@"%(?<property>[\w\s]+)%", RegexOptions.Compiled, 500)]
     private static partial Regex PropertyParser();
-
+#else
+    private static readonly Regex PropertyParserImpl = new(@"%(?<property>[\w\s]+)%", RegexOptions.Compiled, TimeSpan.FromMilliseconds(500));
+    private static Regex PropertyParser() => PropertyParserImpl;
+#endif
 
     /// <summary>
     /// Gets parent directory path of <paramref name="destinationWithPattern"/>, creates the directory on the disk and return its <see cref="DirectoryInfo"/>
@@ -119,7 +129,7 @@ public static partial class CuePackage
 
     private static void SaveModifiedCueSheet(CueSheet sheet, string filename, DirectoryInfo immediateParentDir, CueWriterSettings? settings)
     {
-        string sheetPath = Path.Join(immediateParentDir.FullName, filename);
+        string sheetPath = Path.Combine(immediateParentDir.FullName, filename);
         sheetPath = Path.ChangeExtension(sheetPath, "cue");
         CueWriter writer = new(settings);
         writer.SaveCueSheet(sheet, sheetPath);//If we can't save the sheet there, IOException happens and we stop without needing to reverse anything.
@@ -245,7 +255,7 @@ public static partial class CuePackage
     private static string GetNotNullName(string? path)
     {
         string? name = Path.GetFileNameWithoutExtension(path);
-        ArgumentException.ThrowIfNullOrEmpty(name);
+        ExceptionHelper.ThrowIfNullOrEmpty(name);
         return name;
     }
 
@@ -257,7 +267,7 @@ public static partial class CuePackage
     private static string GetNotNullDestination(string? path)
     {
         string destination = Path.GetDirectoryName(path)!;
-        ArgumentException.ThrowIfNullOrEmpty(destination);
+        ExceptionHelper.ThrowIfNullOrEmpty(destination);
         return destination;
     }
 
@@ -428,7 +438,7 @@ public static partial class CuePackage
                                    bool preserveSubfolders = true,
                                    IAudioConverter? converter = null)
     {
-        ArgumentException.ThrowIfNullOrEmpty(format);
+        ExceptionHelper.ThrowIfNullOrEmpty(format);
         format = format.Trim().Trim('.').ToLowerInvariant();
         converter ??= new RecipeConverter(sheet.SourceFile?.DirectoryName ?? destinationDirectory, "converted.txt");
         CueSheet activeSheet = sheet.Clone();

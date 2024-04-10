@@ -1,0 +1,7 @@
+﻿[*.cs]
+
+# CA1510: Use ArgumentNullException throw helper
+dotnet_diagnostic.CA1510.severity = silent
+
+# MA0015: Specify the parameter name in ArgumentException
+dotnet_diagnostic.MA0015.severity = silent

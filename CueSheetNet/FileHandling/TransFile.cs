@@ -63,14 +63,13 @@ internal record class TransFile
     }
     public TransFile(ICueFile source, DirectoryInfo? cueFolder, GeneralFileType type)
     {
-        string? cueDir = source.SourceFile?.DirectoryName;
-        if (cueFolder is null || cueDir is null)
+        if (cueFolder is null || source.SourceFile?.Directory is null)
         {
             Subfolder = ".";
         }
         else
         {
-            Subfolder = Path.GetRelativePath(cueFolder.FullName, cueDir);
+            Subfolder = PathHelper.GetRelativePath(source.SourceFile.Directory, cueFolder);
         }
         Type = type;
         SourceFile = source.SourceFile!;
@@ -85,7 +84,7 @@ internal record class TransFile
     }
     public string DestinationPath(DirectoryInfo destination)
     {
-        return Path.GetFullPath(Path.Join(destination.FullName, Subfolder, NewNameWithExtension));
+        return Path.GetFullPath(Path.Combine(destination.FullName, Subfolder, NewNameWithExtension));
     }
     public virtual MovedFile Move(DirectoryInfo destination)
     {
@@ -106,8 +105,8 @@ internal record class TransFile
     /// <returns>True if such file exists, False if not</returns>
     public bool CheckNewNameExists(DirectoryInfo directory)
     {
-        string checker = Path.Join(directory.FullName, NewNameWithExtension);
-        return Path.Exists(checker);
+        string checker = Path.Combine(directory.FullName, NewNameWithExtension);
+        return File.Exists(checker);
     }
 
 }
