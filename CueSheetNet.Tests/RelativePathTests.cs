@@ -16,36 +16,36 @@ public class RelativePathTests
         get
         {
             return [
-                [F(@"c:\foo\bar\baz\bom.mp3"), F(@"c:\foo\bar\baz\bom.mp3"), "bom.mp3"],
-                [F(@"c:\foo\bar\baz\bom.mp3"), D(@"c:\foo\bar\baz"), "bom.mp3"],
-                [F(@"c:\foo\bar\baz\bom.mp3"), D(@"c:\foo\bar\baz\"), "bom.mp3"],
-                [D(@"c:\foo\bar\baz"), D(@"c:\foo\bar\baz"), "."],
-                [D(@"c:\foo\bar\baz"), D(@"c:\foo\bar\baz\"), "."],
-                [D(@"c:\foo\bar\baz\"), D(@"c:\foo\bar\baz"), "."],
-                [D(@"c:\foo\bar\baz"), F(@"c:\foo\bar\baz\bom.mp3"), "."],
-                [D(@"c:\foo\bar\baz\"), F(@"c:\foo\bar\baz\bom.mp3"), "."],
-                [D(@"c:\foo\bar\mun\bun"), F(@"c:\foo\bar\baz\bom.mp3"), "../mun/bun/"],
-                [D(@"c:\foo\bar\mun\bun"), D(@"c:\foo\bar\baz\"), "../mun/bun/"],
-                [D(@"c:\foo\bar\mun\bun"), D(@"c:\foo\bar\baz"), "../mun/bun/"],
+                [F(@"c:\001\bar\baz\bom.mp3"), F(@"c:\001\bar\baz\bom.mp3"), "bom.mp3"],
+                [F(@"c:\002\bar\baz\bom.mp3"), D(@"c:\002\bar\baz"), "bom.mp3"],
+                [F(@"c:\003\bar\baz\bom.mp3"), D(@"c:\003\bar\baz\"), "bom.mp3"],
+                [D(@"c:\004\bar\baz"), D(@"c:\004\bar\baz"), "."],
+                [D(@"c:\005\bar\baz"), D(@"c:\005\bar\baz\"), "."],
+                [D(@"c:\006\bar\baz\"), D(@"c:\006\bar\baz"), "."],
+                [D(@"c:\007\bar\baz"), F(@"c:\007\bar\baz\bom.mp3"), "."],
+                [D(@"c:\008\bar\baz\"), F(@"c:\008\bar\baz\bom.mp3"), "."],
+                [D(@"c:\009\bar\mun\bun"), F(@"c:\009\bar\baz\bom.mp3"), "../mun/bun/"],
+                [D(@"c:\010\bar\mun\bun"), D(@"c:\010\bar\baz\"), "../mun/bun/"],
+                [D(@"c:\011\bar\mun\bun"), D(@"c:\011\bar\baz"), "../mun/bun/"],
                 
-                [D(@".\bar\mun\bun"), null!, "bar/mun/bun/"],
-                [D(@"bar\mun\bun"), null!, "bar/mun/bun/"],
-                [F(@".\bar\mun\bun.mp3"), null!, "bar/mun/bun.mp3"],
-                [F(@"bar\mun\bun.mp3"), null!, "bar/mun/bun.mp3"],
+                [D(@".\012\mun\bun"), null!, "012/mun/bun/"],
+                [D(@"013\mun\bun"), null!, "013/mun/bun/"],
+                [F(@".\014\mun\bun.mp3"), null!, "014/mun/bun.mp3"],
+                [F(@"015\mun\bun.mp3"), null!, "015/mun/bun.mp3"],
                 
-                [F(@"c:\foo\bar\baz\bom.mp3"), F(@"c:\goo\bar\baz\bom.mp3"), "../../../foo/bar/baz/bom.mp3"],
+                [F(@"c:\016\bar\baz\bom.mp3"), F(@"c:\goo\bar\baz\bom.mp3"), "../../../016/bar/baz/bom.mp3"],
 
-                [F(@"c:\foo\bar\baz\bom.mp3"), D(@"c:\goo\bar\baz\bom"), "../../../foo/bar/baz/bom.mp3"],
-                [F(@"c:\foo\bar\baz\bom.mp3"), D(@"c:\goo\bar\baz\bom\"), "../../../foo/bar/baz/bom.mp3"],
-                [F(@"c:\foo\bar/baz\bom.mp3"), D(@"c:\goo\bar\baz\bom/"), "../../../foo/bar/baz/bom.mp3"],
+                [F(@"c:\017\bar\baz\bom.mp3"), D(@"c:\goo\bar\baz\bom"),  "../../../../017/bar/baz/bom.mp3"],
+                [F(@"c:\018\bar\baz\bom.mp3"), D(@"c:\goo\bar\baz\bom\"), "../../../../018/bar/baz/bom.mp3"],
+                [F(@"c:\019\bar/baz\bom.mp3"), D(@"c:\goo\bar\baz\bom/"), "../../../../019/bar/baz/bom.mp3"],
 
-                [D(@"c:\foo\bar\baz\bom"), F(@"c:\goo\bar\baz\bom.mp3"), "../../../../foo/bar/baz/bom/"],
-                [D(@"c:\foo\bar\baz\bom"), F(@"c:\goo\bar\baz\bom.mp3"), "../../../foo/bar/baz/bom/"],
-                [D(@"c:\foo\bar/baz\bom"), F(@"c:\goo\bar\baz\bom.mp3"), "../../../foo/bar/baz/bom/"],
+                [D(@"c:\020\bar\baz\bom"), F(@"c:\goo\bar\baz\bom.mp3"), "../../../020/bar/baz/bom/"],
+                [D(@"c:\021\bar\baz\bom"), F(@"c:\goo\bar\baz\bom.mp3"), "../../../021/bar/baz/bom/"],
+                [D(@"c:\022\bar/baz\bom"), F(@"c:\goo\bar\baz\bom.mp3"), "../../../022/bar/baz/bom/"],
 
-                [D(@"c:\foo\bar\baz\bom\"), F(@"c:\goo\bar\baz\bom.mp3"), "../../../../foo/bar/baz/bom/"],
-                [D(@"c:\foo\bar\baz\bom\"), F(@"c:\goo\bar\baz\bom.mp3\"), "../../../../foo/bar/baz/bom/"],
-                [D(@"c:\foo\bar/baz\bom/"), F(@"c:\goo\bar\baz\bom.mp3/"), "../../../../foo/bar/baz/bom/"],
+                [D(@"c:\023\bar\baz\bom\"), F(@"c:\goo\bar\baz\bom.mp3"), "../../../023/bar/baz/bom/"],
+                [D(@"c:\024\bar\baz\bom\"), F(@"c:\goo\bar\baz\bom.mp3\"), "../../../../024/bar/baz/bom/"],
+                [D(@"c:\025\bar/baz\bom/"), F(@"c:\goo\bar\baz\bom.mp3/"), "../../../../025/bar/baz/bom/"],
                 ];
         }
     }
