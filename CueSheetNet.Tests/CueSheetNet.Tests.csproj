@@ -2,9 +2,13 @@
 
 	<PropertyGroup Condition="'$(OS)' != 'Windows_NT'">
 		<DefineConstants>NON_WINDOWS</DefineConstants>
+		<TargetFrameworks>net8.0;net6.0</TargetFrameworks>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
+		<DefineConstants>WINDOWS</DefineConstants>
+		<TargetFrameworks>net8.0;net462;net6.0</TargetFrameworks>
 	</PropertyGroup>
 	<PropertyGroup>
-		<TargetFrameworks>net8.0;net462;net6.0</TargetFrameworks>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<LangVersion>latest</LangVersion>
 		<IsPackable>false</IsPackable>
