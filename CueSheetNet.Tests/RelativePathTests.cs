@@ -9,8 +9,18 @@ namespace CueSheetNet.Tests;
 [TestClass]
 public class RelativePathTests
 {
-    private static FileInfo F(string path) => new FileInfo(path);
-    private static DirectoryInfo D(string path) => new DirectoryInfo(path);
+    private static string SystemizePath(string path)
+    {
+        if (Environment.OSVersion.Platform != PlatformID.Win32NT)
+        {
+            return Regex.Replace(path, @"^[a-zA-Z]:", "/opt");
+        }
+        return path;
+    }
+    private static FileInfo F(string path) => new(SystemizePath(path));
+
+    private static DirectoryInfo D(string path) => new(SystemizePath(path));
+
     public static IEnumerable<object[]> ReferencePaths
     {
         get
@@ -27,12 +37,12 @@ public class RelativePathTests
                 [D(@"c:\009\bar\mun\bun"), F(@"c:\009\bar\baz\bom.mp3"), "../mun/bun/"],
                 [D(@"c:\010\bar\mun\bun"), D(@"c:\010\bar\baz\"), "../mun/bun/"],
                 [D(@"c:\011\bar\mun\bun"), D(@"c:\011\bar\baz"), "../mun/bun/"],
-                
+
                 [D(@".\012\mun\bun"), null!, "012/mun/bun/"],
                 [D(@"013\mun\bun"), null!, "013/mun/bun/"],
                 [F(@".\014\mun\bun.mp3"), null!, "014/mun/bun.mp3"],
                 [F(@"015\mun\bun.mp3"), null!, "015/mun/bun.mp3"],
-                
+
                 [F(@"c:\016\bar\baz\bom.mp3"), F(@"c:\goo\bar\baz\bom.mp3"), "../../../016/bar/baz/bom.mp3"],
 
                 [F(@"c:\017\bar\baz\bom.mp3"), D(@"c:\goo\bar\baz\bom"),  "../../../../017/bar/baz/bom.mp3"],
