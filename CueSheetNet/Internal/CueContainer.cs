@@ -7,9 +7,9 @@ internal class CueContainer
 {
     public bool ParsingMode { get; set; }
     private CueSheet ParentSheet { get; }
-    public List<CueDataFile> Files { get; } = new();
-    public List<CueTrack> Tracks { get; } = new();
-    public List<CueIndexImpl> Indexes { get; } = new();
+    public List<CueDataFile> Files { get; } = [];
+    public List<CueTrack> Tracks { get; } = [];
+    public List<CueIndexImpl> Indexes { get; } = [];
     public void RefreshIndexIndices(int startFromFile = 0)
     {
         if (Files.Count <= startFromFile) return;

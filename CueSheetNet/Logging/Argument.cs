@@ -20,7 +20,7 @@ public record struct Argument(string Identifier, object? Object, string? Accesso
             return prop.GetValue(Object) ?? Object;
         MethodInfo? meth = ObjectType?.GetMethod(Accessor);
         if (meth is not null)
-            return meth.Invoke(Object, Array.Empty<Object?>()) ?? Object;
+            return meth.Invoke(Object, []) ?? Object;
         return Object;
     }
     //public override string ToString()

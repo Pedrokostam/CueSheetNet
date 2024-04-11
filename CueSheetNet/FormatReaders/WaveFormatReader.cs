@@ -6,7 +6,7 @@ internal sealed class WaveFormatReader : IAudioFileFormatReader
     private static readonly byte[] RIFF = "RIFF"u8.ToArray();//  0x52 0x49 0x46 0x46
     private static readonly byte[] WAVE = "WAVE"u8.ToArray();//  0x57 0x41 0x56 0x45
     public string FormatName { get; } = "Wave";
-    public string[] Extensions { get; } = new string[] { ".WAV", ".WAVE" };
+    public string[] Extensions { get; } = [".WAV", ".WAVE"];
     public bool ExtensionMatches(string fileName)
     {
         string ext = Path.GetExtension(fileName);

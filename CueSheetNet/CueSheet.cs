@@ -8,7 +8,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
 {
     #region Rem
 
-    internal readonly List<CueRemark> RawRems = new();
+    internal readonly List<CueRemark> RawRems = [];
 
     public ReadOnlyCollection<CueRemark> Remarks => RawRems.AsReadOnly();
 
@@ -45,7 +45,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
 
     #region Comments
 
-    internal readonly List<string> RawComments = new();
+    internal readonly List<string> RawComments = [];
 
     public ReadOnlyCollection<string> Comments => RawComments.AsReadOnly();
 
@@ -98,7 +98,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
     public CueDataFile AddFile(string path, FileType type) => Container.AddFile(path, type);
     public CueDataFile? LastFile => Container.Files.LastOrDefault();
 
-    private readonly List<ICueFile> _associatedFiles = new();
+    private readonly List<ICueFile> _associatedFiles = [];
     public ReadOnlyCollection<ICueFile> AssociatedFiles => _associatedFiles.AsReadOnly();
 
     #endregion
@@ -297,20 +297,20 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
     public CueIndex[] GetIndexesOfFile(int fileIndex)
     {
         (int start, int end) = Container.GetCueIndicesOfFile_Range(fileIndex);
-        if (start == end) return Array.Empty<CueIndex>();
+        if (start == end) return [];
         return Container.Indexes.Skip(start).Take(end - start).Select(x => new CueIndex(x)).ToArray();
     }
     internal (int Start, int End) GetTracksOfFile_Range(int fileIndex) => Container.GetCueIndicesOfTrack_Range(fileIndex);
     public CueTrack[] GetTracksOfFile(int fileIndex)
     {
         (int start, int end) = Container.GetCueTracksOfFile_Range(fileIndex);
-        if (start == end) return Array.Empty<CueTrack>();
+        if (start == end) return [];
         return Container.Tracks.Skip(start).Take(end - start).ToArray();
     }
     internal IEnumerable<CueTrack> GetTracksOfFile_IEnum(int fileIndex)
     {
         (int start, int end) = Container.GetCueTracksOfFile_Range(fileIndex);
-        if (start == end) return Array.Empty<CueTrack>();
+        if (start == end) return [];
         return Container.Tracks.Skip(start).Take(end - start);
     }
 
@@ -318,7 +318,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
     public CueIndex[] GetIndexesOfTrack(int trackIndex)
     {
         (int start, int end) = Container.GetCueIndicesOfTrack_Range(trackIndex);
-        if (start == end) return Array.Empty<CueIndex>();
+        if (start == end) return [];
         return Container.Indexes.Skip(start).Take(end - start).Select(x => (CueIndex)x).ToArray();
     }
 

@@ -17,7 +17,7 @@ public class RecipeConverter : IAudioConverter
         ExceptionHelper.ThrowIfNull(fileName );
         RecipeOutputFolder = outputFolder;
         OutputName = fileName;
-        Elements = new();
+        Elements = [];
         Append = append;
         OutputEncoding = encoding ?? new UTF8Encoding(false);
         Separator = separator;

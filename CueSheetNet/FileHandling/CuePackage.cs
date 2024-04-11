@@ -18,7 +18,7 @@ public static partial class CuePackage
         //If there are no files or directory of last file is null, return - no files
         if (sheet.LastFile is null || sheet.LastFile?.SourceFile?.DirectoryName is null)
         {
-            return Enumerable.Empty<CueExtraFile>();
+            return [];
         }
         // All variations of base name of cuesheet
         HashSet<string> matchStrings = GetMatchStringHashset(sheet);
@@ -27,7 +27,7 @@ public static partial class CuePackage
         DirectoryInfo? sheetDir = sheet.SourceFile?.Directory;
         //Where the last audio file is located
         DirectoryInfo? audioDir = sheet.LastFile.SourceFile.Directory;
-        IEnumerable<FileInfo> siblingFiles = audioDir?.EnumerateFiles() ?? Enumerable.Empty<FileInfo>();
+        IEnumerable<FileInfo> siblingFiles = audioDir?.EnumerateFiles() ?? [];
 
         // If audio dir and sheet dir are different, concatenate file sequences
         if (!PathComparer.Instance.Equals(sheetDir, audioDir)
@@ -162,7 +162,7 @@ public static partial class CuePackage
     private static List<TransFile> GetTransFiles(CueSheet sheet, string filename, bool preserveSubfolders, string? newAudioExtension)
     {
         DirectoryInfo? cueFolder = preserveSubfolders ? sheet.SourceFile?.Directory : null;
-        List<TransFile> transFiles = new();
+        List<TransFile> transFiles = [];
         IEnumerable<TransFile> transAudios = GetAudioTransFiles(sheet, filename, cueFolder);
         int fileIndex = 0;
         foreach (TransFile transAudio in transAudios)
@@ -191,7 +191,7 @@ public static partial class CuePackage
             }
             else
             {
-                ExtGroups[file.SourceFile.Extension] = new List<TransFile> { transFile };
+                ExtGroups[file.SourceFile.Extension] = [transFile];
             }
         }
         foreach (var ext in ExtGroups.Keys)
@@ -325,7 +325,7 @@ public static partial class CuePackage
                                           out List<TransFile> transFiles,
                                           preserveSubfolders, null);
 
-        List<FileInfo> inProgressCopied = new();
+        List<FileInfo> inProgressCopied = [];
         try
         {
             foreach (var item in transFiles)
@@ -374,7 +374,7 @@ public static partial class CuePackage
                                           out List<TransFile> transFiles,
                                           preserveSubfolders, null);
 
-        List<MovedFile> movedFileArchive = new();
+        List<MovedFile> movedFileArchive = [];
         try
         {
             foreach (var item in transFiles)
@@ -451,7 +451,7 @@ public static partial class CuePackage
                                           out List<TransFile> transFiles,
                                           preserveSubfolders, extension);
 
-        List<FileInfo> inProgressCopied = new();
+        List<FileInfo> inProgressCopied = [];
         try
         {
             foreach (var item in transFiles)

@@ -39,13 +39,13 @@ internal class CueEncodingTester
     /// <summary>
     /// Common encodings which are identified by a preamble
     /// </summary>
-    static readonly Encoding[] PreambledEncodings = new Encoding[] {
+    static readonly Encoding[] PreambledEncodings = [
         Encoding.UTF8,
         Encoding.UTF32,// Even though
         EncodingUTF32BE,
         Encoding.Unicode,
         Encoding.BigEndianUnicode,
-    };
+    ];
 
     /// <summary>
     /// Checks if the <paramref name="input"/> is larger or equal to <paramref name="minInclusive"/> and smaller or equal than <paramref name="maxInclusive"/>

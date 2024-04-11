@@ -108,7 +108,7 @@ public readonly record struct InnerQuotation
 
     private string ReplaceNonsymmetricalQuotes(string input)
     {
-        List<int> ints = new();
+        List<int> ints = [];
         int j = 0;
         for (int i = 0; i < input.Length; i++)
         {

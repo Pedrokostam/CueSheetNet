@@ -28,13 +28,13 @@ public partial class LogEntry
         Level = level;
         Timestamp = DateTime.Now;
         MessageTemplate = messageTemplate;
-        Identifiers = new List<string>();
+        Identifiers = [];
         if (args.Length == 0 && !messageTemplate.Contains('{', StringComparison.Ordinal))
         {
             //No objects, no curly brackets - no identifiers -- no need to check
             Message = messageTemplate;
             FormattingTemplate = string.Empty;
-            Elements = new(Array.Empty<Argument>());
+            Elements = new([]);
             return;
         }
 

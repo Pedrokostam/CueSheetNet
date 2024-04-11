@@ -9,7 +9,7 @@ public class ArrayLogger : ILogDevice
         _LogEntries.Add(entry);
     }
 
-    private readonly List<LogEntry> _LogEntries = new();
+    private readonly List<LogEntry> _LogEntries = [];
     public ReadOnlyCollection<LogEntry> LogEntries => _LogEntries.AsReadOnly();
 
     protected LogLevel _RequestedLogLevels;

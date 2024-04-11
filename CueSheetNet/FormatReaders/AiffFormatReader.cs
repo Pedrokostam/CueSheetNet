@@ -4,7 +4,7 @@ using static System.Buffers.Binary.BinaryPrimitives;
 namespace CueSheetNet.FileReaders;
 public sealed class AiffFormatReader : IAudioFileFormatReader
 {
-    private static readonly string[] extensions = new string[] { ".AIFF", ".AIF", ".AIFC." };
+    private static readonly string[] extensions = [".AIFF", ".AIF", ".AIFC."];
     private static readonly string formatName = "Aiff";
     private static readonly byte[] FORM = "FORM"u8.ToArray();
     private static readonly byte[] COMM = "COMM"u8.ToArray();

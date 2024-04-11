@@ -5,9 +5,9 @@ namespace CueSheetNet.FileReaders;
 internal class CdFormatReader : IBinaryStreamFormatReader
 {
     public string FormatName { get; } = "BINARY";
-    public string[] Extensions { get; } = new string[] { ".BIN", ".MM2", ".ISO", ".MOT", ".IMG" };
+    public string[] Extensions { get; } = [".BIN", ".MM2", ".ISO", ".MOT", ".IMG"];
 
-    private static readonly byte[] Header = { 0x0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00 }; // 0
+    private static readonly byte[] Header = [0x0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00]; // 0
     public bool ExtensionMatches(string fileName)
     {
         string ext = Path.GetExtension(fileName);

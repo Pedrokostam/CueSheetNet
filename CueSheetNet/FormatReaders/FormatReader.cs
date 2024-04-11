@@ -7,11 +7,11 @@ static public class FormatReader
 {
     static FormatReader()
     {
-        BaseAudioFileReaders = new IAudioFileFormatReader[]
-        {
+        BaseAudioFileReaders =
+        [
             new FlacFormatReader(),
             new WaveFormatReader(),
-        };
+        ];
         AudioFileReaders = new List<IAudioFileFormatReader>(BaseAudioFileReaders);
         CdReader = new();
         BaseFallbackReader = new FfprobeFormatReader();

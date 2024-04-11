@@ -23,7 +23,7 @@ public static class Parser
     public static string ToCueCompatible(this TrackFlags fl)
     {
         if (fl == TrackFlags.None) return string.Empty;
-        List<string> strs = new();
+        List<string> strs = [];
         if (fl.HasFlag(TrackFlags.DigitalCopyPermitted))
         {
             strs.Add("DCP");

@@ -19,7 +19,7 @@ public sealed class FfprobeFormatReader : IAudioFileFormatReader
         }
     }
     private static readonly string fFormatName = "Dependent";
-    private static readonly string[] extensions = new string[] { "*" };
+    private static readonly string[] extensions = ["*"];
     public string FormatName => fFormatName;
     public string[] Extensions => extensions;
     public bool ExtensionMatches(string fileName) => true;
@@ -59,7 +59,7 @@ public sealed class FfprobeFormatReader : IAudioFileFormatReader
         metadata = default;
         return false;
     }
-    private static readonly char[] Separators = new char[] { '\r', '\n' };
+    private static readonly char[] Separators = ['\r', '\n'];
 
 #if NET7_0_OR_GREATER
     private static T GetValue<T>(Dictionary<string, string> dict, string key, T default_val) where T : IParsable<T>

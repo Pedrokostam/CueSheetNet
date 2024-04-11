@@ -28,7 +28,7 @@ public partial class CueReader
     public char Quotation { get; set; } = DefaultQuotation;
     private Encoding? Encoding { get; set; }
 
-    readonly List<bool> TrackHasZerothIndex = new();
+    readonly List<bool> TrackHasZerothIndex = [];
     private void Reset(Encoding? encoding = null)
     {
         Sheet = null;

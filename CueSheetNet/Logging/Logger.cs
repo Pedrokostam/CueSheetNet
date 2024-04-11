@@ -96,48 +96,48 @@ public class Logger
     {
         if (CheckLogLevelIgnored(level))
             return;
-        Log(level, message, Array.Empty<object?>());
+        Log(level, message, []);
     }
     public static void Log<T1>(LogLevel level, string messageTemplate, T1 arg1)
     {
         if (CheckLogLevelIgnored(level))
             return;
-        object?[] objs = new object?[] { arg1 };
+        object?[] objs = [arg1];
         Log(level, messageTemplate, objs);
     }
     public static void Log<T1, T2>(LogLevel level, string messageTemplate, T1 arg1, T2 arg2)
     {
         if (CheckLogLevelIgnored(level))
             return;
-        object?[] objs = new object?[] { arg1, arg2 };
+        object?[] objs = [arg1, arg2];
         Log(level, messageTemplate, objs);
     }
     public static void Log<T1, T2, T3>(LogLevel level, string messageTemplate, T1 arg1, T2 arg2, T3 arg3)
     {
         if (CheckLogLevelIgnored(level))
             return;
-        object?[] objs = new object?[] { arg1, arg2, arg3 };
+        object?[] objs = [arg1, arg2, arg3];
         Log(level, messageTemplate, objs);
     }
     public static void Log<T1, T2, T3, T4>(LogLevel level, string messageTemplate, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
     {
         if (CheckLogLevelIgnored(level))
             return;
-        object?[] objs = new object?[] { arg1, arg2, arg3, arg4 };
+        object?[] objs = [arg1, arg2, arg3, arg4];
         Log(level, messageTemplate, objs);
     }
     public static void Log<T1, T2, T3, T4, T5>(LogLevel level, string messageTemplate, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
     {
         if (CheckLogLevelIgnored(level))
             return;
-        object?[] objs = new object?[] { arg1, arg2, arg3, arg4, arg5, };
+        object?[] objs = [arg1, arg2, arg3, arg4, arg5,];
         Log(level, messageTemplate, objs);
     }
     public static void Log<T1, T2, T3, T4, T5, T6>(LogLevel level, string messageTemplate, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
     {
         if (CheckLogLevelIgnored(level))
             return;
-        object?[] objs = new object?[] { arg1, arg2, arg3, arg4, arg5, arg6 };
+        object?[] objs = [arg1, arg2, arg3, arg4, arg5, arg6];
         Log(level, messageTemplate, objs);
     }
     public static void Log<T>(LogLevel level, string messageTemplate, params T[] args)

@@ -12,7 +12,7 @@ public class Benchmark
 {
     [Params(10,1000,1000000)]
     public int Size { get; set; }
-    public IEnumerable<decimal> A { get; set; }=Enumerable.Empty<decimal>();
+    public IEnumerable<decimal> A { get; set; }= [];
     public IEnumerable<decimal> B()
     {
         for (int i = 0; i < Size; i++)

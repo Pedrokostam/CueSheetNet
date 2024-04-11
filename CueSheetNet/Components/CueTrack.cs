@@ -200,7 +200,7 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemCommentable
     }
     #endregion
     #region Comments
-    private readonly List<string> RawComments = new();
+    private readonly List<string> RawComments = [];
     public ReadOnlyCollection<string> Comments => RawComments.AsReadOnly();
     public void AddComment(IEnumerable<string> comments)
     {
