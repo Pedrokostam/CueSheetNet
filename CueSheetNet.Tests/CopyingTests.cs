@@ -1,10 +1,5 @@
 ﻿using CueSheetNet.FileHandling;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CueSheetNet.Tests;
 
@@ -20,7 +15,7 @@ public class CopyingTests
         Dictionary<string, byte[]> hashes = new Dictionary<string, byte[]>(StringComparer.OrdinalIgnoreCase);
         foreach (var file in files)
         {
-            if (Path.GetExtension(file).ToLowerInvariant() == ".cue")
+            if (Path.GetExtension(file).Equals(".cue", StringComparison.InvariantCultureIgnoreCase))
             {
                 continue;
             }
@@ -31,11 +26,11 @@ public class CopyingTests
         string output = CreateTempDirectory("CueCopying");
 
         sheet.CopyPackage(output, null);
-        CueSheet copied = CueSheet.Read(Path.Combine(Path.GetTempPath(), "CueCopying", sheet.SourceFile.Name));
+        CueSheet copied = CueSheet.Read(Path.Combine(Path.GetTempPath(), "CueCopying", sheet.SourceFile!.Name));
         Assert.AreEqual(copied, sheet);
         foreach (var file in Directory.EnumerateFiles(output))
         {
-            if (Path.GetExtension(file).ToLowerInvariant() == ".cue")
+            if (Path.GetExtension(file).Equals(".cue", StringComparison.InvariantCultureIgnoreCase))
             {
                 continue;
             }
@@ -49,7 +44,7 @@ public class CopyingTests
         Assert.AreEqual(copied, moved);
         foreach (var file in Directory.EnumerateFiles(outputMove))
         {
-            if (Path.GetExtension(file).ToLowerInvariant() == ".cue")
+            if (Path.GetExtension(file).Equals(".cue", StringComparison.InvariantCultureIgnoreCase))
             {
                 continue;
             }
@@ -63,7 +58,7 @@ public class CopyingTests
     {
         List<string> pp = new List<string>(parts);
         pp.Insert(0, Path.GetTempPath());
-        string[] p = pp.ToArray();
+        string[] p = [.. pp];
         string output = Path.Combine(p);
         if (Directory.Exists(output))
         {
