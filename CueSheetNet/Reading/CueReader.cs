@@ -110,7 +110,7 @@ public partial class CueReader
     /// <returns>Parsed <see cref="CueSheet"/></returns>
     public CueSheet ParseCueSheet(ReadOnlySpan<char> cueContentChars)
     {
-#if NETCOREAPP2_1_OR_GREATER
+#if NETCOREAPP2_1_OR_GREATER || NETSTANDARD2_1_OR_GREATER // Span ctor for string introduced in NET Core 2.1 and NETStandard2.1
         string s = new string(cueContentChars);
 #else
         string s = new(cueContentChars.ToArray());
@@ -503,7 +503,7 @@ public partial class CueReader
         }
         return string.Empty;
     }
-#if NET7_0_OR_GREATER
+#if NET7_0_OR_GREATER // GeneratedRegex introduces in NET7
     [GeneratedRegex(@"(?<PATH>\w+)\s+(?<TYPE>\w*)", RegexOptions.Compiled,500)]
     private static partial Regex NonQuotedFileRegex();
 #else

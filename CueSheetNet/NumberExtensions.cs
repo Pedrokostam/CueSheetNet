@@ -44,7 +44,7 @@ internal static class NumberExtensions
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int Clamp(this int number, int min, int max)
     {
-#if NET5_0_OR_GREATER
+#if NETCOREAPP2_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
         return Math.Clamp(number, min, max);
 #else
         if (min > max)

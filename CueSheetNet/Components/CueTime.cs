@@ -12,7 +12,7 @@ public readonly record struct CueTime
     : IComparable<CueTime>
     , IComparable
     , IFormattable
-#if NET7_0_OR_GREATER
+#if NET7_0_OR_GREATER // static interface members introduces in NET7
 // Static interface members were introduces in NET7.0
     , IParsable<CueTime>
     , ISpanParsable<CueTime>
@@ -283,11 +283,11 @@ public readonly record struct CueTime
     /// <param name="start">Inclusive start of slice</param>
     /// <param name="end">Exclusive end of slice</param>
     /// <returns>String for NetStandard2.0, ReadOnlySpan elsewhere</returns>
-#if NET7_0_OR_GREATER
-    private static ReadOnlySpan<char> Slice(ReadOnlySpan<char> span,int start, int end) => span[start..end];
+#if !NETSTANDARD2_0 // int.Parse cannot use Spans only in NETSTANDARD2.0
+    private static ReadOnlySpan<char> Slice(ReadOnlySpan<char> span, int start, int end) => span[start..end];
 #else
-    private static string Slice(ReadOnlySpan<char> span, int start, int end) => span[start..end].ToString();
     // While System.Memory adds range slices, we still need to a return string, because int.TryParse requires it.
+    private static string Slice(ReadOnlySpan<char> span, int start, int end) => span[start..end].ToString();
 #endif
 
     /// <summary>
@@ -516,7 +516,7 @@ public readonly record struct CueTime
     #endregion
 
     #region Explicit Interfaces
-#if NET7_0_OR_GREATER
+#if NET7_0_OR_GREATER // static interface members introduces in NET7
     static CueTime IParsable<CueTime>.Parse(string s, IFormatProvider? provider) => Parse(s);
 
     static bool IParsable<CueTime>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out CueTime result) => TryParse(s, out result);

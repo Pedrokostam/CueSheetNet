@@ -109,7 +109,7 @@ internal sealed class CueEncodingTester(Stream stream, CueSource source)
     private Encoding DetectUtf8Heuristically(List<byte> bajtos)
     {
         // The list will not be modified so it is safe to access it as span
-#if NET5_0_OR_GREATER
+#if NET5_0_OR_GREATER // CollectionsMarshal.AsSpan introduces in NET5
         Span<byte> allBytes = CollectionsMarshal.AsSpan(bajtos);
         int length = allBytes.Length - 4;
 #else

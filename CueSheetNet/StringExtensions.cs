@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace CueSheetNet;
 internal static class StringExtensions
 {
-#if !NETCOREAPP2_0_OR_GREATER
+#if !NETCOREAPP2_0_OR_GREATER || !NETSTANDARD2_1_OR_GREATER // String operations introduced in NET Core 2.0 and NETStandard 2.1
     /// <summary>
     /// Extension method for below NETCORE 2.0 (StringComparison parameter was missing).
     /// <para/>
@@ -80,6 +80,16 @@ internal static class StringExtensions
             _ => throw new NotSupportedException(),
         };
         return comparer.GetHashCode(input);
+    }
+
+    public static void CopyTo(this string input, Span<char> destination)
+    {
+        if(destination.Length < input.Length)
+            throw new ArgumentException("Target span is too short",nameof(destination));    
+        for (int i = 0; i < input.Length; i++)
+        {
+            destination[i] = input[i];
+        }
     }
 
     public static bool StartsWith(this string input, char character)

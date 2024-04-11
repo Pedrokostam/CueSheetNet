@@ -47,7 +47,7 @@ public static class PathHelper
     }
     private static string GetRelativePath(string target, string? basePath)
     {
-#if NET7_0_OR_GREATER
+#if NETCOREAPP2_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER // GetRelativePath introduced in NET Core 2.0 and NETStandard2.1
         return Path.GetRelativePath(basePath ?? ".", target);
 #else
         // base has to end with a separator

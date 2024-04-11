@@ -6,7 +6,7 @@ namespace CueSheetNet.FileHandling;
 
 internal sealed partial class PathComparer : EqualityComparer<FileSystemInfo>, IComparer<FileSystemInfo>, IComparer<FileInfo>, IComparer<ICueFile>, IEqualityComparer<ICueFile>
 {
-#if NET7_0_OR_GREATER
+#if NET7_0_OR_GREATER // GeneratedRegex introduces in NET7
     [GeneratedRegex(@"[\\/]",RegexOptions.Compiled,500)]
     private static partial Regex Morpher();
     [GeneratedRegex(@"[\\/]+$", RegexOptions.Compiled, 500)]

@@ -42,7 +42,7 @@ public static class Parser
         {
             strs.Add("SCMS");
         }
-#if NETCOREAPP2_0_OR_GREATER
+#if NETCOREAPP2_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER // string.Join(char,IEnumerable<string>) added in NET Core 2.1 and NETStandard2.1
         return string.Join(' ', strs);
 #else
         return string.Join(" ", strs);

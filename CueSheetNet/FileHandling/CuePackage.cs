@@ -53,10 +53,12 @@ public static partial class CuePackage
                 compareNames.Add(new(file, sheet));
             }
         }
-#if NET7_0_OR_GREATER
+#if NET7_0_OR_GREATER // IEnumerable.Order(IComparer) introduced in NET7
         return compareNames.Order(PathComparer.Instance);
-#else
+#elif NETSTANDARD2_0 || NETSTANDARD2_1
         return compareNames.OrderBy(e => e.SourceFile, PathComparer.Instance);
+#else
+#error "Not supported target"
 #endif
     }
 
@@ -67,11 +69,7 @@ public static partial class CuePackage
     private static HashSet<string> GetMatchStringHashset(CueSheet sheet)
     {
         string baseName = GetBaseNameForSearching(sheet);
-#if NET7_0_OR_GREATER
         string noSpaceName = baseName.Replace(" ", string.Empty, StringComparison.Ordinal);
-#else
-        string noSpaceName = baseName.Replace(" ", string.Empty,StringComparison.Ordinal);
-#endif
         string underscoreName = baseName.Replace(' ', '_');
         HashSet<string> hs = new(StringComparer.InvariantCultureIgnoreCase)
         {

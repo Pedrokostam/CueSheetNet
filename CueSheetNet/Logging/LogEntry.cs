@@ -124,7 +124,7 @@ public partial class LogEntry
 
         return i;
     }
-#if NET7_0_OR_GREATER
+#if NET7_0_OR_GREATER // GeneratedRegex introduces in NET7
     [GeneratedRegex(@"\(.*\)", RegexOptions.Compiled, 500)]
     private static partial Regex ParenthesisRegex();
 #else

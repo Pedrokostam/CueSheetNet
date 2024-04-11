@@ -5,9 +5,10 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace CueSheetNet;
-#if NETSTANDARD2_0
+#if !NET6_0_OR_GREATER // SequenceEqual with IComparer were introduced in NET 6
 internal static class SpanExtensions
 {
+    // SequenceEqual with IComparer were introduced in NET 6
     public static bool SequenceEqual<T>(this Span<T> dataBuffer, ReadOnlySpan<T> template, IEqualityComparer<T>? comparer = null) where T : notnull
     {
         return ((ReadOnlySpan<T>)dataBuffer).SequenceEqual(template, comparer);
