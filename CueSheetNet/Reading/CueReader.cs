@@ -8,6 +8,7 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
+using static System.FormattableString;
 namespace CueSheetNet;
 public partial class CueReader
 {
@@ -325,6 +326,7 @@ public partial class CueReader
         if (!int.TryParse(number, NumberStyles.Integer, CultureInfo.InvariantCulture, out int num))
         {
             //Logger.LogError("Incorrect Index number format at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
+            var t =StringExtensions.Format($"Incorrect Index number format at line {CurrentLineIndex}: {line}");
             throw new FormatException($"Incorrect Index number format at line {CurrentLineIndex}: {line}");
         }
         if (!CueTime.TryParse(line.AsSpan(6 + number.Length + 1), out CueTime cueTime))
@@ -359,7 +361,7 @@ public partial class CueReader
         if (!CueTime.TryParse(line.AsSpan(6 + type.Length + 1), out CueTime cueTime))
         {
             //Logger.LogError("Incorrect Gap format at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
-            throw new FormatException($"Incorrect Gap format at line {CurrentLineIndex}: {line}");
+            throw new FormatException(Invariant($"Incorrect Gap format at line {CurrentLineIndex}: {line}"));
         }
         // the whole line is guarentedd to be uppercase
         if (gapType.StartsWith("PRE", StringComparison.Ordinal))

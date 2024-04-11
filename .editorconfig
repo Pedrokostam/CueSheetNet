@@ -8,3 +8,6 @@ dotnet_diagnostic.MA0015.severity = silent
 
 # IDE0090: Use 'new(...)'
 dotnet_diagnostic.IDE0090.severity = silent
+
+# MA0076: Do not use implicit culture-sensitive ToString in interpolated strings
+dotnet_diagnostic.MA0076.severity=silent
