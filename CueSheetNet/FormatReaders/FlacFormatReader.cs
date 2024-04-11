@@ -69,7 +69,7 @@ internal sealed class FlacFormatReader : IAudioBinaryStreamFormatReader
             SampleRate = samples,
             Channels = numChannels,
             BitDepth = bitsPerSample,
-            FormatName = FormatName
+            FormatName = FormatName,
         };
         return true;
     }

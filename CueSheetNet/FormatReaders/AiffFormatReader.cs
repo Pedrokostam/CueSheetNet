@@ -88,7 +88,7 @@ public sealed class AiffFormatReader : IAudioFileFormatReader
             SampleRate = sampleRate,
             Channels = numChannels,
             BitDepth = bitDepth,
-            FormatName = FormatName
+            FormatName = FormatName,
         };
         return true;
     }

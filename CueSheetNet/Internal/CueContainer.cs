@@ -57,7 +57,7 @@ internal class CueContainer
     {
         CueDataFile cf = new(ParentSheet, filePath, type)
         {
-            Index = Files.Count
+            Index = Files.Count,
         };
         Files.Add(cf);
         return cf;
@@ -75,7 +75,7 @@ internal class CueContainer
         if (fileIndex < 0) fileIndex = Files.Count - 1;
         CueTrack cf = new(Files[fileIndex], type)
         {
-            Index = Tracks.Count == 0 ? 0 : Tracks[^1].Index + 1
+            Index = Tracks.Count == 0 ? 0 : Tracks[^1].Index + 1,
         };
         cf.Offset = parsedIndex - cf.Number;
         Tracks.Add(cf);

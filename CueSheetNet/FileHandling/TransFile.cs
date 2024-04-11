@@ -11,7 +11,7 @@ internal record class TransFile
     {
         Cue,
         Audio,
-        Extra
+        Extra,
     }
 
     public string Subfolder { get; }

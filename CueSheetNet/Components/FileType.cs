@@ -11,6 +11,6 @@ public enum FileType
     /// <summary>Little-Endian binary</summary>
     BINARY = 1 << 3,
     /// <summary>Big-Endian binary</summary>
-    MOTOROLA = 1 << 4
+    MOTOROLA = 1 << 4,
 }
 
