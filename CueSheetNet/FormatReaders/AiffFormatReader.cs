@@ -37,7 +37,7 @@ public sealed class AiffFormatReader : IAudioFileFormatReader
         return four.SequenceEqual(AIFF) || four.SequenceEqual(AIFC);
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "MA0060:The value returned by Stream.Read/Stream.ReadAsync is not used", Justification = "Length of stream is ensured at the start of method")]
+    //[System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "MA0060:The value returned by Stream.Read/Stream.ReadAsync is not used", Justification = "Length of stream is ensured at the start of method")]
     public bool ReadMetadata(Stream stream, out FileMetadata metadata)
     {
         /*
@@ -71,14 +71,14 @@ public sealed class AiffFormatReader : IAudioFileFormatReader
         {
             Logger.LogWarning("Mismatched declared file length vs actual");
         }
-        stream.Seek(20, SeekOrigin.Begin); // at num_channels
-        stream.Read(two);
+        _ = stream.Seek(20, SeekOrigin.Begin); // at num_channels
+        _ = stream.Read(two);
         Int16 numChannels = ReadInt16BigEndian(two);
-        stream.Read(four);
+        _ = stream.Read(four);
         UInt32 samples = ReadUInt32BigEndian(four);
-        stream.Read(two);
+        _ = stream.Read(two);
         Int16 bitDepth = ReadInt16BigEndian(two);
-        stream.Read(ten);
+        _ = stream.Read(ten);
         int sampleRate = (int)ReadAppleExtended80(ten);
         double seconds = samples / (double)sampleRate;
         metadata = new FileMetadata()
