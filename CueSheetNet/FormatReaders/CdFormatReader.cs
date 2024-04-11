@@ -58,7 +58,7 @@ internal class CdFormatReader : IBinaryStreamFormatReader
             throw new InvalidDataFormatException("Length of data is not a multiple of specified sector size");
         // each sector corresponds to 1 cue frame, so 75 of them is 1 second
         TimeSpan duration = TimeSpan.FromSeconds(numberOfSectors / 75.0);
-        bool hasAudio = trackTypes.Where(x => x.ContainsAudioData).Any();
+        bool hasAudio = trackTypes.Any(x => x.ContainsAudioData);
         metadata = new FileMetadata(
             duration,
 Binary: true,
