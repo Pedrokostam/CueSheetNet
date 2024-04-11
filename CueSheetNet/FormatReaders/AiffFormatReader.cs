@@ -19,7 +19,6 @@ public sealed class AiffFormatReader : IAudioFileFormatReader
         return extensions.Contains(ext, StringComparer.OrdinalIgnoreCase);
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "MA0060:The value returned by Stream.Read/Stream.ReadAsync is not used", Justification = "Length of stream is ensured in calling method")]
     public bool FileSignatureMatches(Stream stream)
     {
         /*
@@ -30,11 +29,11 @@ public sealed class AiffFormatReader : IAudioFileFormatReader
          */
         stream.Seek(0, SeekOrigin.Begin);
         Span<byte> four = stackalloc byte[4];
-        stream.Read(four);
+        _ = stream.Read(four);
         if (!four.SequenceEqual(FORM))
             return false;
         stream.Seek(4, SeekOrigin.Current); // skip bytes with filesize
-        stream.Read(four);
+        _ = stream.Read(four);
         return four.SequenceEqual(AIFF) || four.SequenceEqual(AIFC);
     }
 
