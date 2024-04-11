@@ -8,16 +8,12 @@ public static partial class CueTreeFormatter
 #if NET7_0_OR_GREATER
     [GeneratedRegex(@"%(?<property>[\w\s]+)%",RegexOptions.Compiled, 500)]
     private static partial Regex PropertyParser();
-    [GeneratedRegex(@"^[\\/]+$",RegexOptions.Compiled, 500)]
-    private static partial Regex SeparatorChecker();
 
     [GeneratedRegex(@"[\\/]+",RegexOptions.Compiled,500)]
     private static partial Regex SeparatorNormalizer();
 #else
     private static readonly Regex PropertyParserImpl = new(@"%(?<property>[\w\s]+)%", RegexOptions.Compiled, TimeSpan.FromMilliseconds(500));
     private static Regex PropertyParser() => PropertyParserImpl;
-    private static readonly Regex SeparatorCheckerImpl = new(@"^[\\/]+$", RegexOptions.Compiled, TimeSpan.FromMilliseconds(500));
-    private static Regex SeparatorChecker() => SeparatorCheckerImpl;
 
     private static readonly Regex SeparatorNormalizerImpl = new(@"[\\/]+", RegexOptions.Compiled, TimeSpan.FromMilliseconds(500));
     private static Regex SeparatorNormalizer() => SeparatorNormalizerImpl;
