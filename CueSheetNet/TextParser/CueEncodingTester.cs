@@ -104,6 +104,7 @@ internal class CueEncodingTester
         List<byte> b = GetPotentialDiacritizedLines(Stream);
         return DetectUtf8Heuristically(b);
     }
+    [SuppressMessage("Design", "MA0051:Method is too long", Justification = "Most of the length are comments")]
     private Encoding DetectUtf8Heuristically(List<byte> bajtos)
     {
         // The list will not be modified so it is safe to access it as span
@@ -178,13 +179,10 @@ internal class CueEncodingTester
         {
             return new UTF8Encoding(false);
         }
-        else
-        {
-            // Quite difficult if not impossible to guess which regional encoding is being used.
-            // We're assuming it codepage 1252, as it is quite common for english text. It'allBytes actually the most common encoding in the net, save for utf
-            Encoding enc = Encoding.GetEncoding(1252);
-            return enc;
-        }
+        // Quite difficult if not impossible to guess which regional encoding is being used.
+        // We're assuming it codepage 1252, as it is quite common for english text. It'allBytes actually the most common encoding in the net, save for utf
+        Encoding enc = Encoding.GetEncoding(1252);
+        return enc;
     }
     /// <summary>
     /// Scans stream looking for certain cue keywords. When found, takes everything after the keyword until newline. Repeats until end of stream.
@@ -245,19 +243,7 @@ internal class CueEncodingTester
                     continue;
             }
             int read = fs.Read(dataBuffer);
-#if NET6_0_OR_GREATER
             bool sequenceEqual = dataBuffer.SequenceEqual(templateSpan, byteCaseComparer);
-#else
-            bool sequenceEqual = dataBuffer.Length == templateSpan.Length;
-            if (sequenceEqual)
-            {
-                for (int i = 0; i < dataBuffer.Length; i++)
-                {
-                    sequenceEqual = byteCaseComparer.Equals(dataBuffer[i], templateSpan[i]);
-                    if (!sequenceEqual) break;
-                }
-            }
-#endif
             if (read == dataBuffer.Length && sequenceEqual)
             {
                 AddUntilNewLine(fs, bytes);
