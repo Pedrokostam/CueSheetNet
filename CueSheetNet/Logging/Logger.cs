@@ -146,7 +146,6 @@ public class Logger
             return;
         Log(level, messageTemplate, args.Cast<object?>().ToArray());
     }
-    private static readonly object Locker = new();
     public static void Log(LogLevel level, string messageTemplate, params object?[] args)
     {
         if (CheckLogLevelIgnored(level))

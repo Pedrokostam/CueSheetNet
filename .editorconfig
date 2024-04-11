@@ -5,3 +5,6 @@ dotnet_diagnostic.CA1510.severity = silent
 
 # MA0015: Specify the parameter name in ArgumentException
 dotnet_diagnostic.MA0015.severity = silent
+
+# IDE0090: Use 'new(...)'
+dotnet_diagnostic.IDE0090.severity = silent

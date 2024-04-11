@@ -70,7 +70,7 @@ public static partial class CuePackage
 #if NET7_0_OR_GREATER
         string noSpaceName = baseName.Replace(" ", string.Empty, StringComparison.Ordinal);
 #else
-        string noSpaceName = baseName.Replace(" ", string.Empty);
+        string noSpaceName = baseName.Replace(" ", string.Empty,StringComparison.Ordinal);
 #endif
         string underscoreName = baseName.Replace(' ', '_');
         HashSet<string> hs = new(StringComparer.InvariantCultureIgnoreCase)

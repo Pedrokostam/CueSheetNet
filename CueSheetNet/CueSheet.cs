@@ -98,7 +98,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
     public CueDataFile AddFile(string path, FileType type) => Container.AddFile(path, type);
     public CueDataFile? LastFile => Container.Files.LastOrDefault();
 
-    private List<ICueFile> _associatedFiles { get; } = new();
+    private readonly List<ICueFile> _associatedFiles = new();
     public ReadOnlyCollection<ICueFile> AssociatedFiles => _associatedFiles.AsReadOnly();
 
     #endregion
@@ -287,7 +287,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
         bool finalCheck = string.Equals(CdTextFile?.Name, other.CdTextFile?.Name, StringComparison.OrdinalIgnoreCase) //Paths are compared without caring for case
                                                                                                                       //&& string.Equals(SourceFile?.Name, other.SourceFile?.Name, StringComparison.OrdinalIgnoreCase)
                        && string.Equals(Performer, other.Performer, stringComparison)
-                       && string.Equals(Catalog, other.Catalog)
+                       && string.Equals(Catalog, other.Catalog,StringComparison.Ordinal)
                        && string.Equals(Composer, other.Composer, stringComparison)
                        && string.Equals(Title, other.Title, stringComparison);
         return finalCheck;

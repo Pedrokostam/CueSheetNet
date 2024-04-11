@@ -71,14 +71,13 @@ static public class FormatReader
             {
                 return null;
             }
+
             if (CdReader.ReadMetadata(filePath, trackTypes, out meta))
             {
                 return meta;
             }
-            else
-            {
-                return null;
-            }
+
+            return null;
         }
         return null;
     }

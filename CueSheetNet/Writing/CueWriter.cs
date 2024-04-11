@@ -64,9 +64,11 @@ public sealed class CueWriter
     public string? Stringify<T>(string Header, T? value, bool quoteAllowed)
     {
         if (value == null) return null;
+
         if (quoteAllowed && HasWhitespace(value.ToString()))
             return Header + " " + Enquote(value.ToString());
-        else return Header + " " + value;
+
+        return Header + " " + value;
     }
 
     private void AppendTrackRems(CueTrack track) => AppendRems(track.Remarks, 2);

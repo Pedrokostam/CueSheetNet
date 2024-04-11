@@ -110,14 +110,14 @@ internal class CueContainer
             Indexes.Add(pioneer);
             return pioneer;
         }
-        (int Start, int End) fileIndices = GetCueIndicesOfFile_Range(fileIndex);
+        (int Start, int End) = GetCueIndicesOfFile_Range(fileIndex);
         //No indices in selected file
-        if (fileIndices.Start == fileIndices.End)
+        if (Start == End)
         {
             return AddIndex_NoIndexInTrack(time, file, track);
         }
         //Go through all indices of file and find the immediate successor
-        for (int i = fileIndices.Start; i < fileIndices.End; i++)
+        for (int i = Start; i < End; i++)
         {
             CueIndexImpl curr = Indexes[i];
             if (curr.Time == time && !ParsingMode) throw new ArgumentException("Index with specified time already exists in the file");
@@ -130,10 +130,10 @@ internal class CueContainer
             }
         }
         //Found no successors
-        CueIndexImpl endTime = Indexes[fileIndices.End - 1];
+        CueIndexImpl endTime = Indexes[End - 1];
         CueIndexImpl insertedEnd = new(track, file) { Time = time, Number = endTime.Number + 1 };
-        Indexes.Insert(fileIndices.End, insertedEnd);
-        RefreshTracksIndices(fileIndices.End + 1);
+        Indexes.Insert(End, insertedEnd);
+        RefreshTracksIndices(End + 1);
         return insertedEnd;
     }
     private CueIndexImpl AddIndex_NoIndexInTrack(CueTime time, CueDataFile file, CueTrack lastTrack)
