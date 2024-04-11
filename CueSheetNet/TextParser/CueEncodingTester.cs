@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 
 namespace CueSheetNet.TextParser;
-internal class CueEncodingTester
+internal class CueEncodingTester(Stream stream, CueSource source)
 {
     /// <summary>
     /// Compares bytes in a case-insensitive way. Case is changed by changing the sixth bit. Works for standard ASCII letters. 
@@ -33,8 +33,9 @@ internal class CueEncodingTester
         }
     }
 
-    public CueSource Source { get; }
-    public Stream Stream { get; }
+    public CueSource Source { get; } = source;
+    public Stream Stream { get; } = stream;
+
     private static readonly Encoding EncodingUTF32BE = Encoding.GetEncoding("utf-32BE");
     /// <summary>
     /// Common encodings which are identified by a preamble
@@ -308,12 +309,6 @@ internal class CueEncodingTester
     static CueEncodingTester()
     {
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-
-    }
-    public CueEncodingTester(Stream stream, CueSource source)
-    {
-        Stream = stream;
-        Source = source;
 
     }
 }

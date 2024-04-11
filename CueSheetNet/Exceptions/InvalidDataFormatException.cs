@@ -3,8 +3,6 @@
 /// <summary>
 /// Thrown when format is corrupted or otherwise invalid for the format reader
 /// </summary>
-class InvalidDataFormatException : Exception
+class InvalidDataFormatException(string msg) : Exception(msg)
 {
-    public InvalidDataFormatException(string msg) : base(msg)
-    { }
 }

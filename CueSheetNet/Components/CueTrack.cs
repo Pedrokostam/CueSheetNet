@@ -3,7 +3,7 @@ using CueSheetNet.Syntax;
 using System.Collections.ObjectModel;
 
 namespace CueSheetNet;
-public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemCommentable
+public class CueTrack(CueDataFile parentFile, TrackType type) : CueItemBase(parentFile.ParentSheet), IEquatable<CueTrack>, IRemCommentable
 {
     public FieldsSet CommonFieldsSet { get; private set; }
     /// <summary>
@@ -11,10 +11,10 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemCommentable
     /// </summary>
     public int Index { get; internal set; }
     public int Offset { get; internal set; }
-    public TrackType Type { get; internal set; }
+    public TrackType Type { get; internal set; } = type;
     public CueTime PostGap { get; set; }
     public CueTime PreGap { get; set; }
-    private CueDataFile _ParentFile;
+    private CueDataFile _ParentFile = parentFile;
     /// <summary>
     /// File in which Index 01 (or 00 if there is not 01) of Track appeared
     /// </summary>
@@ -140,11 +140,6 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemCommentable
         }
     }
 
-    public CueTrack(CueDataFile parentFile, TrackType type) : base(parentFile.ParentSheet)
-    {
-        _ParentFile = parentFile;
-        Type = type;
-    }
     public override string ToString()
     {
         return "Track " + Number.ToString("D2") + ": " + Title;

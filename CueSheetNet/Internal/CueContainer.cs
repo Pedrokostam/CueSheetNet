@@ -3,10 +3,10 @@
 namespace CueSheetNet.Internal;
 
 [DebuggerDisplay("Files: {Files.Count}, Track: {Tracks.Count}, Indexes: {Indexes.Count}")]
-internal class CueContainer
+internal class CueContainer(CueSheet cueSheet)
 {
     public bool ParsingMode { get; set; }
-    private CueSheet ParentSheet { get; }
+    private CueSheet ParentSheet { get; } = cueSheet;
     public List<CueDataFile> Files { get; } = [];
     public List<CueTrack> Tracks { get; } = [];
     public List<CueIndexImpl> Indexes { get; } = [];
@@ -47,10 +47,6 @@ internal class CueContainer
         {
             Files[i].Index = i;
         }
-    }
-    public CueContainer(CueSheet cueSheet)
-    {
-        ParentSheet = cueSheet;
     }
 
     public CueDataFile AddFile(string filePath, FileType type)
