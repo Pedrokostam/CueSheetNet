@@ -10,9 +10,9 @@ internal static class SpanExtensions
 {
     public static bool SequenceEqual<T>(this Span<T> dataBuffer, ReadOnlySpan<T> template, IEqualityComparer<T>? comparer = null) where T : notnull
     {
-        return dataBuffer.SequenceEqual(template, comparer);
+        return ((ReadOnlySpan<T>)dataBuffer).SequenceEqual(template, comparer);
     }
-    public static bool SequenceEqual<T>(this ReadOnlySpan<T> dataBuffer, ReadOnlySpan<T> template, IEqualityComparer<T>? comparer = null) where T : notnull
+    private static bool SequenceEqual<T>(this ReadOnlySpan<T> dataBuffer, ReadOnlySpan<T> template, IEqualityComparer<T>? comparer = null) where T : notnull
     {
         bool sequenceEqual = dataBuffer.Length == template.Length;
         if (sequenceEqual)
