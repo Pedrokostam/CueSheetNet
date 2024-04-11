@@ -14,7 +14,7 @@ internal sealed class FlacFormatReader : IAudioBinaryStreamFormatReader
     {
         stream.Seek(0, SeekOrigin.Begin);
         Span<byte> four = stackalloc byte[4];
-        stream.Read(four);
+        _ = stream.Read(four);
         return four.SequenceEqual(fLaC);
     }
 
