@@ -1,6 +1,6 @@
 ﻿using System.Text;
 
-namespace CueSheetNet.FileReaders;
+namespace CueSheetNet.FormatReaders;
 internal sealed class WaveFormatReader : IAudioFileFormatReader
 {
     private static readonly byte[] RIFF = "RIFF"u8.ToArray();//  0x52 0x49 0x46 0x46

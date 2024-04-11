@@ -1,8 +1,8 @@
-﻿using CueSheetNet.FileReaders;
+﻿using CueSheetNet.FormatReaders;
 using CueSheetNet.Logging;
 
 
-namespace CueSheetNet.FileReaders;
+namespace CueSheetNet.FormatReaders;
 static public class FormatReader
 {
     static FormatReader()

@@ -1,6 +1,6 @@
 ﻿// See https://aka.ms/new-console-template for more information
 using CueSheetNet;
-using CueSheetNet.FileReaders;
+using CueSheetNet.FormatReaders;
 using CueSheetNet.Logging;
 using CueSheetNet.Test;
 using CueSheetNet.TextParser;

@@ -1,7 +1,7 @@
-﻿using CueSheetNet.FileReaders;
+﻿using CueSheetNet.FormatReaders;
 using CueSheetNet.Logging;
 using static System.Buffers.Binary.BinaryPrimitives;
-namespace CueSheetNet.FileReaders;
+namespace CueSheetNet.FormatReaders;
 public sealed class AiffFormatReader : IAudioFileFormatReader
 {
     private static readonly string[] extensions = [".AIFF", ".AIF", ".AIFC."];

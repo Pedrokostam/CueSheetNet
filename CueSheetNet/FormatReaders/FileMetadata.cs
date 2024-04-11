@@ -1,4 +1,4 @@
-﻿namespace CueSheetNet.FileReaders;
+﻿namespace CueSheetNet.FormatReaders;
 
 public readonly record struct FileMetadata
     (TimeSpan Duration,

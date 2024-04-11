@@ -1,4 +1,4 @@
-﻿using CueSheetNet.FileReaders;
+﻿using CueSheetNet.FormatReaders;
 using CueSheetNet.Logging;
 using CueSheetNet.Reading;
 using System.Diagnostics.CodeAnalysis;

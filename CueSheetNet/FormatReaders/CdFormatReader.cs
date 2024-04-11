@@ -1,6 +1,6 @@
 ﻿using CueSheetNet.Logging;
 
-namespace CueSheetNet.FileReaders;
+namespace CueSheetNet.FormatReaders;
 
 internal sealed class CdFormatReader : IBinaryStreamFormatReader
 {

@@ -1,4 +1,4 @@
-﻿namespace CueSheetNet.FileReaders;
+﻿namespace CueSheetNet.FormatReaders;
 internal sealed class FlacFormatReader : IAudioBinaryStreamFormatReader
 {
     public string FormatName { get; } = "Flac";
