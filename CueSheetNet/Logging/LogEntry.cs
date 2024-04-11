@@ -28,13 +28,13 @@ public partial class LogEntry
         Level = level;
         Timestamp = DateTime.Now;
         MessageTemplate = messageTemplate;
-        Identifiers = new List<string>();
+        Identifiers = [];
         if (args.Length == 0 && !messageTemplate.Contains('{', StringComparison.Ordinal))
         {
             //No objects, no curly brackets - no identifiers -- no need to check
             Message = messageTemplate;
             FormattingTemplate = string.Empty;
-            Elements = new(Array.Empty<Argument>());
+            Elements = new([]);
             return;
         }
 
@@ -128,7 +128,7 @@ public partial class LogEntry
     [GeneratedRegex(@"\(.*\)", RegexOptions.Compiled, 500)]
     private static partial Regex ParenthesisRegex();
 #else
-    private static readonly Regex ParenthesisRegexImpl = new Regex(@"\(.*\)", RegexOptions.Compiled, TimeSpan.FromMilliseconds(500));
+    private static readonly Regex ParenthesisRegexImpl = new(@"\(.*\)", RegexOptions.Compiled, TimeSpan.FromMilliseconds(500));
     private static Regex ParenthesisRegex() => ParenthesisRegexImpl;
 #endif
 }

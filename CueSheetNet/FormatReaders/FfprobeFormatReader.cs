@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 
-namespace CueSheetNet.FileReaders;
+namespace CueSheetNet.FormatReaders;
 
 public sealed class FfprobeFormatReader : IAudioFileFormatReader
 {
@@ -19,7 +19,7 @@ public sealed class FfprobeFormatReader : IAudioFileFormatReader
         }
     }
     private static readonly string fFormatName = "Dependent";
-    private static readonly string[] extensions = new string[] { "*" };
+    private static readonly string[] extensions = ["*"];
     public string FormatName => fFormatName;
     public string[] Extensions => extensions;
     public bool ExtensionMatches(string fileName) => true;
@@ -59,7 +59,7 @@ public sealed class FfprobeFormatReader : IAudioFileFormatReader
         metadata = default;
         return false;
     }
-    private static readonly char[] Separators = new char[] { '\r', '\n' };
+    private static readonly char[] Separators = ['\r', '\n'];
 
 #if NET7_0_OR_GREATER
     private static T GetValue<T>(Dictionary<string, string> dict, string key, T default_val) where T : IParsable<T>
@@ -115,7 +115,7 @@ public sealed class FfprobeFormatReader : IAudioFileFormatReader
         }
         data = new FileMetadata(
             TimeSpan.FromSeconds(GetValue(ini, "duration", -1.0)),
-            false,
+Binary: false,
             GetValue(ini, "sample_rate", -1),
             GetValue(ini, "channels", -1),
             bit_depth,

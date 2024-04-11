@@ -3,13 +3,13 @@
 namespace CueSheetNet.Internal;
 
 [DebuggerDisplay("Files: {Files.Count}, Track: {Tracks.Count}, Indexes: {Indexes.Count}")]
-internal class CueContainer
+internal sealed class CueContainer(CueSheet cueSheet)
 {
     public bool ParsingMode { get; set; }
-    private CueSheet ParentSheet { get; }
-    public List<CueDataFile> Files { get; } = new();
-    public List<CueTrack> Tracks { get; } = new();
-    public List<CueIndexImpl> Indexes { get; } = new();
+    private CueSheet ParentSheet { get; } = cueSheet;
+    public List<CueDataFile> Files { get; } = [];
+    public List<CueTrack> Tracks { get; } = [];
+    public List<CueIndexImpl> Indexes { get; } = [];
     public void RefreshIndexIndices(int startFromFile = 0)
     {
         if (Files.Count <= startFromFile) return;
@@ -48,16 +48,12 @@ internal class CueContainer
             Files[i].Index = i;
         }
     }
-    public CueContainer(CueSheet cueSheet)
-    {
-        ParentSheet = cueSheet;
-    }
 
     public CueDataFile AddFile(string filePath, FileType type)
     {
         CueDataFile cf = new(ParentSheet, filePath, type)
         {
-            Index = Files.Count
+            Index = Files.Count,
         };
         Files.Add(cf);
         return cf;
@@ -75,7 +71,7 @@ internal class CueContainer
         if (fileIndex < 0) fileIndex = Files.Count - 1;
         CueTrack cf = new(Files[fileIndex], type)
         {
-            Index = Tracks.Count == 0 ? 0 : Tracks[^1].Index + 1
+            Index = Tracks.Count == 0 ? 0 : Tracks[^1].Index + 1,
         };
         cf.Offset = parsedIndex - cf.Number;
         Tracks.Add(cf);
@@ -110,14 +106,14 @@ internal class CueContainer
             Indexes.Add(pioneer);
             return pioneer;
         }
-        (int Start, int End) fileIndices = GetCueIndicesOfFile_Range(fileIndex);
+        (int Start, int End) = GetCueIndicesOfFile_Range(fileIndex);
         //No indices in selected file
-        if (fileIndices.Start == fileIndices.End)
+        if (Start == End)
         {
             return AddIndex_NoIndexInTrack(time, file, track);
         }
         //Go through all indices of file and find the immediate successor
-        for (int i = fileIndices.Start; i < fileIndices.End; i++)
+        for (int i = Start; i < End; i++)
         {
             CueIndexImpl curr = Indexes[i];
             if (curr.Time == time && !ParsingMode) throw new ArgumentException("Index with specified time already exists in the file");
@@ -130,16 +126,15 @@ internal class CueContainer
             }
         }
         //Found no successors
-        CueIndexImpl endTime = Indexes[fileIndices.End - 1];
+        CueIndexImpl endTime = Indexes[End - 1];
         CueIndexImpl insertedEnd = new(track, file) { Time = time, Number = endTime.Number + 1 };
-        Indexes.Insert(fileIndices.End, insertedEnd);
-        RefreshTracksIndices(fileIndices.End + 1);
+        Indexes.Insert(End, insertedEnd);
+        RefreshTracksIndices(End + 1);
         return insertedEnd;
     }
     private CueIndexImpl AddIndex_NoIndexInTrack(CueTime time, CueDataFile file, CueTrack lastTrack)
     {
-        CueIndexImpl lastIndex = Indexes[^1];
-        (int Start, int End) = GetCueIndicesOfTrack_Range(lastTrack.Index, true);
+        (int Start, int End) = GetCueIndicesOfTrack_Range(lastTrack.Index, includeDangling: true);
         // track has no indices, and the previous file has no tracks - move track to current file
         int length = End - Start;
         if (length == 0)
@@ -202,7 +197,7 @@ internal class CueContainer
     }
     internal IEnumerable<CueIndexImpl> GetCueIndicesOfTrackWithDangling(int fileIndex = -1)
     {
-        (int Start, int End) = GetCueIndicesOfTrack_Range(fileIndex, true);
+        (int Start, int End) = GetCueIndicesOfTrack_Range(fileIndex, includeDangling: true);
         return Indexes.Skip(Start).Take(End - Start);
     }
     internal (int Start, int End) GetCueIndicesOfFile_Range(int fileIndex = -1)

@@ -44,8 +44,6 @@ public readonly record struct CueTime
         TotalFrames = totalFrames;
     }
 
-    [SuppressMessage("Usage", "MA0015:Specify the parameter name in ArgumentException",
-        Justification = "There are many combinations of the three parameters that can result in the warning and it is not necessary to know precisely which parameter is wrong.")]
     public CueTime(int minutes, int seconds, int frames)
     {
         bool allNonNegative = minutes >= 0 && seconds >= 0 && frames >= 0;

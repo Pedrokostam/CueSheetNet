@@ -3,7 +3,7 @@ using CueSheetNet.Syntax;
 using System.Collections.ObjectModel;
 
 namespace CueSheetNet;
-public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemCommentable
+public class CueTrack(CueDataFile parentFile, TrackType type) : CueItemBase(parentFile.ParentSheet), IEquatable<CueTrack>, IRemCommentable
 {
     public FieldsSet CommonFieldsSet { get; private set; }
     /// <summary>
@@ -11,10 +11,10 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemCommentable
     /// </summary>
     public int Index { get; internal set; }
     public int Offset { get; internal set; }
-    public TrackType Type { get; internal set; }
+    public TrackType Type { get; internal set; } = type;
     public CueTime PostGap { get; set; }
     public CueTime PreGap { get; set; }
-    private CueDataFile _ParentFile;
+    private CueDataFile _ParentFile = parentFile;
     /// <summary>
     /// File in which Index 01 (or 00 if there is not 01) of Track appeared
     /// </summary>
@@ -37,7 +37,7 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemCommentable
     private string? _Title;
     public string Title
     {
-        get => _Title ?? Path.ChangeExtension(ParentFile.SourceFile.Name, null);
+        get => _Title ?? Path.ChangeExtension(ParentFile.SourceFile.Name, extension: null);
         set
         {
             if (string.IsNullOrEmpty(value))
@@ -102,19 +102,15 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemCommentable
             {
                 return ParentSheet.GetCueIndexAt(Start);
             }
-            else
+
+            if (ParentSheet.IndexesImpl[Start].Number == 0)
             {
-                if (ParentSheet.IndexesImpl[Start].Number == 0)
-                {
-                    // first index is 00, so audio starts at 01 - next
-                    return ParentSheet.GetCueIndexAt(Start + 1);
-                }
-                else
-                {
-                    // first index is 01, this is audio start
-                    return ParentSheet.GetCueIndexAt(Start);
-                }
+                // first index is 00, so audio starts at 01 - next
+                return ParentSheet.GetCueIndexAt(Start + 1);
             }
+
+            // first index is 01, this is audio start
+            return ParentSheet.GetCueIndexAt(Start);
         }
     }
     public CueTime? Duration
@@ -135,30 +131,21 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemCommentable
                 {
                     return fileDur.Value - AudioStartIndex.Time;
                 }
-                else
-                {
-                    // File meta is unknown / no file
-                    return null;
-                }
+
+                // File meta is unknown / no file
+                return null;
             }
-            else // next track starts in the same file
-            {
-                return nextTrackImplIndex!.Time - AudioStartIndex.Time;
-            }
+
+            return nextTrackImplIndex!.Time - AudioStartIndex.Time;
         }
     }
 
-    public CueTrack(CueDataFile parentFile, TrackType type) : base(parentFile.ParentSheet)
-    {
-        _ParentFile = parentFile;
-        Type = type;
-    }
     public override string ToString()
     {
         return "Track " + Number.ToString("D2") + ": " + Title;
     }
     #region Rem
-    private readonly List<CueRemark> RawRems = new();
+    private readonly List<CueRemark> RawRems = [];
     public ReadOnlyCollection<CueRemark> Remarks => RawRems.AsReadOnly();
     public void ClearRemarks() => RawRems.Clear();
 
@@ -208,7 +195,7 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemCommentable
     }
     #endregion
     #region Comments
-    private readonly List<string> RawComments = new();
+    private readonly List<string> RawComments = [];
     public ReadOnlyCollection<string> Comments => RawComments.AsReadOnly();
     public void AddComment(IEnumerable<string> comments)
     {
@@ -264,7 +251,7 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemCommentable
 
     public override bool Equals(object? obj)
     {
-        return Equals(obj as CueTrack,StringComparison.InvariantCulture);
+        return Equals(obj as CueTrack, StringComparison.InvariantCulture);
     }
 
     public override int GetHashCode()

@@ -1,17 +1,17 @@
-﻿using CueSheetNet.FileReaders;
+﻿using CueSheetNet.FormatReaders;
 using CueSheetNet.Logging;
 
 
-namespace CueSheetNet.FileReaders;
+namespace CueSheetNet.FormatReaders;
 static public class FormatReader
 {
     static FormatReader()
     {
-        BaseAudioFileReaders = new IAudioFileFormatReader[]
-        {
+        BaseAudioFileReaders =
+        [
             new FlacFormatReader(),
             new WaveFormatReader(),
-        };
+        ];
         AudioFileReaders = new List<IAudioFileFormatReader>(BaseAudioFileReaders);
         CdReader = new();
         BaseFallbackReader = new FfprobeFormatReader();
@@ -71,14 +71,13 @@ static public class FormatReader
             {
                 return null;
             }
+
             if (CdReader.ReadMetadata(filePath, trackTypes, out meta))
             {
                 return meta;
             }
-            else
-            {
-                return null;
-            }
+
+            return null;
         }
         return null;
     }

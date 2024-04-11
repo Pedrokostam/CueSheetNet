@@ -1,13 +1,13 @@
 ﻿using CueSheetNet.Logging;
 
-namespace CueSheetNet.FileReaders;
+namespace CueSheetNet.FormatReaders;
 
-internal class CdFormatReader : IBinaryStreamFormatReader
+internal sealed class CdFormatReader : IBinaryStreamFormatReader
 {
     public string FormatName { get; } = "BINARY";
-    public string[] Extensions { get; } = new string[] { ".BIN", ".MM2", ".ISO", ".MOT", ".IMG" };
+    public string[] Extensions { get; } = [".BIN", ".MM2", ".ISO", ".MOT", ".IMG"];
 
-    private static readonly byte[] Header = { 0x0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00 }; // 0
+    private static readonly byte[] Header = [0x0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00]; // 0
     public bool ExtensionMatches(string fileName)
     {
         string ext = Path.GetExtension(fileName);
@@ -58,10 +58,10 @@ internal class CdFormatReader : IBinaryStreamFormatReader
             throw new InvalidDataFormatException("Length of data is not a multiple of specified sector size");
         // each sector corresponds to 1 cue frame, so 75 of them is 1 second
         TimeSpan duration = TimeSpan.FromSeconds(numberOfSectors / 75.0);
-        bool hasAudio = trackTypes.Where(x => x.ContainsAudioData).Any();
+        bool hasAudio = trackTypes.Any(x => x.ContainsAudioData);
         metadata = new FileMetadata(
             duration,
-            true,
+Binary: true,
             hasAudio ? 44100 : -1,
             hasAudio ? 2 : -1,
             hasAudio ? 16 : -1,

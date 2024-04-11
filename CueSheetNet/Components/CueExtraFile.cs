@@ -1,14 +1,10 @@
 ﻿namespace CueSheetNet;
 
-public class CueExtraFile : ICueFile
+public class CueExtraFile(FileInfo source, CueSheet parent) : ICueFile
 {
-    public CueSheet ParentSheet { get; }
-    public FileInfo SourceFile { get; set; }
-    public CueExtraFile(FileInfo source, CueSheet parent)
-    {
-        ParentSheet = parent;
-        SourceFile = source;
-    }
+    public CueSheet ParentSheet { get; } = parent;
+    public FileInfo SourceFile { get; set; } = source;
+
     public CueExtraFile(string path, CueSheet sheet) : this(new FileInfo(path), sheet)
     {
     }

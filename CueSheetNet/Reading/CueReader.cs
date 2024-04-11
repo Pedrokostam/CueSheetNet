@@ -28,7 +28,7 @@ public partial class CueReader
     public char Quotation { get; set; } = DefaultQuotation;
     private Encoding? Encoding { get; set; }
 
-    readonly List<bool> TrackHasZerothIndex = new();
+    readonly List<bool> TrackHasZerothIndex = [];
     private void Reset(Encoding? encoding = null)
     {
         Sheet = null;
@@ -42,7 +42,7 @@ public partial class CueReader
     }
     /// <remarks></remarks>
     /// <inheritdoc cref="ParseCueSheet(string, Encoding?)"/>
-    public CueSheet ParseCueSheet(string cuePath) => ParseCueSheet(cuePath, null);
+    public CueSheet ParseCueSheet(string cuePath) => ParseCueSheet(cuePath, encoding: null);
     /// <summary>
     /// Loads specified text file and parses it as CueSheet.
     /// </summary>
@@ -62,7 +62,7 @@ public partial class CueReader
         LogParseSource();
         if (!File.Exists(cuePath)) throw new FileNotFoundException($"{cuePath} does not exist");
         byte[] cueFileBytes = File.ReadAllBytes(cuePath);
-        using MemoryStream fs = new(cueFileBytes, false);
+        using MemoryStream fs = new(cueFileBytes, writable: false);
         CueSheet cue = ParseCueSheet_Impl(fs, cuePath);
         return cue;
     }
@@ -72,7 +72,7 @@ public partial class CueReader
     private static void LogParseStart() => Logger.LogDebug("Parsing started");
     /// <remarks></remarks>
     /// <inheritdoc cref="ParseCueSheet(byte[], Encoding?)"/>
-    public CueSheet ParseCueSheet(byte[] cueFileBytes) => ParseCueSheet(cueFileBytes, null);
+    public CueSheet ParseCueSheet(byte[] cueFileBytes) => ParseCueSheet(cueFileBytes, encoding: null);
     /// <summary>
     /// Parses byte array as CueSheet. 
     /// </summary>
@@ -85,8 +85,8 @@ public partial class CueReader
         Reset(encoding);
         Source = new CueSource(cueFileBytes);
         LogParseSource();
-        using MemoryStream fs = new(cueFileBytes, false);
-        return ParseCueSheet_Impl(fs, null);
+        using MemoryStream fs = new(cueFileBytes, writable: false);
+        return ParseCueSheet_Impl(fs, path: null);
     }
     /// <summary>
     /// Parses string as CueSheet. 
@@ -113,7 +113,7 @@ public partial class CueReader
 #if NETCOREAPP2_1_OR_GREATER
         string s = new string(cueContentChars);
 #else
-        string s = new string(cueContentChars.ToArray());
+        string s = new(cueContentChars.ToArray());
 #endif
         return ParseCueSheetFromStringContent(s);
     }
@@ -131,13 +131,13 @@ public partial class CueReader
             Logger.LogInformation("Detected {Encoding.EncodingName} encoding in {Time}ms", Encoding, st.ElapsedMilliseconds);
         }
         fs.Seek(0, SeekOrigin.Begin);
-        using TextReader strr = new StreamReader(fs, Encoding, false);
+        using TextReader strr = new StreamReader(fs, Encoding, detectEncodingFromByteOrderMarks: false);
         return ReadImpl(strr);
     }
 
     private CueSheet ReadImpl(TextReader txtRead)
     {
-        Sheet!.SetParsingMode(true);
+        Sheet!.SetParsingMode(parsing: true);
         Stopwatch st = Stopwatch.StartNew();
         while (txtRead.ReadLine()?.Trim() is string line)
         {
@@ -194,7 +194,7 @@ public partial class CueReader
         st.Stop();
         Logger.LogInformation("Finished parsing {Source} in {Time}ms", Source, st.ElapsedMilliseconds);
         Sheet.SourceEncoding = Encoding;
-        Sheet.SetParsingMode(false);
+        Sheet.SetParsingMode(parsing: false);
         return Sheet;
     }
 
@@ -275,7 +275,7 @@ public partial class CueReader
         }
         TrackFlags flags = TrackFlags.None;
         string[] parts = line[6..] // FLAGS_
-            .Replace("\"", "",StringComparison.Ordinal)
+            .Replace("\"", "", StringComparison.Ordinal)
             .Replace("'", "", StringComparison.Ordinal)
             .Split(' ', StringSplitOptions.RemoveEmptyEntries);
         foreach (var part in parts)
@@ -322,7 +322,7 @@ public partial class CueReader
             return;
         }
         string number = GetKeyword(line, 6);// INDEX_
-        if (!int.TryParse(number,NumberStyles.Integer, CultureInfo.InvariantCulture, out int num))
+        if (!int.TryParse(number, NumberStyles.Integer, CultureInfo.InvariantCulture, out int num))
         {
             //Logger.LogError("Incorrect Index number format at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
             throw new FormatException($"Incorrect Index number format at line {CurrentLineIndex}: {line}");
@@ -466,8 +466,8 @@ public partial class CueReader
             return null;
         if (spanny[^1] == Quotation && spanny[0] == Quotation)
             return spanny[1..^1].ToString();
-        else
-            return spanny.ToString();
+        
+        return spanny.ToString();
     }
     /// <summary>
     /// Get the first full word from the specified start, stops at whitespace

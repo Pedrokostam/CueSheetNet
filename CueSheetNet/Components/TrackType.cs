@@ -55,7 +55,7 @@ public record TrackType
             "MODE2/2352" => TrackType.MODE2_2352,
             "CDI/2336" => TrackType.CDI_2336,
             "CDI/2352" => TrackType.CDI_2352,
-            _ => new TrackType(s, -1, Modes.None, false, false, "Unknown")
+            _ => new TrackType(s, -1, Modes.None, audio: false, cdspec: false, "Unknown")
         };
     }
     public static readonly TrackType AUDIO =

@@ -1,11 +1,5 @@
-﻿using CueSheetNet.FileHandling;
-using CueSheetNet.Logging;
+﻿using CueSheetNet.Logging;
 using CueSheetNet.NameParsing;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CueSheetNet.Tests;
 [TestClass]
@@ -17,13 +11,13 @@ public class TreeParsingTests
         var t = CueTreeFormatter.AvailableProperties;
         Assert.AreNotEqual(t.Length, 0);
     }
-    private static string P(CueSheet sheet, string pattern) => CueTreeFormatter.ParseFormatPattern(sheet, pattern);
+    private static string P(CueSheet sheet, string? pattern) => CueTreeFormatter.ParseFormatPattern(sheet, pattern);
     [TestMethod("Compares various parse pattern to their parsed results")]
     public void TestParsing()
     {
         string path = Utils.GetFile("SavingTests", "Jethro Tull - Aqualung.cue");
         CueSheet sheet = CueSheet.Read(path);
-        string oldName = Path.GetFileNameWithoutExtension(sheet.SourceFile.FullName);
+        string? oldName = Path.GetFileNameWithoutExtension(sheet.SourceFile?.FullName);
         Assert.AreEqual(oldName, P(sheet, null));
         Assert.AreEqual(oldName, P(sheet, ""));
         Assert.AreEqual(oldName, P(sheet, "%old%"));
@@ -43,6 +37,6 @@ public class TreeParsingTests
         Logger.Register(arlog);
         Assert.AreEqual(oldName, P(sheet, "%Discid%/%Year%"));
         var log = arlog.LogEntries.Where(x => x.Level == LogLevel.Warning).FirstOrDefault();
-        Assert.IsNotNull(log); 
+        Assert.IsNotNull(log);
     }
 }

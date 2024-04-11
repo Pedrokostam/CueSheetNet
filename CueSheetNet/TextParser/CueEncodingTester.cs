@@ -1,4 +1,4 @@
-﻿using CueSheetNet.FileReaders;
+﻿using CueSheetNet.FormatReaders;
 using CueSheetNet.Logging;
 using CueSheetNet.Reading;
 using System.Diagnostics.CodeAnalysis;
@@ -7,12 +7,12 @@ using System.Runtime.InteropServices;
 using System.Text;
 
 namespace CueSheetNet.TextParser;
-internal class CueEncodingTester
+internal sealed class CueEncodingTester(Stream stream, CueSource source)
 {
     /// <summary>
     /// Compares bytes in a case-insensitive way. Case is changed by changing the sixth bit. Works for standard ASCII letters. 
     /// </summary>
-    class ByteInvariantComparer : EqualityComparer<byte>
+    sealed class ByteInvariantComparer : EqualityComparer<byte>
     {
         private static int ChangeCase(byte b)
         {
@@ -33,19 +33,20 @@ internal class CueEncodingTester
         }
     }
 
-    public CueSource Source { get; }
-    public Stream Stream { get; }
+    public CueSource Source { get; } = source;
+    public Stream Stream { get; } = stream;
+
     private static readonly Encoding EncodingUTF32BE = Encoding.GetEncoding("utf-32BE");
     /// <summary>
     /// Common encodings which are identified by a preamble
     /// </summary>
-    static readonly Encoding[] PreambledEncodings = new Encoding[] {
+    static readonly Encoding[] PreambledEncodings = [
         Encoding.UTF8,
         Encoding.UTF32,// Even though
         EncodingUTF32BE,
         Encoding.Unicode,
         Encoding.BigEndianUnicode,
-    };
+    ];
 
     /// <summary>
     /// Checks if the <paramref name="input"/> is larger or equal to <paramref name="minInclusive"/> and smaller or equal than <paramref name="maxInclusive"/>
@@ -104,6 +105,7 @@ internal class CueEncodingTester
         List<byte> b = GetPotentialDiacritizedLines(Stream);
         return DetectUtf8Heuristically(b);
     }
+    [SuppressMessage("Design", "MA0051:Method is too long", Justification = "Most of the length are comments")]
     private Encoding DetectUtf8Heuristically(List<byte> bajtos)
     {
         // The list will not be modified so it is safe to access it as span
@@ -129,7 +131,7 @@ internal class CueEncodingTester
             // U+0080..U+07FF       C2..DF     80..BF
             // Range                C2..DF     80..BF
             // skipping C0, C1 - non-minimal
-            else if (CheckRange(allBytes[i], 0xC2, 0xDF)
+            if (CheckRange(allBytes[i], 0xC2, 0xDF)
               && CheckRange(allBytes[i + 1], 0x80, 0xBF))
             {
                 utf8 = true;
@@ -176,15 +178,12 @@ internal class CueEncodingTester
         }
         if (utf8)
         {
-            return new UTF8Encoding(false);
+            return new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
         }
-        else
-        {
-            // Quite difficult if not impossible to guess which regional encoding is being used.
-            // We're assuming it codepage 1252, as it is quite common for english text. It'allBytes actually the most common encoding in the net, save for utf
-            Encoding enc = Encoding.GetEncoding(1252);
-            return enc;
-        }
+        // Quite difficult if not impossible to guess which regional encoding is being used.
+        // We're assuming it codepage 1252, as it is quite common for english text. It'allBytes actually the most common encoding in the net, save for utf
+        Encoding enc = Encoding.GetEncoding(1252);
+        return enc;
     }
     /// <summary>
     /// Scans stream looking for certain cue keywords. When found, takes everything after the keyword until newline. Repeats until end of stream.
@@ -245,19 +244,7 @@ internal class CueEncodingTester
                     continue;
             }
             int read = fs.Read(dataBuffer);
-#if NET6_0_OR_GREATER
             bool sequenceEqual = dataBuffer.SequenceEqual(templateSpan, byteCaseComparer);
-#else
-            bool sequenceEqual = dataBuffer.Length == templateSpan.Length;
-            if (sequenceEqual)
-            {
-                for (int i = 0; i < dataBuffer.Length; i++)
-                {
-                    sequenceEqual = byteCaseComparer.Equals(dataBuffer[i], templateSpan[i]);
-                    if (!sequenceEqual) break;
-                }
-            }
-#endif
             if (read == dataBuffer.Length && sequenceEqual)
             {
                 AddUntilNewLine(fs, bytes);
@@ -322,12 +309,6 @@ internal class CueEncodingTester
     static CueEncodingTester()
     {
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-
-    }
-    public CueEncodingTester(Stream stream, CueSource source)
-    {
-        Stream = stream;
-        Source = source;
 
     }
 }

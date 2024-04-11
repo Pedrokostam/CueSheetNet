@@ -18,7 +18,7 @@ public static partial class CuePackage
         //If there are no files or directory of last file is null, return - no files
         if (sheet.LastFile is null || sheet.LastFile?.SourceFile?.DirectoryName is null)
         {
-            return Enumerable.Empty<CueExtraFile>();
+            return [];
         }
         // All variations of base name of cuesheet
         HashSet<string> matchStrings = GetMatchStringHashset(sheet);
@@ -27,7 +27,7 @@ public static partial class CuePackage
         DirectoryInfo? sheetDir = sheet.SourceFile?.Directory;
         //Where the last audio file is located
         DirectoryInfo? audioDir = sheet.LastFile.SourceFile.Directory;
-        IEnumerable<FileInfo> siblingFiles = audioDir?.EnumerateFiles() ?? Enumerable.Empty<FileInfo>();
+        IEnumerable<FileInfo> siblingFiles = audioDir?.EnumerateFiles() ?? [];
 
         // If audio dir and sheet dir are different, concatenate file sequences
         if (!PathComparer.Instance.Equals(sheetDir, audioDir)
@@ -70,7 +70,7 @@ public static partial class CuePackage
 #if NET7_0_OR_GREATER
         string noSpaceName = baseName.Replace(" ", string.Empty, StringComparison.Ordinal);
 #else
-        string noSpaceName = baseName.Replace(" ", string.Empty);
+        string noSpaceName = baseName.Replace(" ", string.Empty,StringComparison.Ordinal);
 #endif
         string underscoreName = baseName.Replace(' ', '_');
         HashSet<string> hs = new(StringComparer.InvariantCultureIgnoreCase)
@@ -105,13 +105,6 @@ public static partial class CuePackage
         }
         return name;
     }
-#if NET7_0_OR_GREATER
-    [GeneratedRegex(@"%(?<property>[\w\s]+)%", RegexOptions.Compiled, 500)]
-    private static partial Regex PropertyParser();
-#else
-    private static readonly Regex PropertyParserImpl = new(@"%(?<property>[\w\s]+)%", RegexOptions.Compiled, TimeSpan.FromMilliseconds(500));
-    private static Regex PropertyParser() => PropertyParserImpl;
-#endif
 
     /// <summary>
     /// Gets parent directory path of <paramref name="destinationWithPattern"/>, creates the directory on the disk and return its <see cref="DirectoryInfo"/>
@@ -162,7 +155,7 @@ public static partial class CuePackage
     private static List<TransFile> GetTransFiles(CueSheet sheet, string filename, bool preserveSubfolders, string? newAudioExtension)
     {
         DirectoryInfo? cueFolder = preserveSubfolders ? sheet.SourceFile?.Directory : null;
-        List<TransFile> transFiles = new();
+        List<TransFile> transFiles = [];
         IEnumerable<TransFile> transAudios = GetAudioTransFiles(sheet, filename, cueFolder);
         int fileIndex = 0;
         foreach (TransFile transAudio in transAudios)
@@ -191,7 +184,7 @@ public static partial class CuePackage
             }
             else
             {
-                ExtGroups[file.SourceFile.Extension] = new List<TransFile> { transFile };
+                ExtGroups[file.SourceFile.Extension] = [transFile];
             }
         }
         foreach (var ext in ExtGroups.Keys)
@@ -278,7 +271,7 @@ public static partial class CuePackage
         var allFiles = audioFiles.Concat(sheet.AssociatedFiles).Select(x => x.SourceFile);
         if (sheet.SourceFile is FileInfo main)
         {
-            allFiles.Append(main);
+            allFiles = allFiles.Append(main);
         }
         HashSet<string> h = new(StringComparer.InvariantCulture);
         foreach (var file in allFiles)
@@ -323,9 +316,9 @@ public static partial class CuePackage
                                           activeSheet,
                                           out DirectoryInfo immediateParentDir,
                                           out List<TransFile> transFiles,
-                                          preserveSubfolders, null);
+                                          preserveSubfolders, newAudioExtension: null);
 
-        List<FileInfo> inProgressCopied = new();
+        List<FileInfo> inProgressCopied = [];
         try
         {
             foreach (var item in transFiles)
@@ -372,9 +365,9 @@ public static partial class CuePackage
                                           activeSheet,
                                           out DirectoryInfo immediateParentDir,
                                           out List<TransFile> transFiles,
-                                          preserveSubfolders, null);
+                                          preserveSubfolders, newAudioExtension: null);
 
-        List<MovedFile> movedFileArchive = new();
+        List<MovedFile> movedFileArchive = [];
         try
         {
             foreach (var item in transFiles)
@@ -451,7 +444,7 @@ public static partial class CuePackage
                                           out List<TransFile> transFiles,
                                           preserveSubfolders, extension);
 
-        List<FileInfo> inProgressCopied = new();
+        List<FileInfo> inProgressCopied = [];
         try
         {
             foreach (var item in transFiles)

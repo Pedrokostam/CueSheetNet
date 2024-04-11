@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 namespace CueSheetNet;
 internal static class StringExtensions
 {
-
 #if !NETCOREAPP2_0_OR_GREATER
     /// <summary>
     /// Extension method for below NETCORE 2.0 (StringComparison parameter was missing).

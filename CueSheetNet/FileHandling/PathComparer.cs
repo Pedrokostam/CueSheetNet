@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 namespace CueSheetNet.FileHandling;
 
 
-internal partial class PathComparer : EqualityComparer<FileSystemInfo>, IComparer<FileSystemInfo>, IComparer<FileInfo>, IComparer<ICueFile>, IEqualityComparer<ICueFile>
+internal sealed partial class PathComparer : EqualityComparer<FileSystemInfo>, IComparer<FileSystemInfo>, IComparer<FileInfo>, IComparer<ICueFile>, IEqualityComparer<ICueFile>
 {
 #if NET7_0_OR_GREATER
     [GeneratedRegex(@"[\\/]",RegexOptions.Compiled,500)]

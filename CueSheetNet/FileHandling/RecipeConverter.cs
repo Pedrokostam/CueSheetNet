@@ -17,13 +17,13 @@ public class RecipeConverter : IAudioConverter
         ExceptionHelper.ThrowIfNull(fileName );
         RecipeOutputFolder = outputFolder;
         OutputName = fileName;
-        Elements = new();
+        Elements = [];
         Append = append;
-        OutputEncoding = encoding ?? new UTF8Encoding(false);
+        OutputEncoding = encoding ?? new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
         Separator = separator;
     }
    
-    public RecipeConverter(string recipePath) : this(Path.GetDirectoryName(recipePath)!, Path.GetFileName(recipePath)!, false, Encoding.UTF8, ";")
+    public RecipeConverter(string recipePath) : this(Path.GetDirectoryName(recipePath)!, Path.GetFileName(recipePath)!, append: false, Encoding.UTF8, ";")
     {
 
     }
@@ -32,7 +32,7 @@ public class RecipeConverter : IAudioConverter
     /// </summary>
     /// <param name="outputFolder">Folder in which the text file with list of converted files will placed</param>
     /// <param name="fileName">Filename of the text file with list of converted files</param>
-    public RecipeConverter(string outputFolder, string fileName) : this(outputFolder, fileName, false, new UTF8Encoding(false), ";")
+    public RecipeConverter(string outputFolder, string fileName) : this(outputFolder, fileName, append: false, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), ";")
     {
 
     }

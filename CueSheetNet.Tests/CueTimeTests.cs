@@ -3,15 +3,15 @@ namespace CueSheetNet.Tests;
 [TestClass]
 public class CueTimeTests
 {
-    public (string Text, CueTime Time)[] TestTexts { get; set; }
-    public string[] FailTexts { get; set; }
-    public (object Compared, int Result)[] TestObjectComparisons { get; set; }
-    public (object Object, Type Type)[] TestObjectComparisonsThrow { get; set; }
+    public (string Text, CueTime Time)[] TestTexts { get; set; } = [];
+    public string[] FailTexts { get; set; } = [];
+    public (object Compared, int Result)[] TestObjectComparisons { get; set; } = [];
+    public (object Object, Type Type)[] TestObjectComparisonsThrow { get; set; } = [];
     [TestInitialize]
     public void Initialize()
     {
-        TestTexts = new (string Text, CueTime Time)[]
-        {
+        TestTexts =
+        [
             ("00:00:00",        new(0)),
             ("-00:00:00",       new(0)),
             ("0:0:0",           new(0)),
@@ -24,17 +24,17 @@ public class CueTimeTests
             ("00:00:01",        new(0,0,1)),
             ("00:     00:01",   new(0,0,1)),
             ("50:360:750",      new(50,360,750)),
-        };
-        FailTexts = new string[]
-        {
+        ];
+        FailTexts =
+        [
             "",
             //"10",// Is now valid, to comply with Foobar2000 standard
             //"101010",// Is now valid, to comply with Foobar2000 standard - it's just the number of frames
             "477219:0:0",
             "477217:9999:9999"
-        };
-        TestObjectComparisons = new (object Compared, int Result)[]
-        {
+        ];
+        TestObjectComparisons =
+        [
              (CueTime.FromMinutes(5),0),
             (TimeSpan.FromMinutes(5),0),
             (TimeSpan.FromMinutes(4.5),1),
@@ -54,9 +54,9 @@ public class CueTimeTests
             (TimeSpan.FromMilliseconds(4.5*60000),1),
             (TimeSpan.FromMilliseconds(5.5*60000),0),
             (TimeSpan.FromMilliseconds(6.5*60000),-1),
-        };
-        TestObjectComparisonsThrow = new (object Object, Type Type)[]
-        {
+        ];
+        TestObjectComparisonsThrow =
+        [
             (CueTime.Zero,typeof(CueTime)),
             (2137,typeof(int)),
             (2137D,typeof(double)),
@@ -67,7 +67,7 @@ public class CueTimeTests
 #if NET6_0_OR_GREATER
             (DateOnly.FromDayNumber(1),typeof(DateOnly)),
 #endif
-        };
+        ];
     }
     [TestMethod("Convert CueTime to TimeSpan and back to CueTime")]
     public void RoundTripConversionTest_CtTsCt()
@@ -80,29 +80,7 @@ public class CueTimeTests
             Assert.AreEqual(back, ct);
         }
     }
-    //[TestMethod("Roundtrip conversion from TimeSpan to CueTime and back to Timespan should not be larger than source")]
-    //public void RoundTripConversionTest_TsCtTs()
-    //{
-    //    int span = 100000;
-    //    int[] basevals = { -1000000, -100000, -10000, -1000, 1000, 10000, 100000, 1000000 };
-    //    foreach (int baseval in basevals)
-    //    {
-    //        for (int i = baseval; i <= baseval + span; i++)
-    //        {
-    //            TimeSpan ts = TimeSpan.FromTicks(-933332);
-    //            CueTime ct = (CueTime)ts;
-    //            TimeSpan ts2 = ct;
-    //            if (ts.Ticks > 0)
-    //            {
-    //                Assert.IsTrue(ts >= ts2, $"{ts} - {ts2} - {i}");
-    //            }
-    //            else
-    //            {
-    //                Assert.IsTrue(ts <= ts2,$"{ts} - {ts2} - {i}");
-    //            }
-    //        }
-    //    }
-    //}
+    
     [TestMethod("TryParse various valid strings")]
     public void TryParseTestString()
     {
@@ -200,8 +178,7 @@ public class CueTimeTests
             {
                 (object Compared, int Result) = TestObjectComparisons[i + j];
                 var t = (TimeSpan)(Compared);
-                var c = (CueTime)t;
-                Assert.AreEqual(baseCue.CompareTo((CueTime)(TimeSpan)(Compared)), Result);
+                Assert.AreEqual(baseCue.CompareTo((CueTime)t), Result);
             }
         }
 

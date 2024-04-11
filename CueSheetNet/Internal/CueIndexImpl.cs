@@ -3,17 +3,11 @@
 namespace CueSheetNet.Internal;
 
 [DebuggerDisplay("CIImpl- Num: {Number}, Abs: {Index} - File {File.Index}, Track {Track.Index}")]
-internal class CueIndexImpl : CueItemBase
+internal sealed class CueIndexImpl(CueTrack track, CueDataFile file) : CueItemBase(file.ParentSheet)
 {
-    public CueDataFile File { get; }
+    public CueDataFile File { get; } = file;
 
-    public CueTrack Track { get; }
-
-    public CueIndexImpl(CueTrack track, CueDataFile file) : base(file.ParentSheet)
-    {
-        Track = track;
-        File = file;
-    }
+    public CueTrack Track { get; } = track;
 
     internal CueIndexImpl ClonePartial(CueTrack newOwnerTrack, CueDataFile newOwnerFile)
     {

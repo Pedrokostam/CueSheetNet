@@ -7,6 +7,10 @@
 		<Nullable>enable</Nullable>
 	</PropertyGroup>
 
+	<PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+		<NoWarn>$(NoWarn);nullable</NoWarn>
+	</PropertyGroup>
+
 	<ItemGroup>
 		<PackageReference Include="Meziantou.Analyzer" Version="2.0.146">
 			<PrivateAssets>all</PrivateAssets>
@@ -20,6 +24,10 @@
 		<PackageReference Include="Microsoft.Bcl.HashCode " Version="1.1.1" Condition="'$(TargetFramework)' == 'netstandard2.0'" />
 		<PackageReference Include="System.Text.Encoding" Version="4.3.0" />
 		<PackageReference Include="System.Text.Encoding.CodePages" Version="8.0.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="NewFolder\" />
 	</ItemGroup>
 	
 </Project>

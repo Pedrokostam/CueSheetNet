@@ -5,3 +5,12 @@ dotnet_diagnostic.CA1510.severity = silent
 
 # MA0015: Specify the parameter name in ArgumentException
 dotnet_diagnostic.MA0015.severity = silent
+
+# IDE0090: Use 'new(...)'
+dotnet_diagnostic.IDE0090.severity = silent
+
+# MA0076: Do not use implicit culture-sensitive ToString in interpolated strings
+dotnet_diagnostic.MA0076.severity=silent
+
+# MA0038: Make method static
+dotnet_diagnostic.MA0038.severity=silent

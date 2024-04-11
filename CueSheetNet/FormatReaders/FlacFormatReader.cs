@@ -1,22 +1,23 @@
-﻿namespace CueSheetNet.FileReaders;
+﻿namespace CueSheetNet.FormatReaders;
 internal sealed class FlacFormatReader : IAudioBinaryStreamFormatReader
 {
     public string FormatName { get; } = "Flac";
-    public string[] Extensions { get; } = new string[] { ".flac" };
+    public string[] Extensions { get; } = [".flac"];
     private static readonly byte[] fLaC = "fLaC"u8.ToArray();// 0x66 0x4c 0x61 0x43
     public bool ExtensionMatches(string fileName)
     {
         string ext = Path.GetExtension(fileName);
         return Extensions.Contains(ext, StringComparer.OrdinalIgnoreCase);
     }
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "MA0060:The value returned by Stream.Read/Stream.ReadAsync is not used", Justification = "Length of stream is ensured in calling method")]
+
     public bool FileSignatureMatches(Stream stream)
     {
         stream.Seek(0, SeekOrigin.Begin);
         Span<byte> four = stackalloc byte[4];
-        stream.Read(four);
+        _ = stream.Read(four);
         return four.SequenceEqual(fLaC);
     }
+
     public bool ReadMetadata(Stream stream, out FileMetadata metadata)
     {
         metadata = default;
@@ -69,7 +70,7 @@ internal sealed class FlacFormatReader : IAudioBinaryStreamFormatReader
             SampleRate = samples,
             Channels = numChannels,
             BitDepth = bitsPerSample,
-            FormatName = FormatName
+            FormatName = FormatName,
         };
         return true;
     }

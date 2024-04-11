@@ -8,7 +8,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
 {
     #region Rem
 
-    internal readonly List<CueRemark> RawRems = new();
+    internal readonly List<CueRemark> RawRems = [];
 
     public ReadOnlyCollection<CueRemark> Remarks => RawRems.AsReadOnly();
 
@@ -45,7 +45,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
 
     #region Comments
 
-    internal readonly List<string> RawComments = new();
+    internal readonly List<string> RawComments = [];
 
     public ReadOnlyCollection<string> Comments => RawComments.AsReadOnly();
 
@@ -98,7 +98,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
     public CueDataFile AddFile(string path, FileType type) => Container.AddFile(path, type);
     public CueDataFile? LastFile => Container.Files.LastOrDefault();
 
-    private List<ICueFile> _associatedFiles { get; } = new();
+    private readonly List<ICueFile> _associatedFiles = [];
     public ReadOnlyCollection<ICueFile> AssociatedFiles => _associatedFiles.AsReadOnly();
 
     #endregion
@@ -114,10 +114,8 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
         {
             return GetCueIndexAt(index);
         }
-        else
-        {
-            return null;
-        }
+
+        return null;
     }
     public CueIndex[] Indexes => Container.Indexes.Select(x => new CueIndex(x)).ToArray();
     public CueIndex AddIndex(CueTime time, CueDataFile file, CueTrack track)
@@ -276,7 +274,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
         {
             CueTrack one = Container.Tracks[i];
             CueTrack two = other.Container.Tracks[i];
-            if (!one.Equals(two,StringComparison.InvariantCulture))
+            if (!one.Equals(two, StringComparison.InvariantCulture))
                 return false;
         }
         for (int i = 0; i < Container.Files.Count; i++)
@@ -289,7 +287,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
         bool finalCheck = string.Equals(CdTextFile?.Name, other.CdTextFile?.Name, StringComparison.OrdinalIgnoreCase) //Paths are compared without caring for case
                                                                                                                       //&& string.Equals(SourceFile?.Name, other.SourceFile?.Name, StringComparison.OrdinalIgnoreCase)
                        && string.Equals(Performer, other.Performer, stringComparison)
-                       && string.Equals(Catalog, other.Catalog)
+                       && string.Equals(Catalog, other.Catalog,StringComparison.Ordinal)
                        && string.Equals(Composer, other.Composer, stringComparison)
                        && string.Equals(Title, other.Title, stringComparison);
         return finalCheck;
@@ -299,20 +297,20 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
     public CueIndex[] GetIndexesOfFile(int fileIndex)
     {
         (int start, int end) = Container.GetCueIndicesOfFile_Range(fileIndex);
-        if (start == end) return Array.Empty<CueIndex>();
+        if (start == end) return [];
         return Container.Indexes.Skip(start).Take(end - start).Select(x => new CueIndex(x)).ToArray();
     }
     internal (int Start, int End) GetTracksOfFile_Range(int fileIndex) => Container.GetCueIndicesOfTrack_Range(fileIndex);
     public CueTrack[] GetTracksOfFile(int fileIndex)
     {
         (int start, int end) = Container.GetCueTracksOfFile_Range(fileIndex);
-        if (start == end) return Array.Empty<CueTrack>();
+        if (start == end) return [];
         return Container.Tracks.Skip(start).Take(end - start).ToArray();
     }
     internal IEnumerable<CueTrack> GetTracksOfFile_IEnum(int fileIndex)
     {
         (int start, int end) = Container.GetCueTracksOfFile_Range(fileIndex);
-        if (start == end) return Array.Empty<CueTrack>();
+        if (start == end) return [];
         return Container.Tracks.Skip(start).Take(end - start);
     }
 
@@ -320,13 +318,13 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
     public CueIndex[] GetIndexesOfTrack(int trackIndex)
     {
         (int start, int end) = Container.GetCueIndicesOfTrack_Range(trackIndex);
-        if (start == end) return Array.Empty<CueIndex>();
+        if (start == end) return [];
         return Container.Indexes.Skip(start).Take(end - start).Select(x => (CueIndex)x).ToArray();
     }
 
-    public void RemoveCdTextFile() => SetCdTextFile(null);
+    public void RemoveCdTextFile() => SetCdTextFile(value: null);
 
-    public void RemoveCuePath() => SetCuePath(null);
+    public void RemoveCuePath() => SetCuePath(value: null);
 
     public void SetCdTextFile(string? value)
     {
@@ -352,7 +350,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
     public bool SetTrackHasZerothIndex(int trackIndex, bool hasZerothIndex)
     {
         CueTrack? track = Container.Tracks.ElementAtOrDefault(trackIndex) ?? throw new ArgumentOutOfRangeException(nameof(trackIndex), "Specified track does not exist");
-        (int Start, int End) = Container.GetCueIndicesOfTrack_Range(trackIndex, true);
+        (int Start, int End) = Container.GetCueIndicesOfTrack_Range(trackIndex, includeDangling: true);
         int count = End - Start;
         //0
         if (count == 0) throw new InvalidOperationException("Track has no indices");
@@ -361,27 +359,26 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
         {
             if (hasZerothIndex)
                 throw new InvalidOperationException("Cannot set zero index for track with only one index");
-            else
-                return SetZerothIndexImpl(hasZerothIndex, track);
+
+            return SetZerothIndexImpl(hasZerothIndex, track);
         }
         //2+
         if (Container.Indexes[Start].Time > Container.Indexes[Start + 1].Time) //if 0th time is larger than 1st it means the track is split
         {
             if (!hasZerothIndex)
                 throw new InvalidOperationException("Cannot remove zero index in track split across 2 files");
-            else
-                return SetZerothIndexImpl(hasZerothIndex, track);
+
+            return SetZerothIndexImpl(hasZerothIndex, track);
         }
         //2+ indices, one file
-        else
-            return SetZerothIndexImpl(hasZerothIndex, track);
+        return SetZerothIndexImpl(hasZerothIndex, track);
     }
 
 
 
     internal CueIndexImpl AddIndexInternal(CueTime time, int fileIndex = -1, int trackIndex = -1) => Container.AddIndex(time, fileIndex, trackIndex);
 
-    internal (int Start, int End) GetCueIndicesOfTrack(int trackIndex) => Container.GetCueIndicesOfTrack_Range(trackIndex, true);
+    internal (int Start, int End) GetCueIndicesOfTrack(int trackIndex) => Container.GetCueIndicesOfTrack_Range(trackIndex, includeDangling: true);
 
     internal void RefreshIndices()
     {
@@ -526,9 +523,11 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
 
     public static bool operator ==(CueSheet? left, CueSheet? right)
     {
-        if (left is not null) return left.Equals(right, StringComparison.InvariantCulture); //not null and whatever
-        else if (right is not null) return false; // null and not null
-        else return true; // null and null
+        if (left is not null) return left.Equals(right, StringComparison.InvariantCulture); // notnull and whatever
+
+        if (right is not null) return false; // null and notnull
+
+        return true; // null and null
     }
     public static bool operator !=(CueSheet? left, CueSheet? right)
     {
@@ -575,11 +574,11 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
         return HashCode.Combine(Performer, Title, Date, Files.Count, Tracks.Count, Remarks.Count, Comments.Count);
     }
     /// <inheritdoc cref="CuePackage.CopyCueFiles(CueSheet, string, string?)"/>
-    public CueSheet CopyPackage(string destination, string? pattern) => CopyPackage(destination, pattern, null);
+    public CueSheet CopyPackage(string destination, string? pattern) => CopyPackage(destination, pattern, settings: null);
     /// <inheritdoc cref="CuePackage.CopyCueFiles(CueSheet, string, string?)"/>
     public CueSheet CopyPackage(string destination, string? pattern, CueWriterSettings? settings) => CuePackage.CopyPackage(this, destination, pattern, settings);
     /// <inheritdoc cref="CuePackage.MoveCueFiles(CueSheet, string, string?)"/>
-    public CueSheet MovePackage(string destination, string? pattern) => MovePackage(destination, pattern, null);
+    public CueSheet MovePackage(string destination, string? pattern) => MovePackage(destination, pattern, settings: null);
     /// <inheritdoc cref="CuePackage.MoveCueFiles(CueSheet, string, string?)"/>
     public CueSheet MovePackage(string destination, string? pattern, CueWriterSettings? settings) => CuePackage.MovePackage(this, destination, pattern, settings);
     public void RemovePackage() => CuePackage.RemovePackage(this);

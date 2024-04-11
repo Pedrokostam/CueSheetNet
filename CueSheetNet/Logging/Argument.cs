@@ -11,8 +11,8 @@ namespace CueSheetNet.Logging;
 /// <param name="Accessor">Optional property or parameterless method to be used instead of value of object</param>
 public record struct Argument(string Identifier, object? Object, string? Accessor = null)
 {
-    public Type? ObjectType => Object?.GetType();
-    public object? Get()
+    public readonly Type? ObjectType => Object?.GetType();
+    public readonly object? Get()
     {
         if (Accessor is null) return Object;
         PropertyInfo? prop = ObjectType?.GetProperty(Accessor);
@@ -20,19 +20,7 @@ public record struct Argument(string Identifier, object? Object, string? Accesso
             return prop.GetValue(Object) ?? Object;
         MethodInfo? meth = ObjectType?.GetMethod(Accessor);
         if (meth is not null)
-            return meth.Invoke(Object, Array.Empty<Object?>()) ?? Object;
+            return meth.Invoke(Object, []) ?? Object;
         return Object;
     }
-    //public override string ToString()
-    //{
-    //    string def = Object.ToString() ?? "N/A";
-    //    if (Accessor is null) return def;
-    //    PropertyInfo? prop = ObjectType.GetProperty(Accessor);
-    //    if (prop is not null)
-    //        return prop.GetValue(Object)?.ToString() ?? def;
-    //    MethodInfo? meth = ObjectType.GetMethod(Accessor);
-    //    if (meth is not null)
-    //        return meth.Invoke(Object, Array.Empty<Object>())?.ToString() ?? def;
-    //    return def;
-    //}
 }

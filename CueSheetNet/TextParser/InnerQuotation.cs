@@ -97,17 +97,18 @@ public readonly record struct InnerQuotation
     {
         if (input == null || Redundant)
             return input;
+
         if (Symmetrical)
             return input.Replace(DoubleQuote, OpeningQuote);
-        else
-            return ReplaceNonsymmetricalQuotes(input);
+
+        return ReplaceNonsymmetricalQuotes(input);
     }
 
     public static implicit operator InnerQuotation(char symmetricalQuotation) => new(symmetricalQuotation);
 
     private string ReplaceNonsymmetricalQuotes(string input)
     {
-        List<int> ints = new();
+        List<int> ints = [];
         int j = 0;
         for (int i = 0; i < input.Length; i++)
         {

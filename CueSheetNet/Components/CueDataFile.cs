@@ -1,5 +1,5 @@
 ﻿using CueSheetNet.FileHandling;
-using CueSheetNet.FileReaders;
+using CueSheetNet.FormatReaders;
 using CueSheetNet.Internal;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;

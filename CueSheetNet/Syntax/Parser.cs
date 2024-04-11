@@ -1,11 +1,13 @@
 ﻿namespace CueSheetNet.Syntax;
-#pragma warning disable MA0048 // File name must match type name
 public static class Parser
 {
     public static TrackFlags Parse(string flagstring)
     {
         TrackFlags flag = TrackFlags.None;
-        var parts = flagstring.Replace("\"", "").Replace("'", "").Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var parts = flagstring
+            .Replace("\"", "", StringComparison.Ordinal)
+            .Replace("'", "",StringComparison.Ordinal)
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries);
         foreach (var part in parts)
         {
             char trim = part[0];
@@ -23,7 +25,7 @@ public static class Parser
     public static string ToCueCompatible(this TrackFlags fl)
     {
         if (fl == TrackFlags.None) return string.Empty;
-        List<string> strs = new();
+        List<string> strs = [];
         if (fl.HasFlag(TrackFlags.DigitalCopyPermitted))
         {
             strs.Add("DCP");
@@ -47,4 +49,3 @@ public static class Parser
 #endif
     }
 }
-#pragma warning restore MA0048 // File name must match type name

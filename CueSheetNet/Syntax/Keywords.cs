@@ -14,6 +14,6 @@
         POSTGAP,
         PREGAP,
         ISRC,
-        CATALOG
+        CATALOG,
     }
 }
