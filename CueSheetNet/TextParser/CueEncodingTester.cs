@@ -130,7 +130,7 @@ internal class CueEncodingTester
             // U+0080..U+07FF       C2..DF     80..BF
             // Range                C2..DF     80..BF
             // skipping C0, C1 - non-minimal
-            else if (CheckRange(allBytes[i], 0xC2, 0xDF)
+            if (CheckRange(allBytes[i], 0xC2, 0xDF)
               && CheckRange(allBytes[i + 1], 0x80, 0xBF))
             {
                 utf8 = true;

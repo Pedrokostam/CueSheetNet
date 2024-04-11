@@ -113,7 +113,7 @@ public partial class CueReader
 #if NETCOREAPP2_1_OR_GREATER
         string s = new string(cueContentChars);
 #else
-        string s = new string(cueContentChars.ToArray());
+        string s = new(cueContentChars.ToArray());
 #endif
         return ParseCueSheetFromStringContent(s);
     }
@@ -275,7 +275,7 @@ public partial class CueReader
         }
         TrackFlags flags = TrackFlags.None;
         string[] parts = line[6..] // FLAGS_
-            .Replace("\"", "",StringComparison.Ordinal)
+            .Replace("\"", "", StringComparison.Ordinal)
             .Replace("'", "", StringComparison.Ordinal)
             .Split(' ', StringSplitOptions.RemoveEmptyEntries);
         foreach (var part in parts)
@@ -322,7 +322,7 @@ public partial class CueReader
             return;
         }
         string number = GetKeyword(line, 6);// INDEX_
-        if (!int.TryParse(number,NumberStyles.Integer, CultureInfo.InvariantCulture, out int num))
+        if (!int.TryParse(number, NumberStyles.Integer, CultureInfo.InvariantCulture, out int num))
         {
             //Logger.LogError("Incorrect Index number format at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
             throw new FormatException($"Incorrect Index number format at line {CurrentLineIndex}: {line}");
@@ -466,8 +466,8 @@ public partial class CueReader
             return null;
         if (spanny[^1] == Quotation && spanny[0] == Quotation)
             return spanny[1..^1].ToString();
-        else
-            return spanny.ToString();
+        
+        return spanny.ToString();
     }
     /// <summary>
     /// Get the first full word from the specified start, stops at whitespace

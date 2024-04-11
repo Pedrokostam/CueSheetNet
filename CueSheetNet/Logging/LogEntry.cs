@@ -128,7 +128,7 @@ public partial class LogEntry
     [GeneratedRegex(@"\(.*\)", RegexOptions.Compiled, 500)]
     private static partial Regex ParenthesisRegex();
 #else
-    private static readonly Regex ParenthesisRegexImpl = new Regex(@"\(.*\)", RegexOptions.Compiled, TimeSpan.FromMilliseconds(500));
+    private static readonly Regex ParenthesisRegexImpl = new(@"\(.*\)", RegexOptions.Compiled, TimeSpan.FromMilliseconds(500));
     private static Regex ParenthesisRegex() => ParenthesisRegexImpl;
 #endif
 }

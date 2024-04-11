@@ -102,19 +102,15 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemCommentable
             {
                 return ParentSheet.GetCueIndexAt(Start);
             }
-            else
+
+            if (ParentSheet.IndexesImpl[Start].Number == 0)
             {
-                if (ParentSheet.IndexesImpl[Start].Number == 0)
-                {
-                    // first index is 00, so audio starts at 01 - next
-                    return ParentSheet.GetCueIndexAt(Start + 1);
-                }
-                else
-                {
-                    // first index is 01, this is audio start
-                    return ParentSheet.GetCueIndexAt(Start);
-                }
+                // first index is 00, so audio starts at 01 - next
+                return ParentSheet.GetCueIndexAt(Start + 1);
             }
+
+            // first index is 01, this is audio start
+            return ParentSheet.GetCueIndexAt(Start);
         }
     }
     public CueTime? Duration
@@ -135,16 +131,12 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemCommentable
                 {
                     return fileDur.Value - AudioStartIndex.Time;
                 }
-                else
-                {
-                    // File meta is unknown / no file
-                    return null;
-                }
+
+                // File meta is unknown / no file
+                return null;
             }
-            else // next track starts in the same file
-            {
-                return nextTrackImplIndex!.Time - AudioStartIndex.Time;
-            }
+
+            return nextTrackImplIndex!.Time - AudioStartIndex.Time;
         }
     }
 
@@ -158,7 +150,7 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemCommentable
         return "Track " + Number.ToString("D2") + ": " + Title;
     }
     #region Rem
-    private readonly List<CueRemark> RawRems = new();
+    private readonly List<CueRemark> RawRems = [];
     public ReadOnlyCollection<CueRemark> Remarks => RawRems.AsReadOnly();
     public void ClearRemarks() => RawRems.Clear();
 
@@ -264,7 +256,7 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemCommentable
 
     public override bool Equals(object? obj)
     {
-        return Equals(obj as CueTrack,StringComparison.InvariantCulture);
+        return Equals(obj as CueTrack, StringComparison.InvariantCulture);
     }
 
     public override int GetHashCode()

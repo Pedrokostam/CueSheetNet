@@ -114,10 +114,8 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
         {
             return GetCueIndexAt(index);
         }
-        else
-        {
-            return null;
-        }
+
+        return null;
     }
     public CueIndex[] Indexes => Container.Indexes.Select(x => new CueIndex(x)).ToArray();
     public CueIndex AddIndex(CueTime time, CueDataFile file, CueTrack track)
@@ -276,7 +274,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
         {
             CueTrack one = Container.Tracks[i];
             CueTrack two = other.Container.Tracks[i];
-            if (!one.Equals(two,StringComparison.InvariantCulture))
+            if (!one.Equals(two, StringComparison.InvariantCulture))
                 return false;
         }
         for (int i = 0; i < Container.Files.Count; i++)
@@ -361,20 +359,19 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
         {
             if (hasZerothIndex)
                 throw new InvalidOperationException("Cannot set zero index for track with only one index");
-            else
-                return SetZerothIndexImpl(hasZerothIndex, track);
+
+            return SetZerothIndexImpl(hasZerothIndex, track);
         }
         //2+
         if (Container.Indexes[Start].Time > Container.Indexes[Start + 1].Time) //if 0th time is larger than 1st it means the track is split
         {
             if (!hasZerothIndex)
                 throw new InvalidOperationException("Cannot remove zero index in track split across 2 files");
-            else
-                return SetZerothIndexImpl(hasZerothIndex, track);
+
+            return SetZerothIndexImpl(hasZerothIndex, track);
         }
         //2+ indices, one file
-        else
-            return SetZerothIndexImpl(hasZerothIndex, track);
+        return SetZerothIndexImpl(hasZerothIndex, track);
     }
 
 
@@ -526,9 +523,11 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
 
     public static bool operator ==(CueSheet? left, CueSheet? right)
     {
-        if (left is not null) return left.Equals(right, StringComparison.InvariantCulture); //not null and whatever
-        else if (right is not null) return false; // null and not null
-        else return true; // null and null
+        if (left is not null) return left.Equals(right, StringComparison.InvariantCulture); // notnull and whatever
+
+        if (right is not null) return false; // null and notnull
+
+        return true; // null and null
     }
     public static bool operator !=(CueSheet? left, CueSheet? right)
     {
