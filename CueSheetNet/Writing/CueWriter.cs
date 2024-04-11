@@ -8,7 +8,6 @@ using System.Globalization;
 using System.Text;
 
 namespace CueSheetNet;
-
 public sealed class CueWriter
 {
     /// <summary>

@@ -271,7 +271,7 @@ public static partial class CuePackage
         var allFiles = audioFiles.Concat(sheet.AssociatedFiles).Select(x => x.SourceFile);
         if (sheet.SourceFile is FileInfo main)
         {
-            allFiles.Append(main);
+            allFiles = allFiles.Append(main);
         }
         HashSet<string> h = new(StringComparer.InvariantCulture);
         foreach (var file in allFiles)

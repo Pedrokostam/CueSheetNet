@@ -22,11 +22,11 @@ internal sealed class WaveFormatReader : IAudioFileFormatReader
          */
         stream.Seek(0, SeekOrigin.Begin);
         Span<byte> four = stackalloc byte[4];
-        stream.Read(four);
+        _ = stream.Read(four);
         if (!four.SequenceEqual(RIFF))
             return false;
         stream.Seek(4, SeekOrigin.Current);
-        stream.Read(four);
+        _ = stream.Read(four);
         return four.SequenceEqual(WAVE);
     }
 
