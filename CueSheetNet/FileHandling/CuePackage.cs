@@ -105,13 +105,6 @@ public static partial class CuePackage
         }
         return name;
     }
-#if NET7_0_OR_GREATER
-    [GeneratedRegex(@"%(?<property>[\w\s]+)%", RegexOptions.Compiled, 500)]
-    private static partial Regex PropertyParser();
-#else
-    private static readonly Regex PropertyParserImpl = new(@"%(?<property>[\w\s]+)%", RegexOptions.Compiled, TimeSpan.FromMilliseconds(500));
-    private static Regex PropertyParser() => PropertyParserImpl;
-#endif
 
     /// <summary>
     /// Gets parent directory path of <paramref name="destinationWithPattern"/>, creates the directory on the disk and return its <see cref="DirectoryInfo"/>

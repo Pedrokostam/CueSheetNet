@@ -12,7 +12,6 @@ internal sealed class WaveFormatReader : IAudioFileFormatReader
         string ext = Path.GetExtension(fileName);
         return Extensions.Contains(ext, StringComparer.OrdinalIgnoreCase);
     }
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "MA0060:The value returned by Stream.Read/Stream.ReadAsync is not used", Justification = "Length of stream is ensured in calling method")]
     public bool FileSignatureMatches(Stream stream)
     {
         /*

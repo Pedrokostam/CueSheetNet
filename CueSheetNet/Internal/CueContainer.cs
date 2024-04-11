@@ -138,7 +138,6 @@ internal class CueContainer
     }
     private CueIndexImpl AddIndex_NoIndexInTrack(CueTime time, CueDataFile file, CueTrack lastTrack)
     {
-        CueIndexImpl lastIndex = Indexes[^1];
         (int Start, int End) = GetCueIndicesOfTrack_Range(lastTrack.Index, includeDangling: true);
         // track has no indices, and the previous file has no tracks - move track to current file
         int length = End - Start;
