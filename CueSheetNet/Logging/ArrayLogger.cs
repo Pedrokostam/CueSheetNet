@@ -2,7 +2,7 @@
 
 namespace CueSheetNet.Logging;
 
-public class ArrayLogger : ILogDevice
+public class ArrayLogger(LogLevel requested) : ILogDevice
 {
     public virtual void WriteLog(LogEntry entry)
     {
@@ -12,14 +12,8 @@ public class ArrayLogger : ILogDevice
     private readonly List<LogEntry> _LogEntries = [];
     public ReadOnlyCollection<LogEntry> LogEntries => _LogEntries.AsReadOnly();
 
-    protected LogLevel _RequestedLogLevels;
+    protected LogLevel _RequestedLogLevels = requested;
     public LogLevel RequestedLogLevels => _RequestedLogLevels;
 
-    public Guid InstanceId { get; }
-
-    public ArrayLogger(LogLevel requested)
-    {
-        InstanceId = Guid.NewGuid();
-        _RequestedLogLevels = requested;
-    }
+    public Guid InstanceId { get; } = Guid.NewGuid();
 }
