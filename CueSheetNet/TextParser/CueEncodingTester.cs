@@ -7,12 +7,12 @@ using System.Runtime.InteropServices;
 using System.Text;
 
 namespace CueSheetNet.TextParser;
-internal class CueEncodingTester(Stream stream, CueSource source)
+internal sealed class CueEncodingTester(Stream stream, CueSource source)
 {
     /// <summary>
     /// Compares bytes in a case-insensitive way. Case is changed by changing the sixth bit. Works for standard ASCII letters. 
     /// </summary>
-    class ByteInvariantComparer : EqualityComparer<byte>
+    sealed class ByteInvariantComparer : EqualityComparer<byte>
     {
         private static int ChangeCase(byte b)
         {

@@ -3,7 +3,7 @@
 namespace CueSheetNet.Internal;
 
 [DebuggerDisplay("Files: {Files.Count}, Track: {Tracks.Count}, Indexes: {Indexes.Count}")]
-internal class CueContainer(CueSheet cueSheet)
+internal sealed class CueContainer(CueSheet cueSheet)
 {
     public bool ParsingMode { get; set; }
     private CueSheet ParentSheet { get; } = cueSheet;

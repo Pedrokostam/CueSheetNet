@@ -2,7 +2,7 @@
 
 namespace CueSheetNet.FileReaders;
 
-internal class CdFormatReader : IBinaryStreamFormatReader
+internal sealed class CdFormatReader : IBinaryStreamFormatReader
 {
     public string FormatName { get; } = "BINARY";
     public string[] Extensions { get; } = [".BIN", ".MM2", ".ISO", ".MOT", ".IMG"];

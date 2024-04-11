@@ -3,7 +3,7 @@
 namespace CueSheetNet.Internal;
 
 [DebuggerDisplay("CIImpl- Num: {Number}, Abs: {Index} - File {File.Index}, Track {Track.Index}")]
-internal class CueIndexImpl : CueItemBase
+internal sealed class CueIndexImpl : CueItemBase
 {
     public CueDataFile File { get; }
 
