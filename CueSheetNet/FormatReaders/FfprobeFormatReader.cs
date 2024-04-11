@@ -115,7 +115,7 @@ public sealed class FfprobeFormatReader : IAudioFileFormatReader
         }
         data = new FileMetadata(
             TimeSpan.FromSeconds(GetValue(ini, "duration", -1.0)),
-            false,
+Binary: false,
             GetValue(ini, "sample_rate", -1),
             GetValue(ini, "channels", -1),
             bit_depth,

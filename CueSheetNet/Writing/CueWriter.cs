@@ -17,7 +17,7 @@ public sealed class CueWriter
     readonly StringBuilder Builder;
     public CueWriterSettings Settings { get; set; }
 
-    public CueWriter() : this(null)
+    public CueWriter() : this(settings: null)
     {
     }
     public CueWriter(CueWriterSettings? settings)
@@ -53,8 +53,8 @@ public sealed class CueWriter
     /// <remarks>Also performs other string replacements, if specified in settings</remarks>
     [return: NotNullIfNotNull(nameof(str))]
     private string? Replace(string? str) => Settings.InnerQuotationReplacement.ReplaceQuotes(str);
-    private bool AppendRemark(CueRemark rem, int depth) => AppendStringify("REM " + rem.Field, Replace(rem.Value), depth, true);
-    private bool AppendIndex(CueIndexImpl cim) => AppendStringify("INDEX " +  cim.Number.Pad(2), cim.Time.ToString(), 2, false);
+    private bool AppendRemark(CueRemark rem, int depth) => AppendStringify("REM " + rem.Field, Replace(rem.Value), depth, quoteAllowed: true);
+    private bool AppendIndex(CueIndexImpl cim) => AppendStringify("INDEX " +  cim.Number.Pad(2), cim.Time.ToString(), 2, quoteAllowed: false);
     [return: NotNullIfNotNull(nameof(s))]
     private static string? Enquote(string? s)
     {
@@ -81,7 +81,7 @@ public sealed class CueWriter
     private void AppendComments(IEnumerable<string> comms, int depth = 0)
     {
         foreach (var item in comms)
-            AppendStringify("REM COMMENT", Replace(item), depth, true);
+            AppendStringify("REM COMMENT", Replace(item), depth, quoteAllowed: true);
     }
     private void AppendIndentation(int level)
     {
@@ -115,7 +115,7 @@ public sealed class CueWriter
             _ => throw new NotSupportedException(),
         };
         if (write) //if both track and sheet value are null, next method will skip it
-            AppendStringify(keyName.ToUpperInvariant(), Replace(trackValue), 2, true);
+            AppendStringify(keyName.ToUpperInvariant(), Replace(trackValue), 2, quoteAllowed: true);
     }
 
     internal char[] WriteToCharArray(CueSheet sheet)
@@ -137,13 +137,13 @@ public sealed class CueWriter
         Builder.Clear();
         AppendRems(sheet.Remarks, 0);
         AppendComments(sheet.Comments, 0);
-        AppendStringify("REM DATE", sheet.Date, 0, true);
-        AppendStringify("REM DISCID", sheet.DiscID, 0, true);
-        AppendStringify("CDTEXTFILE", sheet.CdTextFile?.Name, 0, true);
-        AppendStringify("CATALOG", sheet.Catalog, 0, true);
-        AppendStringify("PERFORMER", Replace(sheet.Performer), 0, true);
-        AppendStringify("REM COMPOSER", Replace(sheet.Composer), 0, true);
-        AppendStringify("TITLE", Replace(sheet.Title), 0, true);
+        AppendStringify("REM DATE", sheet.Date, 0, quoteAllowed: true);
+        AppendStringify("REM DISCID", sheet.DiscID, 0, quoteAllowed: true);
+        AppendStringify("CDTEXTFILE", sheet.CdTextFile?.Name, 0, quoteAllowed: true);
+        AppendStringify("CATALOG", sheet.Catalog, 0, quoteAllowed: true);
+        AppendStringify("PERFORMER", Replace(sheet.Performer), 0, quoteAllowed: true);
+        AppendStringify("REM COMPOSER", Replace(sheet.Composer), 0, quoteAllowed: true);
+        AppendStringify("TITLE", Replace(sheet.Title), 0, quoteAllowed: true);
         CueTrack? track = null;
         CueDataFile? file = null;
         foreach (CueIndexImpl ind in sheet.IndexesImpl)
@@ -206,20 +206,20 @@ public sealed class CueWriter
     private void AppendPostgap(CueTrack? track)
     {
         if (track != null && track.PostGap > CueTime.Zero)
-            AppendStringify("POSTGAP", track.PostGap, 2, false);
+            AppendStringify("POSTGAP", track.PostGap, 2, quoteAllowed: false);
     }
 
-    private void AppendISRC(CueTrack track) => AppendStringify("ISRC", track.ISRC, 2, true);
+    private void AppendISRC(CueTrack track) => AppendStringify("ISRC", track.ISRC, 2, quoteAllowed: true);
     private void AppendFlags(CueTrack track)
     {
         if (track.Flags != TrackFlags.None)
-            AppendStringify("FLAGS", track.Flags.ToCueCompatible(), 2, true);
+            AppendStringify("FLAGS", track.Flags.ToCueCompatible(), 2, quoteAllowed: true);
     }
 
     private void AppendPregap(CueTrack track)
     {
         if (track.PreGap > CueTime.Zero)
-            AppendStringify("PREGAP", track.PreGap, 2, false);
+            AppendStringify("PREGAP", track.PreGap, 2, quoteAllowed: false);
     }
     /// <summary>
     /// Returns an <see cref="Encoding"/> object. Three sources will be tried in this order:

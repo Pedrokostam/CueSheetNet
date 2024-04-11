@@ -177,7 +177,7 @@ internal class CueEncodingTester
         }
         if (utf8)
         {
-            return new UTF8Encoding(false);
+            return new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
         }
         // Quite difficult if not impossible to guess which regional encoding is being used.
         // We're assuming it codepage 1252, as it is quite common for english text. It'allBytes actually the most common encoding in the net, save for utf

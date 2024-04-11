@@ -42,7 +42,7 @@ public partial class CueReader
     }
     /// <remarks></remarks>
     /// <inheritdoc cref="ParseCueSheet(string, Encoding?)"/>
-    public CueSheet ParseCueSheet(string cuePath) => ParseCueSheet(cuePath, null);
+    public CueSheet ParseCueSheet(string cuePath) => ParseCueSheet(cuePath, encoding: null);
     /// <summary>
     /// Loads specified text file and parses it as CueSheet.
     /// </summary>
@@ -62,7 +62,7 @@ public partial class CueReader
         LogParseSource();
         if (!File.Exists(cuePath)) throw new FileNotFoundException($"{cuePath} does not exist");
         byte[] cueFileBytes = File.ReadAllBytes(cuePath);
-        using MemoryStream fs = new(cueFileBytes, false);
+        using MemoryStream fs = new(cueFileBytes, writable: false);
         CueSheet cue = ParseCueSheet_Impl(fs, cuePath);
         return cue;
     }
@@ -72,7 +72,7 @@ public partial class CueReader
     private static void LogParseStart() => Logger.LogDebug("Parsing started");
     /// <remarks></remarks>
     /// <inheritdoc cref="ParseCueSheet(byte[], Encoding?)"/>
-    public CueSheet ParseCueSheet(byte[] cueFileBytes) => ParseCueSheet(cueFileBytes, null);
+    public CueSheet ParseCueSheet(byte[] cueFileBytes) => ParseCueSheet(cueFileBytes, encoding: null);
     /// <summary>
     /// Parses byte array as CueSheet. 
     /// </summary>
@@ -85,8 +85,8 @@ public partial class CueReader
         Reset(encoding);
         Source = new CueSource(cueFileBytes);
         LogParseSource();
-        using MemoryStream fs = new(cueFileBytes, false);
-        return ParseCueSheet_Impl(fs, null);
+        using MemoryStream fs = new(cueFileBytes, writable: false);
+        return ParseCueSheet_Impl(fs, path: null);
     }
     /// <summary>
     /// Parses string as CueSheet. 
@@ -131,13 +131,13 @@ public partial class CueReader
             Logger.LogInformation("Detected {Encoding.EncodingName} encoding in {Time}ms", Encoding, st.ElapsedMilliseconds);
         }
         fs.Seek(0, SeekOrigin.Begin);
-        using TextReader strr = new StreamReader(fs, Encoding, false);
+        using TextReader strr = new StreamReader(fs, Encoding, detectEncodingFromByteOrderMarks: false);
         return ReadImpl(strr);
     }
 
     private CueSheet ReadImpl(TextReader txtRead)
     {
-        Sheet!.SetParsingMode(true);
+        Sheet!.SetParsingMode(parsing: true);
         Stopwatch st = Stopwatch.StartNew();
         while (txtRead.ReadLine()?.Trim() is string line)
         {
@@ -194,7 +194,7 @@ public partial class CueReader
         st.Stop();
         Logger.LogInformation("Finished parsing {Source} in {Time}ms", Source, st.ElapsedMilliseconds);
         Sheet.SourceEncoding = Encoding;
-        Sheet.SetParsingMode(false);
+        Sheet.SetParsingMode(parsing: false);
         return Sheet;
     }
 

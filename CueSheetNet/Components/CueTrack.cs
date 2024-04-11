@@ -37,7 +37,7 @@ public class CueTrack : CueItemBase, IEquatable<CueTrack>, IRemCommentable
     private string? _Title;
     public string Title
     {
-        get => _Title ?? Path.ChangeExtension(ParentFile.SourceFile.Name, null);
+        get => _Title ?? Path.ChangeExtension(ParentFile.SourceFile.Name, extension: null);
         set
         {
             if (string.IsNullOrEmpty(value))

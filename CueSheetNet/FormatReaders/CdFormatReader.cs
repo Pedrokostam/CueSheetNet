@@ -61,7 +61,7 @@ internal class CdFormatReader : IBinaryStreamFormatReader
         bool hasAudio = trackTypes.Where(x => x.ContainsAudioData).Any();
         metadata = new FileMetadata(
             duration,
-            true,
+Binary: true,
             hasAudio ? 44100 : -1,
             hasAudio ? 2 : -1,
             hasAudio ? 16 : -1,

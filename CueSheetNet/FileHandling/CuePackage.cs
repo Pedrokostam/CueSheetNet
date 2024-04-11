@@ -323,7 +323,7 @@ public static partial class CuePackage
                                           activeSheet,
                                           out DirectoryInfo immediateParentDir,
                                           out List<TransFile> transFiles,
-                                          preserveSubfolders, null);
+                                          preserveSubfolders, newAudioExtension: null);
 
         List<FileInfo> inProgressCopied = [];
         try
@@ -372,7 +372,7 @@ public static partial class CuePackage
                                           activeSheet,
                                           out DirectoryInfo immediateParentDir,
                                           out List<TransFile> transFiles,
-                                          preserveSubfolders, null);
+                                          preserveSubfolders, newAudioExtension: null);
 
         List<MovedFile> movedFileArchive = [];
         try
