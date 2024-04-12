@@ -1,7 +1,8 @@
-﻿namespace CueSheetNet;
+﻿#if !NET6_0_OR_GREATER // NET 6 contains native implementation of all below methods
+namespace CueSheetNet;
 internal static class StringExtensions
 {
-#if !NETCOREAPP2_0_OR_GREATER || !NETSTANDARD2_1_OR_GREATER // String operations introduced in NET Core 2.0 and NETStandard 2.1
+#if !(NETSTANDARD2_1_OR_GREATER || NETCOREAPP2_0_OR_GREATER)
     /// <summary>
     /// Extension method for below NETCORE 2.0 (StringComparison parameter was missing).
     /// <para/>
@@ -38,20 +39,6 @@ internal static class StringExtensions
     }
 
     /// <summary>
-    /// Extension method for below NETCORE 2.0 (StringSplitOptions parameter was missing).
-    /// <para/>
-    /// Returns a value indicating whether a specified character occurs within this string, using the specified comparison rules.
-    /// </summary>
-    /// <param name="input"></param>
-    /// <param name="value"></param>
-    /// <param name="comparison"></param>
-    /// <returns></returns>
-    public static bool Contains(this string input, char value, StringComparison comparison)
-    {
-        return input.IndexOf(value.ToString(), comparison) != -1;
-    }
-
-    /// <summary>
     /// Extension method for below NETCORE 2.0 (StringComparison parameter was missing).
     /// <para/>
     /// Returns the hash code for this string using the specified rules.
@@ -75,20 +62,38 @@ internal static class StringExtensions
         return comparer.GetHashCode(input);
     }
 
-    public static void CopyTo(this string input, Span<char> destination)
-    {
-        if(destination.Length < input.Length)
-            throw new ArgumentException("Target span is too short",nameof(destination));    
-        for (int i = 0; i < input.Length; i++)
-        {
-            destination[i] = input[i];
-        }
-    }
-
+#endif
+#if !NETCOREAPP2_1_OR_GREATER
     public static bool StartsWith(this string input, char character)
     {
         if (input.Length == 0) return false;
         return input[0] == character;
     }
+
+    /// <summary>
+    /// Extension method for below NETCORE 2.0 (StringSplitOptions parameter was missing).
+    /// <para/>
+    /// Returns a value indicating whether a specified character occurs within this string, using the specified comparison rules.
+    /// </summary>
+    /// <param name="input"></param>
+    /// <param name="value"></param>
+    /// <param name="comparison"></param>
+    /// <returns></returns>
+    public static bool Contains(this string input, char value, StringComparison comparison)
+    {
+        return input.IndexOf(value.ToString(), comparison) != -1;
+    }
+#endif
+#if !NET6_0_OR_GREATER
+    public static void CopyTo(this string input, Span<char> destination)
+    {
+        if (destination.Length < input.Length)
+            throw new ArgumentException("Target span is too short", nameof(destination));
+        for (int i = 0; i < input.Length; i++)
+        {
+            destination[i] = input[i];
+        }
+    }
 #endif
 }
+//#endif
