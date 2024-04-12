@@ -1,6 +1,6 @@
-﻿#if !(NETCOREAPP2_1_OR_GREATER || !NETSTANDARD2_1_OR_GREATER) // Stream.Read(Span) was introduced in NET Core 2.1 and NETStandard2.1
+﻿#if !(NETCOREAPP2_1_OR_GREATER || NETSTANDARD2_1_OR_GREATER) // Stream.Read(Span) was introduced in NET Core 2.1 and NETStandard2.1
 namespace CueSheetNet;
-internal static class StreamExtensions
+internal static class StreamCompatibility
 {
     /// <summary>
     /// <para>COMPATIBILITY</para>
@@ -9,7 +9,7 @@ internal static class StreamExtensions
     /// </summary>
     /// <param name="stream"></param>
     /// <param name="span">A region of memory. When this method returns, the contents of this region are replaced by the bytes read from the current source.</param>
-    /// <returns></returns>
+    /// <returns>The total number of bytes read into the buffer. This can be less than the size of the buffer if that many bytes are not currently available, or zero (0) if the buffer's length is zero or the end of the stream has been reached.</returns>
     public static int Read(this Stream stream, Span<byte> span)
     {
         int i;
