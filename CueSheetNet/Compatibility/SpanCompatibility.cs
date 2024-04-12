@@ -12,7 +12,7 @@ internal static class SpanCompatibility
     /// <param name="span">The first sequence to compare.</param>
     /// <param name="other">The second sequence to compare.</param>
     /// <param name="comparer">The <see cref="IEqualityComparer{T}"/> implementation to use when comparing elements, or <see langword="null"/> to use the default <see cref="IEqualityComparer{T}"/> for the type of an element.</param>
-    /// <returns></returns>
+    /// <returns><see langword="true"/> if the two sequences are equal; otherwise, <see langword="false"/>.</returns>
     public static bool SequenceEqual<T>(this Span<T> span, ReadOnlySpan<T> other, IEqualityComparer<T>? comparer = null) where T : notnull
     {
         return ((ReadOnlySpan<T>)span).SequenceEqual(other, comparer);
