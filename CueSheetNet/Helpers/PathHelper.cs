@@ -1,4 +1,4 @@
-﻿namespace CueSheetNet;
+﻿namespace CueSheetNet.Helpers;
 public static class PathHelper
 {
     private static string GetPathWithSeparator(DirectoryInfo directory)
@@ -49,7 +49,7 @@ public static class PathHelper
         basePath ??= Environment.CurrentDirectory + Path.DirectorySeparatorChar;
         var referenceUri = new Uri(basePath);
         string relative = Uri.UnescapeDataString(referenceUri.MakeRelativeUri(fileUri).ToString()).Replace('/', Path.DirectorySeparatorChar);
-        if(relative == string.Empty)
+        if (relative == string.Empty)
         {
             relative = ".";
         }

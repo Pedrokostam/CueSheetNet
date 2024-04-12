@@ -27,6 +27,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <Using Include="CueSheetNet.Helpers" />
 	  <Using Include="System.Text" />
 	</ItemGroup>
 	

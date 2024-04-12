@@ -1,10 +1,10 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
-namespace CueSheetNet;
+namespace CueSheetNet.Helpers;
 internal static class ExceptionHelper
 {
-    public static void ThrowIfNull([NotNull]object? value, [CallerMemberName] string? name = null, string? message = null)
+    public static void ThrowIfNull([NotNull] object? value, [CallerMemberName] string? name = null, string? message = null)
     {
         if (value == null)
         {
