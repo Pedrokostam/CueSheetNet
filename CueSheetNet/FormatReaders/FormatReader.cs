@@ -1,5 +1,4 @@
-﻿using CueSheetNet.FormatReaders;
-using CueSheetNet.Logging;
+﻿using CueSheetNet.Logging;
 
 
 namespace CueSheetNet.FormatReaders;

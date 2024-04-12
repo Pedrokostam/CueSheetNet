@@ -1,5 +1,4 @@
-﻿using CueSheetNet.FormatReaders;
-using CueSheetNet.Logging;
+﻿using CueSheetNet.Logging;
 using static System.Buffers.Binary.BinaryPrimitives;
 namespace CueSheetNet.FormatReaders;
 public sealed class AiffFormatReader : IAudioFileFormatReader

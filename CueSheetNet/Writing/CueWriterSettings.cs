@@ -1,5 +1,4 @@
 ﻿using CueSheetNet.TextParser;
-using System.Text;
 
 namespace CueSheetNet;
 

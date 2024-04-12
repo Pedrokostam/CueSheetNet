@@ -1,5 +1,4 @@
 ﻿using CueSheetNet.Logging;
-using System.Text;
 namespace CueSheetNet.FileHandling;
 
 public class RecipeConverter : IAudioConverter

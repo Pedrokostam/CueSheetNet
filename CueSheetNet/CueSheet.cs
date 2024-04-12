@@ -1,7 +1,6 @@
 ﻿using CueSheetNet.FileHandling;
 using CueSheetNet.Internal;
 using System.Collections.ObjectModel;
-using System.Text;
 
 namespace CueSheetNet;
 public class CueSheet : IEquatable<CueSheet>, IRemCommentable

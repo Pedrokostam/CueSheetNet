@@ -1,6 +1,4 @@
-﻿using System.ComponentModel;
-
-namespace CueSheetNet;
+﻿namespace CueSheetNet;
 
 public record TrackType
 {

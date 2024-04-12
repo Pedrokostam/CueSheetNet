@@ -1,10 +1,8 @@
-﻿using CueSheetNet.FormatReaders;
-using CueSheetNet.Logging;
+﻿using CueSheetNet.Logging;
 using CueSheetNet.Reading;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace CueSheetNet.TextParser;
 internal sealed class CueEncodingTester(Stream stream, CueSource source)

@@ -1,9 +1,5 @@
-﻿using System.Collections.Concurrent;
-using System.Collections.Immutable;
-using System.Diagnostics;
-using System.Text.RegularExpressions;
+﻿using System.Collections.Immutable;
 using BenchmarkDotNet.Attributes;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace CueSheetNet.Benchmark;
 

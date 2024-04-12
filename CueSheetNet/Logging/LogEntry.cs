@@ -1,7 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
-using System.Text;
 using System.Text.RegularExpressions;
 
 namespace CueSheetNet.Logging;

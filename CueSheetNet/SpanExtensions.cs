@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace CueSheetNet;
+﻿namespace CueSheetNet;
 #if !NET6_0_OR_GREATER // SequenceEqual with IComparer were introduced in NET 6
 internal static class SpanExtensions
 {

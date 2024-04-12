@@ -1,7 +1,6 @@
 ﻿using CueSheetNet.Logging;
 using System.Diagnostics;
 using System.Globalization;
-using System.Text;
 
 namespace CueSheetNet.FormatReaders;
 

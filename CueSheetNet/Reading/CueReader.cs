@@ -5,8 +5,6 @@ using CueSheetNet.Syntax;
 using CueSheetNet.TextParser;
 using System.Diagnostics;
 using System.Globalization;
-using System.IO;
-using System.Text;
 using System.Text.RegularExpressions;
 namespace CueSheetNet;
 public partial class CueReader

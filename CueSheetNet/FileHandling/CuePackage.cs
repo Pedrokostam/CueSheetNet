@@ -1,7 +1,5 @@
 ﻿using CueSheetNet.Logging;
 using CueSheetNet.NameParsing;
-using System.Globalization;
-using System.Text.RegularExpressions;
 
 namespace CueSheetNet.FileHandling;
 

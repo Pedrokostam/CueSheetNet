@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace CueSheetNet;
+﻿namespace CueSheetNet;
 internal static class StringExtensions
 {
 #if !NETCOREAPP2_0_OR_GREATER || !NETSTANDARD2_1_OR_GREATER // String operations introduced in NET Core 2.0 and NETStandard 2.1
