@@ -11,7 +11,6 @@ public readonly record struct CueTime
     , IComparable
     , IFormattable
 #if NET7_0_OR_GREATER // static interface members introduces in NET7
-// Static interface members were introduces in NET7.0
     , IParsable<CueTime>
     , ISpanParsable<CueTime>
     , IDecrementOperators<CueTime>
@@ -514,7 +513,7 @@ public readonly record struct CueTime
     #endregion
 
     #region Explicit Interfaces
-#if NET7_0_OR_GREATER // static interface members introduces in NET7
+#if NET7_0_OR_GREATER // static interface members introduced in NET7
     static CueTime IParsable<CueTime>.Parse(string s, IFormatProvider? provider) => Parse(s);
 
     static bool IParsable<CueTime>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out CueTime result) => TryParse(s, out result);
