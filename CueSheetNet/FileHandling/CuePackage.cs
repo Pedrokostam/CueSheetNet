@@ -51,13 +51,7 @@ public static partial class CuePackage
                 compareNames.Add(new(file, sheet));
             }
         }
-#if NET7_0_OR_GREATER // IEnumerable.Order(IComparer) introduced in NET7
         return compareNames.Order(PathComparer.Instance);
-#elif NETSTANDARD2_0 || NETSTANDARD2_1
-        return compareNames.OrderBy(e => e.SourceFile, PathComparer.Instance);
-#else
-#error "Not supported target"
-#endif
     }
 
     /// <summary>
