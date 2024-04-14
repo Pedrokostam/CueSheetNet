@@ -110,6 +110,10 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
     public bool IsAudio() => (AudioTypes & Type) != FileType.Unknown;
 
     private FileInfo _sourceFile;
+
+    /// <summary>
+    /// Source file in the filesystem.
+    /// </summary>
     public FileInfo SourceFile => _sourceFile;
 
     /// <summary>

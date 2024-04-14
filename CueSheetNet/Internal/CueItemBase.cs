@@ -6,6 +6,10 @@ namespace CueSheetNet.Internal
     {
         internal bool Orphaned { get; set; } = false;
         protected CueSheet _ParentSheet = parent;
+
+        /// <summary>
+        /// The sheet mentioning the file.
+        /// </summary>
         public CueSheet ParentSheet
         {
             get
