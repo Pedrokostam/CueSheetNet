@@ -3,35 +3,34 @@ using System.Globalization;
 using System.Numerics;
 
 namespace CueSheetNet;
+
 /// <summary>
-/// Represents a time interval measured in Cue Frames. Cue Frame is equivalent to 1 CD sector (not to be confused with CD frame, which is a part of a sector) 
+/// Represents a time interval measured in Cue Frames. Cue Frame is equivalent to 1 CD sector (not to be confused with CD frame, which is a part of a sector)
 /// </summary>
-public readonly record struct CueTime
-    : IComparable<CueTime>
-    , IComparable
-    , IFormattable
+public readonly record struct CueTime : IComparable<CueTime>, IComparable, IFormattable
 #if NET7_0_OR_GREATER // static interface members introduces in NET7
-    , IParsable<CueTime>
-    , ISpanParsable<CueTime>
-    , IDecrementOperators<CueTime>
-    , IIncrementOperators<CueTime>
-    , IAdditionOperators<CueTime, CueTime, CueTime>
-    , IAdditionOperators<CueTime, int, CueTime>
-    , IAdditiveIdentity<CueTime, CueTime>
-    , ISubtractionOperators<CueTime, CueTime, CueTime>
-    , ISubtractionOperators<CueTime, int, CueTime>
-    , IMultiplyOperators<CueTime, int, CueTime>
-    , IMultiplyOperators<CueTime, double, CueTime>
-    , IMultiplyOperators<CueTime, decimal, CueTime>
-    , IDivisionOperators<CueTime, int, CueTime>
-    , IDivisionOperators<CueTime, double, CueTime>
-    , IDivisionOperators<CueTime, decimal, CueTime>
-    , IDivisionOperators<CueTime, CueTime, double>
-    , IUnaryNegationOperators<CueTime, CueTime>
-    , IUnaryPlusOperators<CueTime, CueTime>
-    , IModulusOperators<CueTime, CueTime, CueTime>
-    , IEqualityOperators<CueTime, CueTime, bool>
-    , IComparisonOperators<CueTime, CueTime, bool>
+        ,
+        IParsable<CueTime>,
+        ISpanParsable<CueTime>,
+        IDecrementOperators<CueTime>,
+        IIncrementOperators<CueTime>,
+        IAdditionOperators<CueTime, CueTime, CueTime>,
+        IAdditionOperators<CueTime, int, CueTime>,
+        IAdditiveIdentity<CueTime, CueTime>,
+        ISubtractionOperators<CueTime, CueTime, CueTime>,
+        ISubtractionOperators<CueTime, int, CueTime>,
+        IMultiplyOperators<CueTime, int, CueTime>,
+        IMultiplyOperators<CueTime, double, CueTime>,
+        IMultiplyOperators<CueTime, decimal, CueTime>,
+        IDivisionOperators<CueTime, int, CueTime>,
+        IDivisionOperators<CueTime, double, CueTime>,
+        IDivisionOperators<CueTime, decimal, CueTime>,
+        IDivisionOperators<CueTime, CueTime, double>,
+        IUnaryNegationOperators<CueTime, CueTime>,
+        IUnaryPlusOperators<CueTime, CueTime>,
+        IModulusOperators<CueTime, CueTime, CueTime>,
+        IEqualityOperators<CueTime, CueTime, bool>,
+        IComparisonOperators<CueTime, CueTime, bool>
 #endif
 {
     public int TotalFrames { get; } // Int is sufficient - it can describe up to 331 days of continuous playback (or about 4.5 TB of WAVE)
@@ -47,7 +46,9 @@ public readonly record struct CueTime
         bool allNonPositive = minutes <= 0 && seconds <= 0 && frames <= 0;
         if (!(allNonNegative || allNonPositive))
         {
-            throw new ArgumentException($"Parameters must all be either be all non-negative or all non-positive");
+            throw new ArgumentException(
+                $"Parameters must all be either be all non-negative or all non-positive"
+            );
         }
 
         TotalFrames = CalculateTotalFrames(minutes, seconds, frames);
@@ -60,6 +61,9 @@ public readonly record struct CueTime
         frames = Frames;
     }
 
+    /// <summary>
+    /// Return text representation of this time, as would be used in a sheet.
+    /// </summary>
     public override string ToString()
     {
         if (Negative)
@@ -181,7 +185,8 @@ public readonly record struct CueTime
     /// <param name="frames"></param>
     /// <exception cref="OverflowException">Thrown if multiplication results in overflow</exception>
     /// <returns></returns>
-    public static int CalculateTotalFrames(int minutes, int seconds, int frames) => checked(frames + FramesPerSecond * seconds + FramesPerMinute * minutes);
+    public static int CalculateTotalFrames(int minutes, int seconds, int frames) =>
+        checked(frames + FramesPerSecond * seconds + FramesPerMinute * minutes);
 
     /// <summary>
     /// Calculates total frames from the specified components. Operation is unchecked - overflow can cause incorrect results. Components don'spanTrimmedSliced have to have the same sign.
@@ -190,15 +195,18 @@ public readonly record struct CueTime
     /// <param name="seconds"></param>
     /// <param name="frames"></param>
     /// <returns></returns>
-    public static int CalculateTotalFrames_Unchecked(int minutes, int seconds, int frames) => unchecked(frames + FramesPerSecond * seconds + FramesPerMinute * minutes);
+    public static int CalculateTotalFrames_Unchecked(int minutes, int seconds, int frames) =>
+        unchecked(frames + FramesPerSecond * seconds + FramesPerMinute * minutes);
     #endregion
 
     #region Conversions
-    public static CueTime FromTimeSpan(TimeSpan timeSpan) => new(totalFrames: TicksToFrames(timeSpan.Ticks));
+    public static CueTime FromTimeSpan(TimeSpan timeSpan) =>
+        new(totalFrames: TicksToFrames(timeSpan.Ticks));
 
     public TimeSpan ToTimeSpan() => TimeSpan.FromTicks(LongTicks);
 
-    public static CueTime FromMilliseconds(double millis) => new((int)(millis / MillisecondsPerFrame));
+    public static CueTime FromMilliseconds(double millis) =>
+        new((int)(millis / MillisecondsPerFrame));
 
     public static CueTime FromSeconds(double seconds) => new((int)(seconds * FramesPerSecond));
 
@@ -216,18 +224,27 @@ public readonly record struct CueTime
     public static CueTime Parse(ReadOnlySpan<char> span)
     {
         ReadOnlySpan<char> spanTrimmed = span.Trim();
-        if (spanTrimmed.Length == 0) throw new ArgumentException("Empty CueTime string", nameof(span));
+        if (spanTrimmed.Length == 0)
+            throw new ArgumentException("Empty CueTime string", nameof(span));
         List<int> inds = SeekSeparator(spanTrimmed);
-        if (inds.Count < 4) throw new ArgumentException($"CueTime string has less than 3 parts ({span.ToString()})", nameof(span));
+        if (inds.Count < 4)
+            throw new ArgumentException(
+                $"CueTime string has less than 3 parts ({span.ToString()})",
+                nameof(span)
+            );
         Span<int> nums = stackalloc int[3];
         int numCount = 0;
         for (int i = 1; i < inds.Count; i++)
         {
-            int rangeStart = inds[i - 1] + 1;//plus one, because it was included in previous range
+            int rangeStart = inds[i - 1] + 1; //plus one, because it was included in previous range
             //That';'s why the SeekSeparator add -1 as the first element
             //so that the first rangeStart will be equal to 0
             int rangeEnd = inds[i];
-            int x = int.Parse(Slice(spanTrimmed, rangeStart, rangeEnd), NumberStyles.Integer, CultureInfo.InvariantCulture);
+            int x = int.Parse(
+                Slice(spanTrimmed, rangeStart, rangeEnd),
+                NumberStyles.Integer,
+                CultureInfo.InvariantCulture
+            );
             nums[numCount] = x;
             if (++numCount > 2)
                 break;
@@ -281,10 +298,12 @@ public readonly record struct CueTime
     /// <param name="end">Exclusive end of slice</param>
     /// <returns>String for NetStandard2.0, ReadOnlySpan elsewhere</returns>
 #if !NETSTANDARD2_0 // int.Parse cannot use Spans only in NETSTANDARD2.0
-    private static ReadOnlySpan<char> Slice(ReadOnlySpan<char> span, int start, int end) => span[start..end];
+    private static ReadOnlySpan<char> Slice(ReadOnlySpan<char> span, int start, int end) =>
+        span[start..end];
 #else
     // While System.Memory adds range slices, we still need to a return string, because int.TryParse requires it.
-    private static string Slice(ReadOnlySpan<char> span, int start, int end) => span[start..end].ToString();
+    private static string Slice(ReadOnlySpan<char> span, int start, int end) =>
+        span[start..end].ToString();
 #endif
 
     /// <summary>
@@ -300,25 +319,33 @@ public readonly record struct CueTime
         cueTime = default;
         ReadOnlySpan<char> spanTrimmed = span.Trim();
         List<int> inds = SeekSeparator(spanTrimmed);
-        if (inds.Count <= 1) return false;
+        if (inds.Count <= 1)
+            return false;
         Span<int> nums = stackalloc int[Math.Min(3, inds.Count - 1)];
         int numCount = 0;
         for (int i = 1; i < inds.Count; i++)
         {
-            int rangeStart = inds[i - 1] + 1;//plus one, because it was included in previous range
+            int rangeStart = inds[i - 1] + 1; //plus one, because it was included in previous range
             //That's why the SeekSeparator add -1 as the first element
             //so that the first rangeStart will be equal to 0
             int rangeEnd = inds[i];
-            if (!int.TryParse(Slice(spanTrimmed, rangeStart, rangeEnd), NumberStyles.Integer, CultureInfo.InvariantCulture, out int x))
+            if (
+                !int.TryParse(
+                    Slice(spanTrimmed, rangeStart, rangeEnd),
+                    NumberStyles.Integer,
+                    CultureInfo.InvariantCulture,
+                    out int x
+                )
+            )
                 return false;
             nums[numCount] = x;
             if (++numCount > 2)
                 break;
         }
         int multiplier = nums[0] >= 0 ? 1 : -1;
-        int _minutes = nums.Length == 3 ? Math.Abs(nums[^3]) : 0;// If there are 3 elements, take the third from the end (i.e the zeroth)
-        int _seconds = nums.Length >= 2 ? Math.Abs(nums[^2]) : 0;// If there are 2 or 3 elements, take the second from the end (i.e the zeroth or the first)
-        int _frames = Math.Abs(nums[^1]);// take last element
+        int _minutes = nums.Length == 3 ? Math.Abs(nums[^3]) : 0; // If there are 3 elements, take the third from the end (i.e the zeroth)
+        int _seconds = nums.Length >= 2 ? Math.Abs(nums[^2]) : 0; // If there are 2 or 3 elements, take the second from the end (i.e the zeroth or the first)
+        int _frames = Math.Abs(nums[^1]); // take last element
         try
         {
             int totalFrames = CalculateTotalFrames(_minutes, _seconds, _frames) * multiplier;
@@ -341,17 +368,20 @@ public readonly record struct CueTime
     public static bool TryParse([NotNullWhen(true)] string? s, out CueTime cueTime)
     {
         cueTime = default;
-        if (s == null) return false;
+        if (s == null)
+            return false;
         return TryParse(s.AsSpan(), out cueTime);
     }
     #endregion
 
     #region Comparison and Equality
-    public static int Compare(CueTime ct1, CueTime ct2) => ct1.TotalFrames.CompareTo(ct2.TotalFrames);
+    public static int Compare(CueTime ct1, CueTime ct2) =>
+        ct1.TotalFrames.CompareTo(ct2.TotalFrames);
 
     public int CompareTo(object? obj)
     {
-        if (obj == null) return 1;
+        if (obj == null)
+            return 1;
         return CompareTo((CueTime)obj);
     }
 
@@ -370,7 +400,8 @@ public readonly record struct CueTime
     /// <exception cref="DivideByZeroException">Thrown if parameter <paramref name="divisor"/> is zero</exception>
     public CueTime Divide(int divisor)
     {
-        if (divisor == 0) throw new DivideByZeroException();
+        if (divisor == 0)
+            throw new DivideByZeroException();
         return new(TotalFrames / divisor);
     }
 
@@ -383,7 +414,8 @@ public readonly record struct CueTime
     /// <exception cref="DivideByZeroException">Thrown if parameter <paramref name="divisor"/> is zero</exception>
     public CueTime Divide(decimal divisor)
     {
-        if (divisor == 0) throw new DivideByZeroException();
+        if (divisor == 0)
+            throw new DivideByZeroException();
         return new((int)(TotalFrames / divisor));
     }
 
@@ -395,10 +427,13 @@ public readonly record struct CueTime
     /// <exception cref="DivideByZeroException">Thrown if parameter <paramref name="divisor"/> is zero</exception>
     public CueTime Divide(double divisor)
     {
-        if (double.IsNaN(divisor)) throw new ArgumentException("Divisor must be a number", nameof(divisor));
-        if (divisor == 0) throw new DivideByZeroException();
+        if (double.IsNaN(divisor))
+            throw new ArgumentException("Divisor must be a number", nameof(divisor));
+        if (divisor == 0)
+            throw new DivideByZeroException();
         return new((int)(TotalFrames / divisor));
     }
+
     /// <summary>
     /// Multiplies the time by the multiplier
     /// </summary>
@@ -414,9 +449,11 @@ public readonly record struct CueTime
     /// <exception cref="ArgumentException">When <paramref name="multiplier"/> is Not A Number</exception>
     public CueTime Multiply(double multiplier)
     {
-        if (double.IsNaN(multiplier)) throw new ArgumentException("Multiplier must be a number", nameof(multiplier));
+        if (double.IsNaN(multiplier))
+            throw new ArgumentException("Multiplier must be a number", nameof(multiplier));
         return new((int)(TotalFrames * multiplier));
     }
+
     /// <summary>
     /// Multiplies the time by the multiplier
     /// </summary>
@@ -455,6 +492,7 @@ public readonly record struct CueTime
     public static bool operator <=(CueTime left, CueTime right) => left.CompareTo(right) <= 0;
 
     public static CueTime operator +(CueTime left, CueTime right) => left.Add(right);
+
     public static CueTime operator +(CueTime left, int right) => left.AddFrames(right);
 
     public static CueTime operator -(CueTime time) => new(-time.TotalFrames);
@@ -503,11 +541,14 @@ public readonly record struct CueTime
 
     public static CueTime operator *(int multiplier, CueTime right) => right.Multiply(multiplier);
 
-    public static CueTime operator *(double multiplier, CueTime right) => right.Multiply(multiplier);
+    public static CueTime operator *(double multiplier, CueTime right) =>
+        right.Multiply(multiplier);
 
-    public static CueTime operator *(decimal multiplier, CueTime right) => right.Multiply(multiplier);
+    public static CueTime operator *(decimal multiplier, CueTime right) =>
+        right.Multiply(multiplier);
 
-    public static CueTime operator %(CueTime left, CueTime right) => new(left.Frames % right.Frames);
+    public static CueTime operator %(CueTime left, CueTime right) =>
+        new(left.Frames % right.Frames);
 
     public static double operator /(CueTime left, CueTime right) => (left.Frames / right.Frames);
     #endregion
@@ -516,22 +557,55 @@ public readonly record struct CueTime
 #if NET7_0_OR_GREATER // static interface members introduced in NET7
     static CueTime IParsable<CueTime>.Parse(string s, IFormatProvider? provider) => Parse(s);
 
-    static bool IParsable<CueTime>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out CueTime result) => TryParse(s, out result);
+    static bool IParsable<CueTime>.TryParse(
+        [NotNullWhen(true)] string? s,
+        IFormatProvider? provider,
+        [MaybeNullWhen(false)] out CueTime result
+    ) => TryParse(s, out result);
 
-    static CueTime ISpanParsable<CueTime>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s);
+    static CueTime ISpanParsable<CueTime>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider) =>
+        Parse(s);
 
-    static bool ISpanParsable<CueTime>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, [MaybeNullWhen(false)] out CueTime result) => TryParse(s, out result);
+    static bool ISpanParsable<CueTime>.TryParse(
+        ReadOnlySpan<char> s,
+        IFormatProvider? provider,
+        [MaybeNullWhen(false)] out CueTime result
+    ) => TryParse(s, out result);
 
     static CueTime IAdditiveIdentity<CueTime, CueTime>.AdditiveIdentity => CueTime.Zero;
 #endif
     #endregion
     #region String
+    /// <summary>
+    /// Converts the time to a text representation according to the given format.
+    /// </summary>
+    /// <param name="format">A case-insensitive cue time format string.
+    /// <para/>
+    /// The following formats are supported:
+    /// <list type="bullet">
+    /// <item>'G' - default representantation. Equivalent of calling <see cref="ToString()"/>. Cannot be mixed with others.</item>
+    /// <item>'M' - the minutes part. Can be repeated to pad the result with leading zeroes (width mathes number of repeats).</item>
+    /// <item>'S' - the seconds part. Can be repeated to pad the result with leading zeroes (width mathes number of repeats).</item>
+    /// <item>'F' - the frames part. Can be repeated to pad the result with leading zeroes (width mathes number of repeats).</item>
+    /// <item>'D' - the milliseconds part. Can be repeated to pad the result with leading zeroes (width mathes number of repeats).</item>
+    /// <item>'-' - if specified and the time is negative, add the minus sign at the beginning.</item>
+    /// <item>'+' - always adds the sign at the beginning.</item>
+    /// <item>'\' - escapes the next character.</item>
+    /// <item>any other characters - is added to result.</item>
+    /// </list>
+    /// </param>
+    /// <returns></returns>
     public string ToString(string? format) => ToString(format, CultureInfo.CurrentCulture);
+
     public string ToString(string? format, IFormatProvider? formatProvider)
     {
         switch (format)
         {
-            case null or "" or "G" or "g" or @"-mm\:ss\:ff":
+            case null
+            or ""
+            or "G"
+            or "g"
+            or @"-mm\:ss\:ff":
                 return ToString();
             default:
                 break;
@@ -545,6 +619,7 @@ public readonly record struct CueTime
             char character = span[i];
             switch (character)
             {
+                // Escape char
                 case '\\':
                     if (i < spanLength - 1)
                     {
@@ -552,33 +627,37 @@ public readonly record struct CueTime
                         i += 2;
                     }
                     break;
-                case '+' or '-':
+                case '+'
+                or '-':
                     i++;
-                    if (!(character == '-' && !Negative))
+                    if (character == '-' && !Negative)
                     {
-                        strb.Append(Negative ? '-' : '+');
+                        break;
                     }
+                    strb.Append(Negative ? '-' : '+');
                     break;
-                case 'm' or 's' or 'f':
-                    {
-                        int charLength = ParseRepeat(span, i);
-                        if (charLength > 2)
-                        {
-                            throw new FormatException();
-                        }
-                        i += charLength;
-                        int num = GetTimeValueByChar(character);
-                        strb.Append(num.ToString().PadRight(charLength, '0'));
-                        break;
-                    }
-                case 'D':
-                    {
-                        int charLength = ParseRepeat(span, i);
-                        i += charLength;
-                        string fmt = "." + new string('0', charLength);
-                        strb.Append((Math.Abs(Milliseconds) / 1000).ToString(fmt)[1..]);
-                        break;
-                    }
+                case 'm'
+                or 'M'
+                or 's'
+                or 'S'
+                or 'f'
+                or 'F':
+                {
+                    int charLength = ParseRepeat(span, i);
+                    i += charLength;
+                    int num = GetTimeValueByChar(character);
+                    strb.Append(num.ToString().PadRight(charLength, '0'));
+                    break;
+                }
+                case 'd'
+                or 'D':
+                {
+                    int charLength = ParseRepeat(span, i);
+                    i += charLength;
+                    string fmt = "." + new string('0', charLength);
+                    strb.Append((Math.Abs(Milliseconds) / 1000).ToString(fmt)[1..]);
+                    break;
+                }
 
                 default:
                     strb.Append(character);
@@ -588,6 +667,7 @@ public readonly record struct CueTime
         }
         return strb.ToString();
     }
+
     /// <summary>
     /// Returns the value of one of the time properties, depending on the <paramref name="character"/>:
     /// <list type="table">
@@ -615,9 +695,9 @@ public readonly record struct CueTime
     {
         return character switch
         {
-            'm' => Math.Abs(Minutes),
-            's' => Math.Abs(Seconds),
-            'f' => Math.Abs(Frames),
+            'm' or 'M' => Math.Abs(Minutes),
+            's' or 'S' => Math.Abs(Seconds),
+            'f' or 'F' => Math.Abs(Frames),
             _ => 0
         };
     }
