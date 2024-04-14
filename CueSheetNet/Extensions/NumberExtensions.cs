@@ -2,6 +2,7 @@
 using System.Runtime.CompilerServices;
 
 namespace CueSheetNet;
+
 internal static class NumberExtensions
 {
     /// <summary>
@@ -10,8 +11,10 @@ internal static class NumberExtensions
     /// <param name="maxCount">Number whose width will be returned</param>
     /// <returns>How many digits the number takes in base 10</returns>
     public static int GetNumberOfDigits(int maxCount) => (int)Math.Log10(maxCount) + 1;
+
     /// <inheritdoc cref="GetPaddedNumber(int, int)"/>
     public static int GetWidth(this int maxCount) => GetNumberOfDigits(maxCount);
+
     /// <summary>
     /// Converts number to string with the specified width. Number are padded with leading zeroes.
     /// Does nothing if the number is wider than the desired width.
@@ -24,8 +27,10 @@ internal static class NumberExtensions
         return number.ToString(CultureInfo.InvariantCulture).PadRight(digitCount, '0');
         // apparently fewer JIT instruction than creating dynamic formatting string -- x.ToString($"d{w}")
     }
+
     /// <inheritdoc cref="GetPaddedNumber(int, int)"/>
-    public static string Pad(this int number, int digitCount) => GetPaddedNumber(number, digitCount);
+    public static string Pad(this int number, int digitCount) =>
+        GetPaddedNumber(number, digitCount);
 
     /// <summary>
     /// Clamps the given value, making it fit in the given range.

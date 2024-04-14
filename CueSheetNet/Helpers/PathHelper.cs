@@ -1,4 +1,5 @@
 ﻿namespace CueSheetNet.Helpers;
+
 public static class PathHelper
 {
     private static string GetPathWithSeparator(DirectoryInfo directory)
@@ -12,20 +13,33 @@ public static class PathHelper
             _ => fullname + Path.DirectorySeparatorChar,
         };
     }
+
     public static string GetRelativePath(string target, DirectoryInfo? baseDir)
     {
         string? basePath = baseDir is null ? null : GetPathWithSeparator(baseDir);
         return GetRelativePath(target, basePath);
     }
+
     public static string GetRelativePath(string target, FileInfo? baseFile)
     {
-        string? basePath = baseFile?.Directory is null ? null : GetPathWithSeparator(baseFile.Directory!);
+        string? basePath = baseFile?.Directory is null
+            ? null
+            : GetPathWithSeparator(baseFile.Directory!);
         return GetRelativePath(target, basePath);
     }
-    public static string GetRelativePath(FileInfo target, FileInfo? baseFile) => GetRelativePath(target.FullName, baseFile);
-    public static string GetRelativePath(DirectoryInfo target, FileInfo? baseFile) => GetRelativePath(GetPathWithSeparator(target), baseFile);
-    public static string GetRelativePath(FileInfo target, DirectoryInfo? baseDir) => GetRelativePath(target.FullName, baseDir);
-    public static string GetRelativePath(DirectoryInfo target, DirectoryInfo? baseDir) => GetRelativePath(GetPathWithSeparator(target), baseDir);
+
+    public static string GetRelativePath(FileInfo target, FileInfo? baseFile) =>
+        GetRelativePath(target.FullName, baseFile);
+
+    public static string GetRelativePath(DirectoryInfo target, FileInfo? baseFile) =>
+        GetRelativePath(GetPathWithSeparator(target), baseFile);
+
+    public static string GetRelativePath(FileInfo target, DirectoryInfo? baseDir) =>
+        GetRelativePath(target.FullName, baseDir);
+
+    public static string GetRelativePath(DirectoryInfo target, DirectoryInfo? baseDir) =>
+        GetRelativePath(GetPathWithSeparator(target), baseDir);
+
     public static string GetRelativePath(FileSystemInfo target, FileSystemInfo? baseDir)
     {
         return (target, baseDir) switch
@@ -39,6 +53,7 @@ public static class PathHelper
             _ => throw new NotSupportedException(),
         };
     }
+
     private static string GetRelativePath(string target, string? basePath)
     {
 #if NETCOREAPP2_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER // GetRelativePath introduced in NET Core 2.0 and NETStandard2.1
@@ -48,7 +63,8 @@ public static class PathHelper
         var fileUri = new Uri(target);
         basePath ??= Environment.CurrentDirectory + Path.DirectorySeparatorChar;
         var referenceUri = new Uri(basePath);
-        string relative = Uri.UnescapeDataString(referenceUri.MakeRelativeUri(fileUri).ToString()).Replace('/', Path.DirectorySeparatorChar);
+        string relative = Uri.UnescapeDataString(referenceUri.MakeRelativeUri(fileUri).ToString())
+            .Replace('/', Path.DirectorySeparatorChar);
         if (relative == string.Empty)
         {
             relative = ".";

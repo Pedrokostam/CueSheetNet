@@ -1,11 +1,16 @@
-﻿using CueSheetNet.Internal;
+﻿using System.Collections.ObjectModel;
+using CueSheetNet.Internal;
 using CueSheetNet.Syntax;
-using System.Collections.ObjectModel;
 
 namespace CueSheetNet;
-public class CueTrack(CueDataFile parentFile, TrackType type) : CueItemBase(parentFile.ParentSheet), IEquatable<CueTrack>, IRemCommentable
+
+public class CueTrack(CueDataFile parentFile, TrackType type)
+    : CueItemBase(parentFile.ParentSheet),
+        IEquatable<CueTrack>,
+        IRemCommentable
 {
     public FieldsSet CommonFieldsSet { get; private set; }
+
     /// <summary>
     /// Absolute index for the whole CueSheet
     /// </summary>
@@ -15,6 +20,7 @@ public class CueTrack(CueDataFile parentFile, TrackType type) : CueItemBase(pare
     public CueTime PostGap { get; set; }
     public CueTime PreGap { get; set; }
     private CueDataFile _ParentFile = parentFile;
+
     /// <summary>
     /// File in which Index 01 (or 00 if there is not 01) of Track appeared
     /// </summary>
@@ -25,11 +31,9 @@ public class CueTrack(CueDataFile parentFile, TrackType type) : CueItemBase(pare
             CheckOrphaned();
             return _ParentFile;
         }
-        set
-        {
-            _ParentFile = value;
-        }
+        set { _ParentFile = value; }
     }
+
     /// <summary>
     /// Number of track (does not have to be con
     /// </summary>
@@ -144,13 +148,17 @@ public class CueTrack(CueDataFile parentFile, TrackType type) : CueItemBase(pare
     {
         return "Track " + Number.ToString("D2") + ": " + Title;
     }
+
     #region Rem
     private readonly List<CueRemark> RawRems = [];
     public ReadOnlyCollection<CueRemark> Remarks => RawRems.AsReadOnly();
+
     public void ClearRemarks() => RawRems.Clear();
 
     public void AddRemark(string type, string value) => AddRemark(new CueRemark(type, value));
+
     public void AddRemark(CueRemark entry) => RawRems.Add(entry);
+
     public void AddRemark(IEnumerable<CueRemark> entries)
     {
         foreach (CueRemark remark in entries)
@@ -167,27 +175,37 @@ public class CueTrack(CueDataFile parentFile, TrackType type) : CueItemBase(pare
 
     internal CueTrack ClonePartial(CueDataFile newOwner)
     {
-        CueTrack newTrack = new(newOwner, Type)
-        {
-            CommonFieldsSet = CommonFieldsSet,
-            Composer = Composer,
-            Flags = Flags,
-            Title = Title,
-            PostGap = PostGap,
-            PreGap = PreGap,
-            Performer = Performer,
-            ISRC = ISRC,
-            HasZerothIndex = HasZerothIndex,
-            Index = Index,
-            Offset = Offset,
-            Orphaned = Orphaned,
-        };
+        CueTrack newTrack =
+            new(newOwner, Type)
+            {
+                CommonFieldsSet = CommonFieldsSet,
+                Composer = Composer,
+                Flags = Flags,
+                Title = Title,
+                PostGap = PostGap,
+                PreGap = PreGap,
+                Performer = Performer,
+                ISRC = ISRC,
+                HasZerothIndex = HasZerothIndex,
+                Index = Index,
+                Offset = Offset,
+                Orphaned = Orphaned,
+            };
         newTrack.AddRemark(RawRems.Select(x => x with { }));
         newTrack.AddComment(RawComments);
         return newTrack;
     }
-    public void RemoveRemark(string field, string value, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase) => RemoveRemark(new CueRemark(field, value), comparisonType);
-    public void RemoveRemark(CueRemark entry, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase)
+
+    public void RemoveRemark(
+        string field,
+        string value,
+        StringComparison comparisonType = StringComparison.OrdinalIgnoreCase
+    ) => RemoveRemark(new CueRemark(field, value), comparisonType);
+
+    public void RemoveRemark(
+        CueRemark entry,
+        StringComparison comparisonType = StringComparison.OrdinalIgnoreCase
+    )
     {
         int ind = RawRems.FindIndex(x => x.Equals(entry, comparisonType));
         if (ind >= 0)
@@ -197,6 +215,7 @@ public class CueTrack(CueDataFile parentFile, TrackType type) : CueItemBase(pare
     #region Comments
     private readonly List<string> RawComments = [];
     public ReadOnlyCollection<string> Comments => RawComments.AsReadOnly();
+
     public void AddComment(IEnumerable<string> comments)
     {
         foreach (string comment in comments)
@@ -204,37 +223,49 @@ public class CueTrack(CueDataFile parentFile, TrackType type) : CueItemBase(pare
             AddComment(comment);
         }
     }
+
     public void AddComment(string comment) => RawComments.Add(comment);
-    public void RemoveComment(string comment, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase)
+
+    public void RemoveComment(
+        string comment,
+        StringComparison comparisonType = StringComparison.OrdinalIgnoreCase
+    )
     {
         int ind = RawComments.FindIndex(x => x.Equals(comment, comparisonType));
         if (ind >= 0)
             RawComments.RemoveAt(ind);
     }
+
     public void RemoveComment(int index)
     {
         if (index >= 0 && index < RawComments.Count)
             RawComments.RemoveAt(index);
     }
+
     public void ClearComments() => RawComments.Clear();
 
     #endregion
     public bool Equals(CueTrack? other) => Equals(other, StringComparison.InvariantCulture);
+
     public bool Equals(CueTrack? other, StringComparison stringComparison)
     {
-        if (ReferenceEquals(this, other)) return true;
-        if (other == null) return false;
-        if (RawComments.Count != other.RawComments.Count) return false;
-        if (RawRems.Count != other.RawRems.Count) return false;
+        if (ReferenceEquals(this, other))
+            return true;
+        if (other == null)
+            return false;
+        if (RawComments.Count != other.RawComments.Count)
+            return false;
+        if (RawRems.Count != other.RawRems.Count)
+            return false;
         if (
-               PostGap != other.PostGap
+            PostGap != other.PostGap
             || PreGap != other.PreGap
             || !string.Equals(Performer, other.Performer, stringComparison)
             || !string.Equals(ISRC, other.ISRC, stringComparison)
             || !string.Equals(Composer, other.Composer, stringComparison)
-            || !string.Equals(Title, other.Title, stringComparison) ||
-            Flags != other.Flags
-           )
+            || !string.Equals(Title, other.Title, stringComparison)
+            || Flags != other.Flags
+        )
             return false;
         for (int i = 0; i < RawComments.Count; i++)
         {
@@ -256,13 +287,14 @@ public class CueTrack(CueDataFile parentFile, TrackType type) : CueItemBase(pare
 
     public override int GetHashCode()
     {
-        return HashCode.Combine(Title.GetHashCode(StringComparison.OrdinalIgnoreCase),
-                                Performer?.GetHashCode(StringComparison.OrdinalIgnoreCase),
-                                ISRC?.GetHashCode(StringComparison.OrdinalIgnoreCase),
-                                Composer?.GetHashCode(StringComparison.OrdinalIgnoreCase),
-                                PostGap.GetHashCode(),
-                                RawComments.Count.GetHashCode(),
-                                RawRems.Count.GetHashCode());
+        return HashCode.Combine(
+            Title.GetHashCode(StringComparison.OrdinalIgnoreCase),
+            Performer?.GetHashCode(StringComparison.OrdinalIgnoreCase),
+            ISRC?.GetHashCode(StringComparison.OrdinalIgnoreCase),
+            Composer?.GetHashCode(StringComparison.OrdinalIgnoreCase),
+            PostGap.GetHashCode(),
+            RawComments.Count.GetHashCode(),
+            RawRems.Count.GetHashCode()
+        );
     }
 }
-

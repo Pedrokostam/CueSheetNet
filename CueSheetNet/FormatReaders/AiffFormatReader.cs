@@ -1,6 +1,8 @@
 ﻿using CueSheetNet.Logging;
 using static System.Buffers.Binary.BinaryPrimitives;
+
 namespace CueSheetNet.FormatReaders;
+
 public sealed class AiffFormatReader : IAudioFileFormatReader
 {
     private static readonly string[] extensions = [".AIFF", ".AIF", ".AIFC."];
@@ -40,7 +42,7 @@ public sealed class AiffFormatReader : IAudioFileFormatReader
     public bool ReadMetadata(Stream stream, out FileMetadata metadata)
     {
         /*
-         * 
+         *
          *  range_B range_b     endian	type	expected
            [00..04] [000..032]  big		str		"FORM"
            [04..08] [032..064]  big     int32	filesize-8
@@ -90,13 +92,14 @@ public sealed class AiffFormatReader : IAudioFileFormatReader
         };
         return true;
     }
+
     private static decimal ReadAppleExtended80(ReadOnlySpan<byte> bytes)
     {
-        if (bytes.Length != 10) throw new ArgumentException("Expected 10 bytes for Apple Extended", nameof(bytes));
+        if (bytes.Length != 10)
+            throw new ArgumentException("Expected 10 bytes for Apple Extended", nameof(bytes));
 
         Span<byte> workingBytes = stackalloc byte[bytes.Length];
         bytes.CopyTo(workingBytes);
-
 
         int signVal = workingBytes[0] & 0b10000000;
         int sign = signVal > 0 ? -1 : 1;
@@ -116,6 +119,7 @@ public sealed class AiffFormatReader : IAudioFileFormatReader
         // sign * 2^(expo - 16383) * 0.fraction if special
         return x;
     }
+
     public bool ReadMetadata(string path, out FileMetadata metadata)
     {
         using Stream stream = File.OpenRead(path);

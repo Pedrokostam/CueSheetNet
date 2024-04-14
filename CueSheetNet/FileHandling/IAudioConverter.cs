@@ -1,4 +1,5 @@
 ﻿namespace CueSheetNet.FileHandling;
+
 public interface IAudioConverter
 {
     string PreConvert(string format);

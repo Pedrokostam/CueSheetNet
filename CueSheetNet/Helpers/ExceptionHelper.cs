@@ -2,9 +2,14 @@
 using System.Runtime.CompilerServices;
 
 namespace CueSheetNet.Helpers;
+
 internal static class ExceptionHelper
 {
-    public static void ThrowIfNull([NotNull] object? value, [CallerMemberName] string? name = null, string? message = null)
+    public static void ThrowIfNull(
+        [NotNull] object? value,
+        [CallerMemberName] string? name = null,
+        string? message = null
+    )
     {
         if (value == null)
         {
@@ -14,10 +19,13 @@ internal static class ExceptionHelper
             }
             throw new ArgumentNullException(name, message);
         }
-
     }
 
-    public static void ThrowIfNullOrEmpty([NotNull] string? value, [CallerMemberName] string? name = null, string? message = null)
+    public static void ThrowIfNullOrEmpty(
+        [NotNull] string? value,
+        [CallerMemberName] string? name = null,
+        string? message = null
+    )
     {
         message ??= "The value cannot be an empty string.";
         if (string.IsNullOrEmpty(value))
@@ -30,7 +38,11 @@ internal static class ExceptionHelper
         }
     }
 
-    public static void ThrowIfNullOrWhitespace([NotNull] string? value, [CallerMemberName] string? name = null, string? message = null)
+    public static void ThrowIfNullOrWhitespace(
+        [NotNull] string? value,
+        [CallerMemberName] string? name = null,
+        string? message = null
+    )
     {
         message ??= "The value cannot be an empty string or composed entirely of whitespace.";
         if (string.IsNullOrWhiteSpace(value))

@@ -1,4 +1,5 @@
 ﻿namespace CueSheetNet.Syntax;
+
 public static class Parser
 {
     public static TrackFlags Parse(string flagstring)
@@ -22,9 +23,11 @@ public static class Parser
         }
         return flag;
     }
+
     public static string ToCueCompatible(this TrackFlags fl)
     {
-        if (fl == TrackFlags.None) return string.Empty;
+        if (fl == TrackFlags.None)
+            return string.Empty;
         List<string> strs = [];
         if (fl.HasFlag(TrackFlags.DigitalCopyPermitted))
         {
