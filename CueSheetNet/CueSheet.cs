@@ -286,7 +286,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
         bool finalCheck = string.Equals(CdTextFile?.Name, other.CdTextFile?.Name, StringComparison.OrdinalIgnoreCase) //Paths are compared without caring for case
                                                                                                                       //&& string.Equals(SourceFile?.Name, other.SourceFile?.Name, StringComparison.OrdinalIgnoreCase)
                        && string.Equals(Performer, other.Performer, stringComparison)
-                       && string.Equals(Catalog, other.Catalog,StringComparison.Ordinal)
+                       && string.Equals(Catalog, other.Catalog, StringComparison.Ordinal)
                        && string.Equals(Composer, other.Composer, stringComparison)
                        && string.Equals(Title, other.Title, stringComparison);
         return finalCheck;

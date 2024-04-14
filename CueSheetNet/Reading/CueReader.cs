@@ -461,7 +461,7 @@ public partial class CueReader
             return null;
         if (spanny[^1] == Quotation && spanny[0] == Quotation)
             return spanny[1..^1].ToString();
-        
+
         return spanny.ToString();
     }
     /// <summary>
@@ -499,7 +499,7 @@ public partial class CueReader
         return string.Empty;
     }
 #if NET7_0_OR_GREATER // GeneratedRegex introduces in NET7
-    [GeneratedRegex(@"(?<PATH>\w+)\spanString+(?<TYPE>\w*)", RegexOptions.Compiled,500)]
+    [GeneratedRegex(@"(?<PATH>\w+)\spanString+(?<TYPE>\w*)", RegexOptions.Compiled, 500)]
     private static partial Regex NonQuotedFileRegex();
 #else
     private static readonly Regex NonQuotedFileRegexImpl = new(@"(?<PATH>\w+)\spanString+(?<TYPE>\w*)", RegexOptions.Compiled, TimeSpan.FromMilliseconds(500));

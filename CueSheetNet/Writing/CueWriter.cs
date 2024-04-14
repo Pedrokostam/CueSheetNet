@@ -52,7 +52,7 @@ public sealed class CueWriter
     [return: NotNullIfNotNull(nameof(str))]
     private string? Replace(string? str) => Settings.InnerQuotationReplacement.ReplaceQuotes(str);
     private bool AppendRemark(CueRemark rem, int depth) => AppendStringify("REM " + rem.Field, Replace(rem.Value), depth, quoteAllowed: true);
-    private bool AppendIndex(CueIndexImpl cim) => AppendStringify("INDEX " +  cim.Number.Pad(2), cim.Time.ToString(), 2, quoteAllowed: false);
+    private bool AppendIndex(CueIndexImpl cim) => AppendStringify("INDEX " + cim.Number.Pad(2), cim.Time.ToString(), 2, quoteAllowed: false);
     [return: NotNullIfNotNull(nameof(s))]
     private static string? Enquote(string? s)
     {
@@ -120,7 +120,7 @@ public sealed class CueWriter
     {
         FillStringBuilder(sheet);
         char[] tablicaCzarów = new char[Builder.Length];
-        Builder.CopyTo(0, tablicaCzarów, 0,Builder.Length);
+        Builder.CopyTo(0, tablicaCzarów, 0, Builder.Length);
         return tablicaCzarów;
     }
 

@@ -6,7 +6,7 @@ public static class Parser
         TrackFlags flag = TrackFlags.None;
         var parts = flagstring
             .Replace("\"", "", StringComparison.Ordinal)
-            .Replace("'", "",StringComparison.Ordinal)
+            .Replace("'", "", StringComparison.Ordinal)
             .Split(' ', StringSplitOptions.RemoveEmptyEntries);
         foreach (var part in parts)
         {

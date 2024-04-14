@@ -53,7 +53,7 @@ public sealed class AiffFormatReader : IAudioFileFormatReader
            [28..38] [224..304]  big   	ext		sampleRate
         */
         metadata = default;
-        if(stream.Length < 38)
+        if (stream.Length < 38)
         {
             return false;
         }
@@ -92,7 +92,7 @@ public sealed class AiffFormatReader : IAudioFileFormatReader
     }
     private static decimal ReadAppleExtended80(ReadOnlySpan<byte> bytes)
     {
-        if (bytes.Length != 10) throw new ArgumentException("Expected 10 bytes for Apple Extended",nameof(bytes));
+        if (bytes.Length != 10) throw new ArgumentException("Expected 10 bytes for Apple Extended", nameof(bytes));
 
         Span<byte> workingBytes = stackalloc byte[bytes.Length];
         bytes.CopyTo(workingBytes);

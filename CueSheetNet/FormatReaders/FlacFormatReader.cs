@@ -21,7 +21,7 @@ internal sealed class FlacFormatReader : IAudioBinaryStreamFormatReader
     public bool ReadMetadata(Stream stream, out FileMetadata metadata)
     {
         metadata = default;
-        if(stream.Length < 22)
+        if (stream.Length < 22)
         {
             return false;
         }

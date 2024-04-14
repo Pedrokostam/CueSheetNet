@@ -6,10 +6,10 @@ namespace CueSheetNet.NameParsing;
 public static partial class CueTreeFormatter
 {
 #if NET7_0_OR_GREATER // GeneratedRegex introduces in NET7
-    [GeneratedRegex(@"%(?<property>[\w\s]+)%",RegexOptions.Compiled, 500)]
+    [GeneratedRegex(@"%(?<property>[\w\s]+)%", RegexOptions.Compiled, 500)]
     private static partial Regex PropertyParser();
 
-    [GeneratedRegex(@"[\\/]+",RegexOptions.Compiled,500)]
+    [GeneratedRegex(@"[\\/]+", RegexOptions.Compiled, 500)]
     private static partial Regex SeparatorNormalizer();
 #else
     private static readonly Regex PropertyParserImpl = new(@"%(?<property>[\w\s]+)%", RegexOptions.Compiled, TimeSpan.FromMilliseconds(500));
@@ -45,7 +45,7 @@ public static partial class CueTreeFormatter
             if (TagDict.TryGetValue(groupVal, out ParseToken? tag))
             {
                 string newVal = tag.GetValue(sheet);
-                treeFormat = treeFormat!.Replace(val, newVal,StringComparison.Ordinal);
+                treeFormat = treeFormat!.Replace(val, newVal, StringComparison.Ordinal);
             }
             else
             {
@@ -70,13 +70,13 @@ public static partial class CueTreeFormatter
     {
         Tags =
         [
-            new PropertyParseToken("Title","Title of the album","Album","AlbumTitle","AlbumName"),
-            new PropertyParseToken("Performer","Name of the performer (artist/band)","Artist", "AlbumArtist"),
-            new PropertyParseToken("Date","Release data of the album","Year"),
-            new PropertyParseToken("Composer","Name of the composer"),
-            new PropertyParseToken("Catalog","Catalog number of the CD"),
-            new PropertyParseToken("DiscID","ID of the CD"),
-            new MethodParseToken ("Filename",(s)=>Path.GetFileNameWithoutExtension(s.SourceFile!.Name),"Name of the Cue file, sans extension","Current","Old","Name"),
+            new PropertyParseToken("Title", "Title of the album", "Album", "AlbumTitle", "AlbumName"),
+            new PropertyParseToken("Performer", "Name of the performer (artist/band)", "Artist", "AlbumArtist"),
+            new PropertyParseToken("Date", "Release data of the album", "Year"),
+            new PropertyParseToken("Composer", "Name of the composer"),
+            new PropertyParseToken("Catalog", "Catalog number of the CD"),
+            new PropertyParseToken("DiscID", "ID of the CD"),
+            new MethodParseToken("Filename", (s) => Path.GetFileNameWithoutExtension(s.SourceFile!.Name), "Name of the Cue file, sans extension", "Current", "Old", "Name"),
         ];
         TagDict = new Dictionary<string, ParseToken>(StringComparer.Ordinal);
         foreach (var ptoken in Tags)

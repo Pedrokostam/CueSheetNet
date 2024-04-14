@@ -260,13 +260,13 @@ internal sealed class CueEncodingTester(Stream stream, CueSource source)
         //test for encoding with BOM
         Encoding? encoding = bomArea switch
         {
-        // Theoretically we need to check only 4 bytes for utf32, 3 for utf8 and 2 for utf16.
-        // But we know that the first characters of the sheet should be standard ASCII characters
-        [0xEF, 0xBB, 0xBF, > 00, > 00] => Encoding.UTF8, // the last 2 bytes have to be anything but null
-        [0xFF, 0xFE, 0x00, 0x00, > 00] => Encoding.UTF32, // the first byte of second character will be larger than zero since it is its start (little-end)
-        [0x00, 0x00, 0xFE, 0xFF, 0x00] => EncodingUTF32BE, // the first byte of second character will be be zero since it is its start (big-end)
-        [0xFF, 0xFE, > 00, 0x00, > 00] => Encoding.Unicode, // We get 1.5 characters, so bytes 3 and 5 will have to be larger than zero (little-end)
-        [0xFE, 0xFF, 0x00, > 00, 0x00] => Encoding.BigEndianUnicode, // We get 1.5 characters, so bytes 3 and 5 will have to be zero (big-end)
+            // Theoretically we need to check only 4 bytes for utf32, 3 for utf8 and 2 for utf16.
+            // But we know that the first characters of the sheet should be standard ASCII characters
+            [0xEF, 0xBB, 0xBF, > 00, > 00] => Encoding.UTF8, // the last 2 bytes have to be anything but null
+            [0xFF, 0xFE, 0x00, 0x00, > 00] => Encoding.UTF32, // the first byte of second character will be larger than zero since it is its start (little-end)
+            [0x00, 0x00, 0xFE, 0xFF, 0x00] => EncodingUTF32BE, // the first byte of second character will be be zero since it is its start (big-end)
+            [0xFF, 0xFE, > 00, 0x00, > 00] => Encoding.Unicode, // We get 1.5 characters, so bytes 3 and 5 will have to be larger than zero (little-end)
+            [0xFE, 0xFF, 0x00, > 00, 0x00] => Encoding.BigEndianUnicode, // We get 1.5 characters, so bytes 3 and 5 will have to be zero (big-end)
             _ => null,
         };
         if (encoding is not null)
@@ -294,11 +294,11 @@ internal sealed class CueEncodingTester(Stream stream, CueSource source)
         // First letter of a cuesheet should be a standard ASCII letter (one byte of data and whatever padding)
         Encoding? naiveApproach = bomArea switch
         {
-        [0, 0, 0, > 1/**/, 0, 0, 0, > 1/**/, 0, 0, 0, > 1/**/, 0, 0, 0, > 1/**/] => new UTF32Encoding(bigEndian: true, byteOrderMark: false), // 3 nulls, followed by a non-zero bytes
-        [> 1, 0, 0, 0/**/, > 1, 0, 0, 0/**/, > 1, 0, 0, 0/**/, > 1, 0, 0, 0/**/] => new UTF32Encoding(bigEndian: false, byteOrderMark: false),// non-zero bytes followed by 3 nulls
-        [> 1, 0/**/, > 1, 0/**/, > 1, 0/**/, > 1, 0/**/, ..] => new UnicodeEncoding(bigEndian: false, byteOrderMark: false), // non-zero bytes, null, ignore everything past 12 byte
-        [0, > 1/**/, 0, > 1/**/, 0, > 1/**/, 0, > 1/**/, ..] => new UnicodeEncoding(bigEndian: true, byteOrderMark: false),// null, non-zero byte, ignore everything past 12 byte
-        [0, 0, 0, 0, ..] => throw new InvalidDataException($"Four consecutive null bytes at the beginning of {Source}"),
+            [0, 0, 0, > 1/**/, 0, 0, 0, > 1/**/, 0, 0, 0, > 1/**/, 0, 0, 0, > 1/**/] => new UTF32Encoding(bigEndian: true, byteOrderMark: false), // 3 nulls, followed by a non-zero bytes
+            [> 1, 0, 0, 0/**/, > 1, 0, 0, 0/**/, > 1, 0, 0, 0/**/, > 1, 0, 0, 0/**/] => new UTF32Encoding(bigEndian: false, byteOrderMark: false),// non-zero bytes followed by 3 nulls
+            [> 1, 0/**/, > 1, 0/**/, > 1, 0/**/, > 1, 0/**/, ..] => new UnicodeEncoding(bigEndian: false, byteOrderMark: false), // non-zero bytes, null, ignore everything past 12 byte
+            [0, > 1/**/, 0, > 1/**/, 0, > 1/**/, 0, > 1/**/, ..] => new UnicodeEncoding(bigEndian: true, byteOrderMark: false),// null, non-zero byte, ignore everything past 12 byte
+            [0, 0, 0, 0, ..] => throw new InvalidDataException($"Four consecutive null bytes at the beginning of {Source}"),
             _ => null,
         };
         return naiveApproach;
