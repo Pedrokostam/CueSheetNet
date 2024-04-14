@@ -593,15 +593,11 @@ public partial class CueReader
     }
 
 #if NET7_0_OR_GREATER // GeneratedRegex introduces in NET7
-    [GeneratedRegex(@"(?<PATH>\w+)\spanString+(?<TYPE>\w*)", RegexOptions.Compiled, 500)]
+    [GeneratedRegex(@"(?<PATH>\w+)\s+(?<TYPE>\w*)", RegexOptions.Compiled, 500)]
     private static partial Regex NonQuotedFileRegex();
 #else
     private static readonly Regex NonQuotedFileRegexImpl =
-        new(
-            @"(?<PATH>\w+)\spanString+(?<TYPE>\w*)",
-            RegexOptions.Compiled,
-            TimeSpan.FromMilliseconds(500)
-        );
+        new(@"(?<PATH>\w+)\s+(?<TYPE>\w*)", RegexOptions.Compiled, TimeSpan.FromMilliseconds(500));
 
     private static Regex NonQuotedFileRegex() => NonQuotedFileRegexImpl;
 #endif
