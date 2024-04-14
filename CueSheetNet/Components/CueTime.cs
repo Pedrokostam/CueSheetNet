@@ -61,18 +61,6 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable, IForm
         frames = Frames;
     }
 
-    /// <summary>
-    /// Return text representation of this time, as would be used in a sheet.
-    /// </summary>
-    public override string ToString()
-    {
-        if (Negative)
-        {
-            return $"-{-Minutes:d2}:{-Seconds:d2}:{-Frames:d2}";
-        }
-        return $"{Minutes:d2}:{Seconds:d2}:{Frames:d2}";
-    }
-
     public override int GetHashCode() => TotalFrames.GetHashCode();
 
     #region Constants
@@ -576,27 +564,67 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable, IForm
 #endif
     #endregion
     #region String
+
+    /// <summary>
+    /// Return text representation of this time, as would be used in a sheet.
+    /// </summary>
+    /// <returns>The text representation created according to the following format: "-MM:SS:FF"</returns>
+    public override string ToString()
+    {
+        if (Negative)
+        {
+            return $"-{-Minutes:d2}:{-Seconds:d2}:{-Frames:d2}";
+        }
+        return $"{Minutes:d2}:{Seconds:d2}:{Frames:d2}";
+    }
+
+    /// <inheritdoc cref="ToString(string?, IFormatProvider?)"/>
+    /// <remarks>Uses <see cref="CultureInfo.CurrentCulture"/> as the format provider.</remarks>
+    public string ToString(string? format) => ToString(format, CultureInfo.CurrentCulture);
+
     /// <summary>
     /// Converts the time to a text representation according to the given format.
     /// </summary>
     /// <param name="format">A case-insensitive cue time format string.
     /// <para/>
-    /// The following formats are supported:
-    /// <list type="bullet">
-    /// <item>'G' - default representantation. Equivalent of calling <see cref="ToString()"/>. Cannot be mixed with others.</item>
-    /// <item>'M' - the minutes part. Can be repeated to pad the result with leading zeroes (width mathes number of repeats).</item>
-    /// <item>'S' - the seconds part. Can be repeated to pad the result with leading zeroes (width mathes number of repeats).</item>
-    /// <item>'F' - the frames part. Can be repeated to pad the result with leading zeroes (width mathes number of repeats).</item>
-    /// <item>'D' - the milliseconds part. Can be repeated to pad the result with leading zeroes (width mathes number of repeats).</item>
-    /// <item>'-' - if specified and the time is negative, add the minus sign at the beginning.</item>
-    /// <item>'+' - always adds the sign at the beginning.</item>
-    /// <item>'\' - escapes the next character.</item>
-    /// <item>any other characters - is added to result.</item>
+    /// The following terms are supported:
+    /// <list type="table">
+    ///     <item>
+    ///         <term>'G'</term>
+    ///         <description>Default representantation. Equivalent of calling <see cref="ToString()"/>. Cannot be mixed with others.</description>
+    ///     </item>
+    ///     <item>
+    ///         <term>'M'</term>
+    ///         <description>The minutes part. Text will be padded to the however many time the term was repeated.</description>
+    ///     </item>
+    ///     <item>
+    ///         <term>'S'</term>
+    ///         <description>The seconds part. Text will be padded to the however many time the term was repeated.</description>
+    ///     </item>
+    ///     <item>
+    ///         <term>'F'</term>
+    ///         <description>The frames part. Text will be padded to the however many time the term was repeated.</description>
+    ///     </item>
+    ///     <item>
+    ///         <term>'D'</term>
+    ///         <description>The milliseconds part. Text will be padded to the however many time the term was repeated.</description>
+    ///     </item>
+    ///     <item>
+    ///         <term>'-'</term>
+    ///         <description>If specified and the time is negative, add the minus sign at the beginning.</description>
+    ///     </item>
+    ///     <item>
+    ///         <term>'+'</term>
+    ///         <description>Always adds the sign at the beginning.</description>
+    ///     </item>
+    ///     <item>
+    ///         <term>'\'</term>
+    ///         <description>Escapes the next character.</description>
+    ///     </item>
     /// </list>
     /// </param>
-    /// <returns></returns>
-    public string ToString(string? format) => ToString(format, CultureInfo.CurrentCulture);
-
+    /// <param name="formatProvider">An object that supplies culture-specific formatting information.</param>
+    /// <returns>The text representation created according to <paramref name="format"/></returns>
     public string ToString(string? format, IFormatProvider? formatProvider)
     {
         switch (format)
