@@ -1,16 +1,16 @@
-﻿using CueSheetNet.FileHandling;
+﻿using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using CueSheetNet.FileHandling;
 using CueSheetNet.FormatReaders;
 using CueSheetNet.Internal;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 
 namespace CueSheetNet;
-
 
 public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
 {
     public const FileType AudioTypes = FileType.WAVE | FileType.AIFF | FileType.MP3;
     public const FileType DataTypes = FileType.BINARY | FileType.MOTOROLA;
+
     public static FileType GetFileTypeFromPath(string path)
     {
         string extension = Path.GetExtension(path)[1..].ToLowerInvariant();
@@ -24,15 +24,20 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
             _ => FileType.WAVE
         };
     }
+
     public int Index { get; internal set; }
-    public CueDataFile(CueSheet parent, string filePath, FileType type) : base(parent)
+
+    public CueDataFile(CueSheet parent, string filePath, FileType type)
+        : base(parent)
     {
         SetFile(filePath, type);
     }
+
     internal CueDataFile ClonePartial(CueSheet newOwner)
     {
         return new(newOwner, SourceFile.FullName, Type);
     }
+
     public FileType Type { get; internal set; }
     private FileMetadata? meta;
     public FileMetadata? Meta
@@ -50,14 +55,15 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
 
     private void RefreshIfNeeded()
     {
-        if (!NeedsRefresh || ParentSheet.Files.Count <= Index) return;
+        if (!NeedsRefresh || ParentSheet.Files.Count <= Index)
+            return;
         Debug.WriteLine($"Refreshing file meta: {_file}");
         if (_file.Exists)
         {
-            FileMetadata? resMeta = FormatReader.ReadMetadata(_file.FullName,
-                                           ParentSheet
-                                           .GetTracksOfFile_IEnum(Index)
-                                           .Select(x => x.Type));
+            FileMetadata? resMeta = FormatReader.ReadMetadata(
+                _file.FullName,
+                ParentSheet.GetTracksOfFile_IEnum(Index).Select(x => x.Type)
+            );
             Meta = resMeta;
         }
         else
@@ -71,7 +77,6 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
 
     private FileInfo _file;
     public FileInfo SourceFile => _file;
-
 
     [MemberNotNull(nameof(_file))]
     public void SetFile(string value, FileType? newType = null)
@@ -97,6 +102,7 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
     {
         return "File " + Index.ToString("D2") + " \"" + SourceFile.FullName + "\" " + Type;
     }
+
     public void RefreshFileInfo()
     {
         string name = SourceFile.Name;
@@ -119,13 +125,18 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
 
     public bool Equals(CueDataFile? other)
     {
-        if (ReferenceEquals(this, other)) return true;
-        if (other is null) return false;
+        if (ReferenceEquals(this, other))
+            return true;
+        if (other is null)
+            return false;
         string thisRelativePath = GetRelativePath();
         string otherRelativePath = other.GetRelativePath();
-        if (!string.Equals(thisRelativePath, otherRelativePath, StringComparison.OrdinalIgnoreCase)) return false;
-        if (Type != other.Type) return false;
-        if (Index != other.Index) return false;
+        if (!string.Equals(thisRelativePath, otherRelativePath, StringComparison.OrdinalIgnoreCase))
+            return false;
+        if (Type != other.Type)
+            return false;
+        if (Index != other.Index)
+            return false;
         return true;
     }
 
@@ -138,12 +149,16 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
     {
         return Equals(obj as CueDataFile);
     }
-    static public implicit operator FileInfo(CueDataFile file) => file.SourceFile;
+
+    public static implicit operator FileInfo(CueDataFile file) => file.SourceFile;
+
     public override int GetHashCode() => HashCode.Combine(NormalizedPath, Index);
+
     public bool Exists => _file.Exists;
 
     #region Watcher
     private FileSystemWatcher? watcher;
+
     private void CreateWatcher(string absPath)
     {
         string? parentDir = Path.GetDirectoryName(absPath);
@@ -205,4 +220,3 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
     }
     #endregion
 }
-
