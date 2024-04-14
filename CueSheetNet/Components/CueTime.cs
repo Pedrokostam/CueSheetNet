@@ -671,7 +671,7 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable, IForm
                 or 'f'
                 or 'F':
                 {
-                    int charLength = ParseRepeat(span, i);
+                    int charLength = StringHelper.CountSubsequence(span, i);
                     i += charLength;
                     int num = GetTimeValueByChar(character);
                     strb.Append(num.ToString().PadRight(charLength, '0'));
@@ -680,7 +680,7 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable, IForm
                 case 'd'
                 or 'D':
                 {
-                    int charLength = ParseRepeat(span, i);
+                    int charLength = StringHelper.CountSubsequence(span, i);
                     i += charLength;
                     string fmt = "." + new string('0', charLength);
                     strb.Append((Math.Abs(Milliseconds) / 1000).ToString(fmt)[1..]);
@@ -695,6 +695,8 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable, IForm
         }
         return strb.ToString();
     }
+
+    private void 
 
     /// <summary>
     /// Returns the value of one of the time properties, depending on the <paramref name="character"/>:
@@ -729,16 +731,6 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable, IForm
             _ => 0
         };
     }
-
-    private static int ParseRepeat(ReadOnlySpan<char> format, int pos)
-    {
-        char patternChar = format[pos];
-        int index = pos + 1;
-        while ((uint)index < (uint)format.Length && format[index] == patternChar)
-        {
-            index++;
-        }
-        return index - pos;
-    }
+    
     #endregion
 }
