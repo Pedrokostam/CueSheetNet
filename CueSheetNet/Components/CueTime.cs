@@ -1,36 +1,40 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 
 namespace CueSheetNet;
 
 /// <summary>
 /// Represents a time interval measured in Cue Frames. Cue Frame is equivalent to 1 CD sector (not to be confused with CD frame, which is a part of a sector)
 /// </summary>
-public readonly record struct CueTime : IComparable<CueTime>, IComparable, IFormattable
+public readonly record struct CueTime
+    : IComparable<CueTime>
+    , IComparable
+    , IFormattable
 #if NET7_0_OR_GREATER // static interface members introduces in NET7
-        ,
-        IParsable<CueTime>,
-        ISpanParsable<CueTime>,
-        IDecrementOperators<CueTime>,
-        IIncrementOperators<CueTime>,
-        IAdditionOperators<CueTime, CueTime, CueTime>,
-        IAdditionOperators<CueTime, int, CueTime>,
-        IAdditiveIdentity<CueTime, CueTime>,
-        ISubtractionOperators<CueTime, CueTime, CueTime>,
-        ISubtractionOperators<CueTime, int, CueTime>,
-        IMultiplyOperators<CueTime, int, CueTime>,
-        IMultiplyOperators<CueTime, double, CueTime>,
-        IMultiplyOperators<CueTime, decimal, CueTime>,
-        IDivisionOperators<CueTime, int, CueTime>,
-        IDivisionOperators<CueTime, double, CueTime>,
-        IDivisionOperators<CueTime, decimal, CueTime>,
-        IDivisionOperators<CueTime, CueTime, double>,
-        IUnaryNegationOperators<CueTime, CueTime>,
-        IUnaryPlusOperators<CueTime, CueTime>,
-        IModulusOperators<CueTime, CueTime, CueTime>,
-        IEqualityOperators<CueTime, CueTime, bool>,
-        IComparisonOperators<CueTime, CueTime, bool>
+    , IParsable<CueTime>
+    , ISpanParsable<CueTime>
+    , IDecrementOperators<CueTime>
+    , IIncrementOperators<CueTime>
+    , IAdditionOperators<CueTime, CueTime, CueTime>
+    , IAdditionOperators<CueTime, int, CueTime>
+    , IAdditiveIdentity<CueTime, CueTime>
+    , ISubtractionOperators<CueTime, CueTime, CueTime>
+    , ISubtractionOperators<CueTime, int, CueTime>
+    , IMultiplyOperators<CueTime, int, CueTime>
+    , IMultiplyOperators<CueTime, double, CueTime>
+    , IMultiplyOperators<CueTime, decimal, CueTime>
+    , IDivisionOperators<CueTime, int, CueTime>
+    , IDivisionOperators<CueTime, double, CueTime>
+    , IDivisionOperators<CueTime, decimal, CueTime>
+    , IDivisionOperators<CueTime, CueTime, double>
+    , IUnaryNegationOperators<CueTime, CueTime>
+    , IUnaryPlusOperators<CueTime, CueTime>
+    , IModulusOperators<CueTime, CueTime, CueTime>
+    , IEqualityOperators<CueTime, CueTime, bool>
+    , IComparisonOperators<CueTime, CueTime, bool>
 #endif
 {
     public int TotalFrames { get; } // Int is sufficient - it can describe up to 331 days of continuous playback (or about 4.5 TB of WAVE)
@@ -564,7 +568,6 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable, IForm
 #endif
     #endregion
     #region String
-
     /// <summary>
     /// Return text representation of this time, as would be used in a sheet.
     /// </summary>
@@ -590,23 +593,23 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable, IForm
     /// The following terms are supported:
     /// <list type="table">
     ///     <item>
-    ///         <term>'G'</term>
+    ///         <term>'G' or 'g'</term>
     ///         <description>Default representantation. Equivalent of calling <see cref="ToString()"/>. Cannot be mixed with others.</description>
     ///     </item>
     ///     <item>
-    ///         <term>'M'</term>
+    ///         <term>'M' or 'm'</term>
     ///         <description>The minutes part. Text will be padded to the however many time the term was repeated.</description>
     ///     </item>
     ///     <item>
-    ///         <term>'S'</term>
+    ///         <term>'S' or 's'</term>
     ///         <description>The seconds part. Text will be padded to the however many time the term was repeated.</description>
     ///     </item>
     ///     <item>
-    ///         <term>'F'</term>
+    ///         <term>'F' or 'f'</term>
     ///         <description>The frames part. Text will be padded to the however many time the term was repeated.</description>
     ///     </item>
     ///     <item>
-    ///         <term>'D'</term>
+    ///         <term>'D' or 'd'</term>
     ///         <description>The milliseconds part. Text will be padded to the however many time the term was repeated.</description>
     ///     </item>
     ///     <item>
@@ -619,7 +622,11 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable, IForm
     ///     </item>
     ///     <item>
     ///         <term>'\'</term>
-    ///         <description>Escapes the next character.</description>
+    ///         <description>Escapes the next character, while discarding this backslash.</description>
+    ///     </item>
+    ///     <item>
+    ///         <term>any other character</term>
+    ///         <description>Is copied to the output string without changes.</description>
     ///     </item>
     /// </list>
     /// </param>
@@ -632,8 +639,7 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable, IForm
             case null
             or ""
             or "G"
-            or "g"
-            or @"-mm\:ss\:ff":
+            or "g":
                 return ToString();
             default:
                 break;
@@ -642,95 +648,37 @@ public readonly record struct CueTime : IComparable<CueTime>, IComparable, IForm
         int spanLength = span.Length;
         int i = 0;
         StringBuilder strb = new();
+        bool addNegativeSign = false;
+        bool addSign = false;
         while (i < spanLength)
         {
             char character = span[i];
-            switch (character)
-            {
-                // Escape char
-                case '\\':
-                    if (i < spanLength - 1)
-                    {
-                        strb.Append(character);
-                        i += 2;
-                    }
-                    break;
-                case '+'
-                or '-':
-                    i++;
-                    if (character == '-' && !Negative)
-                    {
-                        break;
-                    }
-                    strb.Append(Negative ? '-' : '+');
-                    break;
-                case 'm'
-                or 'M'
-                or 's'
-                or 'S'
-                or 'f'
-                or 'F':
-                {
-                    int charLength = StringHelper.CountSubsequence(span, i);
-                    i += charLength;
-                    int num = GetTimeValueByChar(character);
-                    strb.Append(num.ToString().PadRight(charLength, '0'));
-                    break;
-                }
-                case 'd'
-                or 'D':
-                {
-                    int charLength = StringHelper.CountSubsequence(span, i);
-                    i += charLength;
-                    string fmt = "." + new string('0', charLength);
-                    strb.Append((Math.Abs(Milliseconds) / 1000).ToString(fmt)[1..]);
-                    break;
-                }
 
-                default:
-                    strb.Append(character);
-                    i++;
-                    break;
+            if (character == '-' || character == '+')
+            {
+                addNegativeSign |= character == '-';
+                addSign |= character == '+';
+                i++;
+                continue;
             }
+
+            i += character switch
+            {
+                'm' or 'M' or 's' or 'S' or 'f' or 'F' => CueTimeFormatHelper.AppendCoreTimeProperty(this, strb, span, i),
+                'd' or 'D' => CueTimeFormatHelper.AppendMilliseconds(this, strb, span, i),
+                '\\' => CueTimeFormatHelper.AppendEscaped(strb, span, i),
+                _ => CueTimeFormatHelper.AppendOther(strb, span, i),
+            };
+        }
+        if (addSign)
+        {
+            strb.Insert(0, Negative ? '-' : '+');
+        }
+        else if (addNegativeSign && Negative)
+        {
+            strb.Insert(0, '-');
         }
         return strb.ToString();
     }
-
-    private void 
-
-    /// <summary>
-    /// Returns the value of one of the time properties, depending on the <paramref name="character"/>:
-    /// <list type="table">
-    ///    <item>
-    ///        <term>m</term>
-    ///        <description>Minutes</description>
-    ///    </item>
-    ///     <item>
-    ///        <term>s</term>
-    ///        <description>Seconds</description>
-    ///    </item>
-    ///     <item>
-    ///        <term>f</term>
-    ///        <description>Frames</description>
-    ///    </item>
-    ///    <item>
-    ///        <term>other</term>
-    ///        <description>0</description>
-    ///    </item>
-    ///</list>
-    /// </summary>
-    /// <param name="character"></param>
-    /// <returns></returns>
-    private int GetTimeValueByChar(char character)
-    {
-        return character switch
-        {
-            'm' or 'M' => Math.Abs(Minutes),
-            's' or 'S' => Math.Abs(Seconds),
-            'f' or 'F' => Math.Abs(Frames),
-            _ => 0
-        };
-    }
-    
     #endregion
 }
