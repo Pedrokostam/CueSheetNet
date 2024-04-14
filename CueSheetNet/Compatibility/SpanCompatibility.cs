@@ -2,7 +2,6 @@
 namespace CueSheetNet;
 internal static class SpanCompatibility
 {
-    // SequenceEqual with IComparer were introduced in NET 6
     /// <summary>
     /// <para>COMPATIBILITY</para>
     /// Determines whether two sequences are equal by comparing the elements using an <see cref="IEqualityComparer{T}"/>.
@@ -17,27 +16,24 @@ internal static class SpanCompatibility
     {
         return ((ReadOnlySpan<T>)span).SequenceEqual(other, comparer);
     }
-    /// <inheritdoc cref="SpanCompatibility.SequenceEqual{T}(Span{T}, ReadOnlySpan{T}, IEqualityComparer{T}?)"/>
-    /// <returns></returns>
+
+    /// <inheritdoc cref="SequenceEqual{T}(Span{T}, ReadOnlySpan{T}, IEqualityComparer{T}?)"/>
     private static bool SequenceEqual<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> other, IEqualityComparer<T>? comparer = null) where T : notnull
     {
-        bool sequenceEqual = span.Length == other.Length;
-        if (sequenceEqual)
+        if (span.Length != other.Length)
         {
-            for (int i = 0; i < span.Length; i++)
-            {
-                if (comparer is not null)
-                {
-                    sequenceEqual = comparer.Equals(span[i], other[i]);
-                }
-                else
-                {
-                    sequenceEqual = (span[i].Equals(other[i]));
-                }
-                if (!sequenceEqual) break;
-            }
+            return false;
         }
-        return sequenceEqual;
+        comparer ??= EqualityComparer<T>.Default;
+        for (int i = 0; i < span.Length; i++)
+        {
+            if (!comparer.Equals(span[i], other[i]))
+            {
+                return false;
+            }
+
+        }
+        return true;
     }
 }
 #endif
