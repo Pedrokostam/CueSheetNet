@@ -15,15 +15,13 @@ internal static class StreamCompatibility
         int i;
         for (i = 0; i < span.Length; i++)
         {
-            int readByte =stream.ReadByte();
-            if(readByte >= 0)
-            {
-                span[i]=(byte)readByte;
-            }
-            else
+            int readByte = stream.ReadByte();
+            if (readByte < 0)
             {
                 break;
             }
+
+            span[i] = (byte)readByte;
         }
         return i;
     }
