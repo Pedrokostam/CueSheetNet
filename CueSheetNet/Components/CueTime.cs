@@ -3,7 +3,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace CueSheetNet;
 
@@ -58,6 +57,7 @@ public readonly record struct CueTime
         TotalFrames = CalculateTotalFrames(minutes, seconds, frames);
     }
 
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="Deconstruct"]'/>
     public void Deconstruct(out int minutes, out int seconds, out int frames)
     {
         minutes = Minutes;
@@ -100,49 +100,47 @@ public readonly record struct CueTime
 
     /// <summary>CueTime corresponding to -99:59:74.</summary>
     public static readonly CueTime Min = new(-99, -59, -74);
-    #endregion
+
+    #endregion // Constants
 
     #region Properties
-    /// <summary>
-    /// Gets the minutes component of the time interval represented by the current CueTime structure (0-59).
-    /// </summary>
+
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="Minutes"]'/>
     public int Minutes => (TotalFrames - Frames - SecondsPerMinute * Seconds) / FramesPerMinute;
-    /// <summary>
-    /// Gets the seconds component of the time interval represented by the current CueTime structure (0-59).
-    /// </summary>
+
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="Seconds"]'/>
     public int Seconds => ((TotalFrames - Frames) / FramesPerSecond) % SecondsPerMinute;
 
-    /// <summary>
-    /// Gets the milliseconds component of the time interval represented by the current CueTime structure (0-999).
-    /// </summary>
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="Milliseconds"]'/>
     public double Milliseconds => MillisecondsPerFrame * Frames;
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="Frames"]'/>
     public int Frames => TotalFrames % FramesPerSecond;
 
-    /// <summary>Return <see langword="true"/> if the interval is negative, otherwise <see langword="false"/></summary>
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="Negative"]'/>
     public bool Negative => TotalFrames < 0;
 
-    /// <summary>Gets the value of the current CueTime structure expressed in whole and fractional seconds.</summary>
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="TotalSeconds"]'/>
     public double TotalSeconds => TotalFrames / (double)FramesPerSecond;
 
-    /// <summary>Gets the value of the current CueTime structure expressed in whole and fractional milliseconds.</summary>
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="TotalMilliseconds"]'/>
     public double TotalMilliseconds => TotalFrames * MillisecondsPerFrame;
 
-    /// <summary>Gets the value of the current CueTime structure expressed in whole and fractional minutes.</summary>
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="TotalMinutes"]'/>
     public double TotalMinutes => TotalFrames / (double)FramesPerMinute;
 
-    /// <summary>Indicates whether the number of equivalent Ticks is a whole number, i.e. has no fractional part.<br/>Every 3 frames (or every 40ms) is a whole number.</summary>
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="IsTickWhole"]'/>
     public bool IsTickWhole => TotalFrames % 3 == 0;
 
-    /// <summary>Gets the value of the current CueTime structure expressed in <see cref="TimeSpan.Ticks">ticks</see>.</summary>
-    public double Ticks => TotalFrames * TicksPerFrame;
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="TotalTicks"]'/>
+    public double TotalTicks => TotalFrames * TicksPerFrame;
 
-    /// <summary>Gets the value of the current CueTime structure expressed in <see cref="TimeSpan.Ticks">ticks</see> truncated to the nearest long integer.</summary>
-    public long LongTicks => (long)(TotalFrames * TicksPerFrame);
-    #endregion
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="LongTotalTicks"]'/>
+    public long LongTotalTicks => (long)(TotalFrames * TicksPerFrame);
+    #endregion // Properties
 
     #region Statics
+
     /// <summary>
     /// Calculates how man timecode frames can fit in an interval of given milliseconds.
     /// </summary>
@@ -185,17 +183,10 @@ public readonly record struct CueTime
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="CalculateTotalFrames"]'/>
     public static int CalculateTotalFrames(int minutes, int seconds, int frames) => checked(frames + FramesPerSecond * seconds + FramesPerMinute * minutes);
 
-    /// <summary>
-    /// Calculates total frames from the specified components. Operation is unchecked - overflow can cause incorrect results. Components don't have to have the same sign.
-    /// </summary>
-    /// <param name="minutes"></param>
-    /// <param name="seconds"></param>
-    /// <param name="frames"></param>
-    /// <returns></returns>
-    public static int CalculateTotalFrames_Unchecked(int minutes, int seconds, int frames) => unchecked(frames + FramesPerSecond * seconds + FramesPerMinute * minutes);
-    #endregion
+    #endregion // Statics
 
     #region Conversions
+
     public static CueTime FromTimeSpan(TimeSpan timeSpan) =>
         new(totalFrames: TicksToFrames(timeSpan.Ticks));
 
@@ -205,16 +196,18 @@ public readonly record struct CueTime
     /// The interval is rounded down to the nearest <see cref="TimeSpan.Ticks">tick</see>.
     /// </summary>
     /// <returns></returns>
-    public TimeSpan ToTimeSpan() => TimeSpan.FromTicks(LongTicks);
+    public TimeSpan ToTimeSpan() => TimeSpan.FromTicks(LongTotalTicks);
 
     public static CueTime FromMilliseconds(double millis) => new((int)(millis / MillisecondsPerFrame));
 
     public static CueTime FromSeconds(double seconds) => new((int)(seconds * FramesPerSecond));
 
     public static CueTime FromMinutes(double minutes) => new((int)(minutes * FramesPerMinute));
-    #endregion
+    
+    #endregion // Conversions
 
     #region Parsing
+
     /// <summary>
     /// Parses ReadOnlySpan to CueTime (±mm:ss:ff). The parsed time is negative, only if the minute part is negative.
     /// The frame and seconds parts do not affect the negativity.
@@ -373,9 +366,11 @@ public readonly record struct CueTime
             return false;
         return TryParse(s.AsSpan(), out cueTime);
     }
-    #endregion
+    
+    #endregion // Parsing
 
     #region Comparison and Equality
+
     public static int Compare(CueTime ct1, CueTime ct2) =>
         ct1.TotalFrames.CompareTo(ct2.TotalFrames);
 
@@ -389,18 +384,23 @@ public readonly record struct CueTime
     public int CompareTo(CueTime other) => TotalFrames.CompareTo(other.TotalFrames);
 
     public static bool Equals(CueTime ct1, CueTime ct2) => ct1.TotalFrames == ct2.TotalFrames;
-    #endregion
+    #endregion // Comparison and Equality
 
     #region Math
-    /// <summary>
-    /// Divides the time by the divisor.
-    /// </summary>
-    /// <param name="divisor">The divisor.
-    /// <para/>
-    /// Must be different than 0, otherwise <see cref="DivideByZeroException"/> is thrown.
-    /// </param>
-    /// <returns>CueTime equivalent to the number frames of input CueTime divided by the divisor, with <see cref="TotalFrames"/> rounded down towards zero.</returns>
-    /// <exception cref="DivideByZeroException"><paramref name="divisor"/> is zero.</exception>
+
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="Add"]'/>
+    public CueTime Add(CueTime time) => new(checked(TotalFrames + time.TotalFrames));
+
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="AddFrames"]'/>
+    public CueTime AddFrames(int frames) => new(checked(TotalFrames + frames));
+
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="Subtract"]'/>
+    public CueTime Subtract(CueTime time) => new(checked(TotalFrames - time.TotalFrames));
+
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="SubtractFrames"]'/>
+    public CueTime SubtractFrames(int frames) => new(checked(TotalFrames - frames));
+
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="DivideInt"]'/>
     public CueTime Divide(int divisor)
     {
         if (divisor == 0)
@@ -408,21 +408,20 @@ public readonly record struct CueTime
         return new(TotalFrames / divisor);
     }
 
-    /// <param name="divisor">The divisor.
-    /// <para/>
-    /// Must be different than 0, otherwise <see cref="DivideByZeroException"/> is thrown.
-    /// <para/>
-    /// Must be a finite number - NaN and ±infinity will result in <see cref="ArgumentException"/>.
-    /// </param>
-    /// <exception cref="ArgumentException">When <paramref name="multiplier"/> is Not A Number</exception>
-    /// <inheritdoc cref="Divide(int)(int)"/>
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="DivideDouble"]'/>
     public CueTime Divide(double divisor)
     {
         if (double.IsNaN(divisor))
-            throw new ArgumentException("Divisor must be a number", nameof(divisor));
+            throw new ArgumentException("Divisor must be a finite number", nameof(divisor));
         if (divisor == 0)
             throw new DivideByZeroException();
         return new((int)(TotalFrames / divisor));
+    }
+
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="DivideCueTime"]'/>
+    public double Divide(CueTime time)
+    {
+        return TotalFrames / (double)time.TotalFrames;
     }
 
     /// <include file='CueTime.xml' path='Elements//Member[@name="MultiplyInt"]'/>
@@ -437,133 +436,95 @@ public readonly record struct CueTime
         return new(checked((int)(TotalFrames * factor)));
     }
 
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="time"></param>
-    /// <returns></returns>
-    /// <exception cref="OverflowException">When resulting frames are greater than <see cref="int.MaxValue"/> or lower than <see cref="int.MinValue"/></exception>
-    public CueTime Add(CueTime time) => new(checked(TotalFrames + time.TotalFrames));
-
-    /// <summary>
-    /// Add the <paramref name="frames"/> number of frames to the time
-    /// </summary>
-    /// <param name="frames"></param>
-    /// <returns></returns>
-    public CueTime AddFrames(int frames) => new(TotalFrames + frames);
-
-    public CueTime Subtract(CueTime time) => new(TotalFrames - time.TotalFrames);
-
-    public CueTime SubtractFrames(int frames) => new(TotalFrames - frames);
-    #endregion
+    #endregion // Math
 
     #region Operators
-    public static implicit operator TimeSpan(CueTime cueTime) => cueTime.ToTimeSpan();
 
-    public static explicit operator CueTime(TimeSpan timeSpan) => FromTimeSpan(timeSpan);
+    public static implicit operator TimeSpan(CueTime cueTime)
+        => cueTime.ToTimeSpan();
 
-    public static bool operator <(CueTime left, CueTime right) => left.CompareTo(right) < 0;
+    public static explicit operator CueTime(TimeSpan timeSpan)
+        => FromTimeSpan(timeSpan);
 
-    public static bool operator >(CueTime left, CueTime right) => left.CompareTo(right) > 0;
+    public static bool operator <(CueTime left, CueTime right)
+        => left.CompareTo(right) < 0;
 
-    public static bool operator >=(CueTime left, CueTime right) => left.CompareTo(right) >= 0;
+    public static bool operator >(CueTime left, CueTime right)
+        => left.CompareTo(right) > 0;
 
-    public static bool operator <=(CueTime left, CueTime right) => left.CompareTo(right) <= 0;
+    public static bool operator >=(CueTime left, CueTime right)
+        => left.CompareTo(right) >= 0;
 
-    /// <inheritdoc/>
-    /// <exception cref="OverflowException"/>
-    public static CueTime operator +(CueTime left, CueTime right) => new(left.TotalFrames + right.TotalFrames);
+    public static bool operator <=(CueTime left, CueTime right)
+        => left.CompareTo(right) <= 0;
 
-    /// <param name="left">The value of type CueTime to which <paramref name="right"/> number of frames are added.</param>
-    /// <param name="right">The number of frames to be added to the <paramref name="left"/> CueTime.</param>
-    /// <inheritdoc cref="AddFrames(int)"/>
-    public static CueTime operator +(CueTime left, int right) => new(left.TotalFrames + right);
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="Negate"]'/>
+    public static CueTime operator -(CueTime time)
+        => new(checked(-time.TotalFrames));
 
-    public static CueTime operator -(CueTime time) => new(-time.TotalFrames);
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="Decrement"]'/>
+    public static CueTime operator --(CueTime time)
+        => time.SubtractFrames(1);
 
-    public static CueTime operator checked -(CueTime time)
-    {
-        checked
-        {
-            return new(-time.TotalFrames);
-        }
-    }
+    public static CueTime operator +(CueTime time)
+        => time;
 
-    public static CueTime operator --(CueTime time) => time.SubtractFrames(1);
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="Increment"]'/>
+    public static CueTime operator ++(CueTime time)
+        => time.AddFrames(1);
 
-    public static CueTime operator +(CueTime time) => time;
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="AddOperator"]'/>
+    public static CueTime operator +(CueTime left, CueTime right)
+        => left.Add(right);
 
-    public static CueTime operator ++(CueTime time) => time.AddFrames(1);
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="AddIntOperator"]'/>
+    public static CueTime operator +(CueTime time, int frames)
+        => time.AddFrames(frames);
 
-    public static CueTime operator -(CueTime left, CueTime right) => left.Subtract(right);
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="SubtractOperator"]'/>
+    public static CueTime operator -(CueTime left, CueTime right)
+        => left.Subtract(right);
 
-    public static CueTime operator -(CueTime time, int frames) => time.SubtractFrames(frames);
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="SubtractIntOperator"]'/>
+    public static CueTime operator -(CueTime time, int frames)
+        => time.SubtractFrames(frames);
 
-    /// <inheritdoc cref="Divide(double)"/>
-    public static CueTime operator /(CueTime time, double divisor) => time.Divide(divisor);
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="DivideOperatorDouble"]'/>
+    public static CueTime operator /(CueTime time, double divisor)
+        => time.Divide(divisor);
 
-    /// <inheritdoc cref="Divide(int)"/>
-    /// <inheritdoc path="//left"/>
-    public static CueTime operator /(CueTime left, int divisor) => left.Divide(divisor);
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="DivideOperatorInt"]'/>
+    public static CueTime operator /(CueTime left, int divisor)
+        => left.Divide(divisor);
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="MultiplyOperatorDouble"]'/>
-    public static CueTime operator *(CueTime left, double factor) => left.Multiply(factor);
-    public static CueTime operator checked *(CueTime left, double multiplier)
-    {
-        checked
-        {
-            return left * multiplier;
-        }
-    }
+    public static CueTime operator *(CueTime time, double factor)
+        => time.Multiply(factor);
 
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="MultiplyOperatorInt"]'/>
+    public static CueTime operator *(CueTime time, int factor)
+        => time.Multiply(factor);
 
-    public static CueTime operator *(CueTime left, int multiplier) => left.Multiply(multiplier);
-    public static CueTime operator checked *(CueTime left, int multiplier)
-    {
-        checked
-        {
-            return left.Multiply(multiplier);
-        }
-    }
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="MultiplyOperatorDouble"]'/>
+    public static CueTime operator *(int factor, CueTime time)
+        => time.Multiply(factor);
 
-    public static CueTime operator *(int multiplier, CueTime right) => right.Multiply(multiplier);
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <remarks>sdfsdf</remarks>
-    /// <remarks>sdfsdfsdfsdf</remarks>
-    /// <param name="multiplier"></param>
-    /// <param name="right"></param>
-    /// <returns></returns>
-    public static CueTime operator *(double multiplier, CueTime right) => right.Multiply(multiplier);
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="MultiplyOperatorInt"]'/>
+    public static CueTime operator *(double factor, CueTime time)
+        => time.Multiply(factor);
 
-    public static CueTime operator %(CueTime left, CueTime right) => new(left.Frames % right.Frames);
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="DivideOperatorCueTime"]'/>
+    public static double operator /(CueTime dividend, CueTime divisor)
+        => dividend.Divide(divisor);
 
-    public static double operator /(CueTime left, CueTime right) => (left.Frames / right.Frames);
-    #endregion
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="ModuloOperator"]'/>
+    public static CueTime operator %(CueTime left, CueTime right)
+        => new(left.TotalFrames % right.TotalFrames);
 
-    #region Explicit Interfaces
-#if NET7_0_OR_GREATER // static interface members introduced in NET7
-    static CueTime IParsable<CueTime>.Parse(string s, IFormatProvider? provider) => Parse(s);
+    #endregion // Operators
 
-    static bool IParsable<CueTime>.TryParse(
-        [NotNullWhen(true)] string? s,
-        IFormatProvider? provider,
-        [MaybeNullWhen(false)] out CueTime result
-    ) => TryParse(s, out result);
-
-    static CueTime ISpanParsable<CueTime>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s);
-
-    static bool ISpanParsable<CueTime>.TryParse(
-        ReadOnlySpan<char> s,
-        IFormatProvider? provider,
-        [MaybeNullWhen(false)] out CueTime result
-    ) => TryParse(s, out result);
-
-    static CueTime IAdditiveIdentity<CueTime, CueTime>.AdditiveIdentity => CueTime.Zero;
-#endif
-    #endregion
     #region String
+
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="ToString"]'/>
     public override string ToString()
     {
@@ -575,7 +536,6 @@ public readonly record struct CueTime
     }
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="ToStringFormatFormatProvider"]'/>
-    /// <see cref="ToString(string?)"/>
     public string ToString(string? format) => ToString(format, CultureInfo.CurrentCulture);
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="ToStringFormatFormatProvider"]'/>
@@ -627,5 +587,31 @@ public readonly record struct CueTime
         }
         return strb.ToString();
     }
+
+    #endregion // String
+    
+#if NET7_0_OR_GREATER // static interface members introduced in NET7
+
+    #region Explicit Interfaces
+    static CueTime IParsable<CueTime>.Parse(string s, IFormatProvider? provider) => Parse(s);
+
+    static bool IParsable<CueTime>.TryParse(
+        [NotNullWhen(true)] string? s,
+        IFormatProvider? provider,
+        [MaybeNullWhen(false)] out CueTime result
+    ) => TryParse(s, out result);
+
+    static CueTime ISpanParsable<CueTime>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s);
+
+    static bool ISpanParsable<CueTime>.TryParse(
+        ReadOnlySpan<char> s,
+        IFormatProvider? provider,
+        [MaybeNullWhen(false)] out CueTime result
+    ) => TryParse(s, out result);
+
+    static CueTime IAdditiveIdentity<CueTime, CueTime>.AdditiveIdentity => CueTime.Zero;
     #endregion
+
+#endif
+
 }
