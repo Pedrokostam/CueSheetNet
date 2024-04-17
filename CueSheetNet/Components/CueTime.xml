@@ -38,19 +38,27 @@
 				Must be a finite number – NaN and ±infinity will result in <see cref="ArgumentException"/>.
 			</para>
 		</Snippet>
+		<Snippet name="ReturnsCueTime">
+			<returns>
+				<see cref="CueTime"/> object representing the given time.
+			</returns>
+		</Snippet>
 		<Snippet name="CheckedOperation">
 			<para>
-				This operation is checked — if the <see cref="CueTime.TotalFrames">TotalFrames</see> of the result overflow or underflow at any point, <see cref="OverflowException"/> will be thrown.
+				This operation is <see langword="checked"/> — if the <see cref="CueTime.TotalFrames">TotalFrames</see> of the result overflow or underflow at any point, <see cref="OverflowException"/> will be thrown.
 			</para>
 		</Snippet>
 		<Snippet name="FrameRoundedToZero">
 			<para>
-				Resulting <see cref="TotalFrames">TotalFrames</see> will be rounded down, towards zero.
+				The resulting <see cref="TotalFrames">TotalFrames</see> will be rounded to nearest integer.
 			</para>
+		</Snippet>
+		<Snippet name="FrameRoundedToZeroDirect">
+			The result will be rounded to nearest integer.
 		</Snippet>
 		<Snippet name="FrameOfCueRoundedToZero">
 			<para>
-				Resulting time will have its <see cref="TotalFrames">TotalFrames</see> rounded down, towards zero.
+				Resulting time will have its <see cref="TotalFrames">TotalFrames</see> rounded to nearest integer.
 			</para>
 		</Snippet>
 		<Snippet name="FormatGuide">
@@ -98,7 +106,7 @@
 		</Snippet>
 		<Snippet name="ParamTime">
 			<param name="time">
-				Time interval expressed as a <see cref="CueTime">CueTime</see>.
+				Time interval expressed as a <see cref='CueTime'/>.
 			</param>
 		</Snippet>
 		<Snippet name="ParamFrames">
@@ -126,7 +134,7 @@
 		</Member>
 		<Member name="CueTimeCtorFrames">
 			<summary>
-				Creates new instance of <see cref="CueTime">CueTime</see> from the given number of timecode frames.
+				Creates new instance of <see cref='CueTime'/> from the given number of timecode frames.
 			</summary>
 			<param name="totalFrames">
 				Represents a time interval measured in Red Book timecode frames.
@@ -195,18 +203,18 @@
 		</Member>
 		<Member name='Add'>
 			<summary>
-				Adds two instances of <see cref='CueTime'>CueTime</see>.
+				Adds two instances of <see cref='CueTime'/>.
 				<include file='CueTime.xml' path='Elements/Snippets/Snippet[@name="CheckedOperation"]'/>
 			</summary>
 			<include file='CueTime.xml' path='Elements/Snippets/Snippet[@name="ParamTime"]'/>
 			<include file='CueTime.xml' path='Elements/Errors/Error[@name="FrameOverflow"]'/>
 			<returns>
-				A new <see cref='CueTime'>CueTime</see> which represents the sum of both elements.
+				A new <see cref='CueTime'/> which represents the sum of both elements.
 			</returns>
 		</Member>
 		<Member name='AddFrames'>
 			<summary>
-				Adds the specified number of <paramref name="frames"/> to the given <see cref='CueTime'>CueTime</see>.
+				Adds the specified number of <paramref name="frames"/> to the given <see cref='CueTime'/>.
 				<include file='CueTime.xml' path='Elements/Snippets/Snippet[@name="CheckedOperation"]'/>
 			</summary>
 			<include file='CueTime.xml' path='Elements/Snippets/Snippet[@name="ParamFrames"]'/>
@@ -230,18 +238,18 @@
 		</Member>
 		<Member name='Subtract'>
 			<summary>
-				Calculates the difference between two instances of <see cref='CueTime'>CueTime</see>.
+				Calculates the difference between two instances of <see cref='CueTime'/>.
 				<include file='CueTime.xml' path='Elements/Snippets/Snippet[@name="CheckedOperation"]'/>
 			</summary>
 			<include file='CueTime.xml' path='Elements/Snippets/Snippet[@name="ParamTime"]'/>
 			<include file='CueTime.xml' path='Elements/Errors/Error[@name="FrameOverflow"]'/>
 			<returns>
-				A new <see cref='CueTime'>CueTime</see> which represents the difference between both elements.
+				A new <see cref='CueTime'/> which represents the difference between both elements.
 			</returns>
 		</Member>
 		<Member name='SubtractFrames'>
 			<summary>
-				Subtracts the specified number of <paramref name="frames"/> from the given <see cref='CueTime'>CueTime</see>.
+				Subtracts the specified number of <paramref name="frames"/> from the given <see cref='CueTime'/>.
 				<include file='CueTime.xml' path='Elements/Snippets/Snippet[@name="CheckedOperation"]'/>
 			</summary>
 			<include file='CueTime.xml' path='Elements/Snippets/Snippet[@name="ParamFrames"]'/>
@@ -257,14 +265,14 @@
 			<include file='CueTime.xml' path='Elements/Members/Member[@name="Subtract"]'/>
 		</Member>
 		<Member name='SubtractIntOperator'>
-				<include file='CueTime.xml' path='Elements/Snippets/Snippet[@name="ParamTime"]'/>
+			<include file='CueTime.xml' path='Elements/Snippets/Snippet[@name="ParamTime"]'/>
 			<include file='CueTime.xml' path='Elements/Snippets/Snippet[@name="ParamFrames"]'/>
 			<include file='CueTime.xml' path='Elements/Members/Member[@name="Subtract"]'/>
 		</Member>
 		<Member name='Increment'>
 			<summary>
 				Adds one frame to the <paramref name='time'/>.
-			<include file='CueTime.xml' path='Elements/Snippets/Snippet[@name="CheckedOperation"]'/>
+				<include file='CueTime.xml' path='Elements/Snippets/Snippet[@name="CheckedOperation"]'/>
 				<include file='CueTime.xml' path='Elements/Snippets/Snippet[@name="FrameClarificationPara"]'/>
 			</summary>
 			<include file='CueTime.xml' path='Elements/Errors/Error[@name="FrameOverflow"]'/>
@@ -275,7 +283,7 @@
 		</Member>
 		<Member name='Negate'>
 			<summary>
-				Negates the value of <see cref='CueTime'>CueTime</see>
+				Negates the value of <see cref='CueTime'/>
 				<include file='CueTime.xml' path='Elements/Snippets/Snippet[@name="CheckedOperation"]'/>
 			</summary>
 			<include file='CueTime.xml' path='Elements/Errors/Error[@name="FrameOverflow"]'/>
@@ -362,14 +370,14 @@
 		</Member>
 		<Member name="DivideCueTime">
 			<summary>
-				Calculates the ratio between two instances of <see cref='CueTime'>CueTime</see>.
+				Calculates the ratio between two instances of <see cref='CueTime'/>.
 			</summary>
 			<remarks>
 				May result in ±infinity.
 			</remarks>
 			<include file='CueTime.xml' path='Elements/Snippets/Snippet[@name="ParamTime"]'/>
 			<returns>
-				The ratio between two given instances of <see cref='CueTime'>CueTime</see>.
+				The ratio between two given instances of <see cref='CueTime'/>.
 			</returns>
 			<include file='CueTime.xml' path='Elements/Errors/Error[@name="DivideByZero"]'/>
 		</Member>
@@ -443,7 +451,7 @@
 		</Member>
 		<Member name='Negative'>
 			<summary>
-				Checks whether the current instance is negative. <see cref='CueTime'>CueTime</see> is negative when its <see cref='CueTime.TotalFrames'>TotalFrames</see> are less than zero.
+				Checks whether the current instance is negative. <see cref='CueTime'/> is negative when its <see cref='CueTime.TotalFrames'>TotalFrames</see> are less than zero.
 			</summary>
 			<return>
 				<see langword="true"/> if the interval is negative, otherwise <see langword="false"/>
@@ -475,13 +483,88 @@
 			<summary>
 				<include file='CueTime.xml' path='Elements/Members/Member[@name="TotalTicks"]/summary'/>
 				<para>
-					The resulting value is rounded down towards zero.
+					The resulting value is rounded towards zero.
 				</para>
 			</summary>
 		</Member>
 		<Member name='ModuloOperator'>
 			<inheritdoc/>
 			<include file='CueTime.xml' path='Elements/Errors/Error[@name="DivideByZero"]'/>
+		</Member>
+		<Member name='TicksToFrames'>
+			<summary>
+				Calculates how man timecode frames can fit in the given <see cref="TimeSpan.Ticks">ticks</see>.
+				<include file='CueTime.xml' path='Elements/Snippets/Snippet[@name="CheckedOperation"]'/>
+				<para>
+					<include file='CueTime.xml' path='Elements/Snippets/Snippet[@name="FrameRoundedToZeroDirect"]'/>
+				</para>
+			</summary>
+			<param name="ticks">
+				Span of time measured in <see cref="TimeSpan.Ticks">ticks</see>.
+			</param>
+			<returns>
+				The integer number of frames in the span of <paramref name="ticks"/>.
+				<br>
+					<include file='CueTime.xml' path='Elements/Snippets/Snippet[@name="FrameRoundedToZeroDirect"]'/>
+				</br>
+			</returns>
+			<include file='CueTime.xml' path='Elements/Errors/Error[@name="FrameOverflow"]'/>
+		</Member>
+		<Member name='ToTimeSpan'>
+			<summary>
+				Converts this CueTime structure to equivalent <see cref="TimeSpan"/>.
+				<para/>
+				The number of <see cref="TimeSpan.Ticks">ticks</see> is rounded down to the nearest integer.
+			</summary>
+			<returns>
+				<see cref="TimeSpan"/> object representing the time.
+			</returns>
+		</Member>
+		<Member name='FromTimeSpan'>
+			<summary>
+				Creates a new <see cref='CueTime'/> instance that represents time equal to that of <paramref name='timeSpan'/>.
+				<para/>
+				The number of <see cref="TimeSpan.Ticks">ticks</see> is rounded down towards zero.
+				<include file='CueTime.xml' path='Elements/Snippets/Snippet[@name="CheckedOperation"]'/>
+			</summary>
+			<param name="timeSpan">
+				A period of time.
+			</param>
+			<include file='CueTime.xml' path='Elements/Snippets/Snippet[@name="ReturnsCueTime"]'/>
+			<include file='CueTime.xml' path='Elements/Errors/Error[@name="FrameOverflow"]'/>
+		</Member>
+		<Member name='FromMilliseconds'>
+			<summary>
+				Creates a new <see cref='CueTime'/> instance that represents time equal to that of <paramref name='millis'/>.
+				<include file='CueTime.xml' path='Elements/Snippets/Snippet[@name="CheckedOperation"]'/>
+			</summary>
+			<param name="millis">
+				An period of time declared in milliseconds.
+			</param>
+			<include file='CueTime.xml' path='Elements/Snippets/Snippet[@name="ReturnsCueTime"]'/>
+			<include file='CueTime.xml' path='Elements/Errors/Error[@name="FrameOverflow"]'/>
+		</Member>
+		<Member name='FromMinutes'>
+			<summary>
+				Creates a new <see cref='CueTime'/> instance that represents time equal to that of <paramref name='millis'/>.
+				<include file='CueTime.xml' path='Elements/Snippets/Snippet[@name="CheckedOperation"]'/>
+			</summary>
+			<param name="minutes">
+				An period of time declared in minutes.
+			</param>
+			<include file='CueTime.xml' path='Elements/Snippets/Snippet[@name="ReturnsCueTime"]'/>
+			<include file='CueTime.xml' path='Elements/Errors/Error[@name="FrameOverflow"]'/>
+		</Member>
+		<Member name='FromSeconds'>
+			<summary>
+				Creates a new <see cref='CueTime'/> instance that represents time equal to that of <paramref name='millis'/>.
+				<include file='CueTime.xml' path='Elements/Snippets/Snippet[@name="CheckedOperation"]'/>
+			</summary>
+			<param name="millis">
+				An period of time declared in seconds.
+			</param>
+			<include file='CueTime.xml' path='Elements/Snippets/Snippet[@name="ReturnsCueTime"]'/>
+			<include file='CueTime.xml' path='Elements/Errors/Error[@name="FrameOverflow"]'/>
 		</Member>
 	</Members>
 </Elements>
