@@ -54,7 +54,10 @@ public readonly record struct CueTime
         frames = Frames;
     }
 
-    public override int GetHashCode() => TotalFrames.GetHashCode();
+    public override int GetHashCode()
+    {
+        return TotalFrames.GetHashCode();
+    }
 
     #region Constants
 
@@ -93,51 +96,106 @@ public readonly record struct CueTime
 
     #endregion // Constants
 
-    #region Properties
+    #region Properties 
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="Minutes"]'/>
     public int Minutes
-        => (TotalFrames - Frames - SecondsPerMinute * Seconds) / FramesPerMinute;
+    {
+        get
+        {
+            return (TotalFrames - Frames - SecondsPerMinute * Seconds) / FramesPerMinute;
+        }
+    }
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="Seconds"]'/>
     public int Seconds
-        => ((TotalFrames - Frames) / FramesPerSecond) % SecondsPerMinute;
+    {
+        get
+        {
+            return ((TotalFrames - Frames) / FramesPerSecond) % SecondsPerMinute;
+        }
+    }
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="Milliseconds"]'/>
     public double Milliseconds
-        => MillisecondsPerFrame * Frames;
+    {
+        get
+        {
+            return MillisecondsPerFrame * Frames;
+        }
+    }
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="Frames"]'/>
     public int Frames
-        => TotalFrames % FramesPerSecond;
+    {
+        get
+        {
+            return TotalFrames % FramesPerSecond;
+        }
+    }
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="Negative"]'/>
     public bool Negative
-        => TotalFrames < 0;
+    {
+        get
+        {
+            return TotalFrames < 0;
+        }
+    }
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="TotalSeconds"]'/>
     public double TotalSeconds
-        => TotalFrames / (double)FramesPerSecond;
+    {
+        get
+        {
+            return TotalFrames / (double)FramesPerSecond;
+        }
+    }
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="TotalMilliseconds"]'/>
     public double TotalMilliseconds
-        => TotalFrames * MillisecondsPerFrame;
+    {
+        get
+        {
+            return TotalFrames * MillisecondsPerFrame;
+        }
+    }
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="TotalMinutes"]'/>
     public double TotalMinutes
-        => TotalFrames / (double)FramesPerMinute;
+    {
+        get
+        {
+            return TotalFrames / (double)FramesPerMinute;
+        }
+    }
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="IsTickWhole"]'/>
     public bool IsTickWhole
-        => TotalFrames % 3 == 0;
+    {
+        get
+        {
+            return TotalFrames % 3 == 0;
+        }
+    }
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="TotalTicks"]'/>
     public double TotalTicks
-        => TotalFrames * TicksPerFrame;
+    {
+        get
+        {
+            return TotalFrames * TicksPerFrame;
+        }
+    }
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="LongTotalTicks"]'/>
     public long LongTotalTicks
-        => (long)(TotalFrames * TicksPerFrame);
+    {
+        get
+        {
+            return (long)(TotalFrames * TicksPerFrame);
+        }
+    }
 
     #endregion // Properties
 
@@ -154,7 +212,15 @@ public readonly record struct CueTime
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="CalculateTotalFrames"]'/>
     public static int CalculateTotalFrames(int minutes, int seconds, int frames)
-        => checked(frames + FramesPerSecond * seconds + FramesPerMinute * minutes);
+    {
+        return checked(frames + (FramesPerSecond * seconds) + (FramesPerMinute * minutes));
+    }
+
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="CalculateTotalFramesDouble"]'/>
+    public static double CalculateTotalFrames(double minutes, double seconds, double frames)
+    {
+        return frames + (FramesPerSecond * seconds) + (FramesPerMinute * minutes);
+    }
 
     #endregion // Statics
 
@@ -162,23 +228,33 @@ public readonly record struct CueTime
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="FromTimeSpan"]'/>
     public static CueTime FromTimeSpan(TimeSpan timeSpan)
-        => new(totalFrames: TicksToFrames(timeSpan.Ticks));
+    {
+        return new(totalFrames: TicksToFrames(timeSpan.Ticks));
+    }
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="ToTimeSpan"]'/>
     public TimeSpan ToTimeSpan()
-        => TimeSpan.FromTicks(LongTotalTicks);
+    {
+        return TimeSpan.FromTicks(LongTotalTicks);
+    }
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="FromMilliseconds"]'/>
     public static CueTime FromMilliseconds(double millis)
-        => new(checked((int)(millis / MillisecondsPerFrame)));
+    {
+        return new(checked((int)(millis / MillisecondsPerFrame)));
+    }
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="FromSeconds"]'/>
     public static CueTime FromSeconds(double seconds)
-        => new(checked((int)(seconds * FramesPerSecond)));
+    {
+        return new(checked((int)(seconds * FramesPerSecond)));
+    }
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="FromMinutes"]'/>
     public static CueTime FromMinutes(double minutes)
-        => new(checked((int)(minutes * FramesPerMinute)));
+    {
+        return new(checked((int)(minutes * FramesPerMinute)));
+    }
 
     #endregion // Conversions
 
@@ -223,7 +299,9 @@ public readonly record struct CueTime
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="ParseSpan"]'/>
     public static CueTime Parse(ReadOnlySpan<char> input)
-        => Parse(input, CultureInfo.InvariantCulture);
+    {
+        return Parse(input, CultureInfo.InvariantCulture);
+    }
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="ParseString"]'/>
     public static CueTime Parse([NotNull] string? input, IFormatProvider? formatProvider)
@@ -234,7 +312,9 @@ public readonly record struct CueTime
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="ParseString"]'/>
     public static CueTime Parse([NotNull] string? input)
-        => Parse(input, CultureInfo.InvariantCulture);
+    {
+        return Parse(input, CultureInfo.InvariantCulture);
+    }
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="TryParseSpan"]'/>
     public static bool TryParse(ReadOnlySpan<char> input, IFormatProvider? formatProvider, out CueTime cueTime)
@@ -284,7 +364,9 @@ public readonly record struct CueTime
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="TryParseSpan"]'/>
     public static bool TryParse(ReadOnlySpan<char> input, out CueTime cueTime)
-        => TryParse(input, CultureInfo.InvariantCulture, out cueTime);
+    {
+        return TryParse(input, CultureInfo.InvariantCulture, out cueTime);
+    }
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="TryParseString"]'/>
     public static bool TryParse([NotNullWhen(true)] string? input, IFormatProvider? formatProvider, out CueTime cueTime)
@@ -297,7 +379,9 @@ public readonly record struct CueTime
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="TryParseString"]'/>
     public static bool TryParse([NotNullWhen(true)] string? input, out CueTime cueTime)
-       => TryParse(input, CultureInfo.InvariantCulture, out cueTime);
+    {
+        return TryParse(input, CultureInfo.InvariantCulture, out cueTime);
+    }
 
     /// <summary>
     /// Finds all separators (':') in <paramref name="spanTrimmed"/>.
@@ -322,35 +406,67 @@ public readonly record struct CueTime
 
     #region Comparison and Equality
 
-    public static int Compare(CueTime ct1, CueTime ct2) =>
-        ct1.TotalFrames.CompareTo(ct2.TotalFrames);
+    public static int Compare(CueTime ct1, CueTime ct2)
+    {
+        return ct1.TotalFrames.CompareTo(ct2.TotalFrames);
+    }
 
     public int CompareTo(object? obj)
     {
-        if (obj == null)
-            return 1;
-        return CompareTo((CueTime)obj);
+        return obj switch
+        {
+            null => 1, // everything not-null is greater than null - https://learn.microsoft.com/en-us/dotnet/api/system.icomparable.compareto#remarks
+            CueTime c => CompareTo(c),
+            TimeSpan t => CompareTo(t),
+            _ => throw new ArgumentException("Object must be of type CueTime, or convertible to it.")
+        };
     }
 
-    public int CompareTo(CueTime other) => TotalFrames.CompareTo(other.TotalFrames);
+    public int CompareTo(CueTime other)
+    {
+        return TotalFrames.CompareTo(other.TotalFrames);
+    }
+    public int CompareTo(TimeSpan other)
+    {
+        // TotalTicks require only a multiplication and TimeSpan.Ticks are not computed
+        // Using double variant since fraction ticks can affect the result (?)
+        // Also, between int.MinValue and int.MaxValue the precision of double is below one,
+        // so there is no way the floating point error can affect the result.
+        return TotalTicks.CompareTo(other.Ticks);
+    }
 
-    public static bool Equals(CueTime ct1, CueTime ct2) => ct1.TotalFrames == ct2.TotalFrames;
+    public static bool Equals(CueTime ct1, CueTime ct2)
+    {
+        return ct1.TotalFrames == ct2.TotalFrames;
+    }
 
     #endregion // Comparison and Equality
 
     #region Math
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="Add"]'/>
-    public CueTime Add(CueTime time) => new(checked(TotalFrames + time.TotalFrames));
+    public CueTime Add(CueTime time)
+    {
+        return new(checked(TotalFrames + time.TotalFrames));
+    }
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="AddFrames"]'/>
-    public CueTime AddFrames(int frames) => new(checked(TotalFrames + frames));
+    public CueTime AddFrames(int frames)
+    {
+        return new(checked(TotalFrames + frames));
+    }
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="Subtract"]'/>
-    public CueTime Subtract(CueTime time) => new(checked(TotalFrames - time.TotalFrames));
+    public CueTime Subtract(CueTime time)
+    {
+        return new(checked(TotalFrames - time.TotalFrames));
+    }
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="SubtractFrames"]'/>
-    public CueTime SubtractFrames(int frames) => new(checked(TotalFrames - frames));
+    public CueTime SubtractFrames(int frames)
+    {
+        return new(checked(TotalFrames - frames));
+    }
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="DivideInt"]'/>
     public CueTime Divide(int divisor)
@@ -377,7 +493,10 @@ public readonly record struct CueTime
     }
 
     /// <include file='CueTime.xml' path='Elements//Member[@name="MultiplyInt"]'/>
-    public CueTime Multiply(int factor) => new(checked(TotalFrames * factor));
+    public CueTime Multiply(int factor)
+    {
+        return new(checked(TotalFrames * factor));
+    }
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="MultiplyDouble"]'/>
     public CueTime Multiply(double factor)
@@ -474,7 +593,7 @@ public readonly record struct CueTime
 
     #endregion // Operators
 
-    #region String
+    #region Strings
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="ToString"]'/>
     public override string ToString()
@@ -487,17 +606,17 @@ public readonly record struct CueTime
     }
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="ToStringFormatFormatProvider"]'/>
-    public string ToString(string? format) => ToString(format, CultureInfo.CurrentCulture);
+    public string ToString(string? format)
+    {
+        return ToString(format, CultureInfo.CurrentCulture);
+    }
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="ToStringFormatFormatProvider"]'/>
     public string ToString(string? format, IFormatProvider? formatProvider)
     {
         switch (format)
         {
-            case null
-            or ""
-            or "G"
-            or "g":
+            case null or "" or "G" or "g":
                 return ToString();
             default:
                 break;
@@ -538,35 +657,43 @@ public readonly record struct CueTime
         return strb.ToString();
     }
 
-    #endregion // String
+    #endregion 
+
+    #region Explicit Interfaces
 
 #if NET7_0_OR_GREATER // static interface members introduced in NET7
 
-    #region Explicit Interfaces
     static CueTime IParsable<CueTime>.Parse(string s, IFormatProvider? provider)
-        => Parse(s, formatProvider: null);
+    {
+        return Parse(s, formatProvider: null);
+    }
 
     static bool IParsable<CueTime>.TryParse(
         [NotNullWhen(true)] string? s,
         IFormatProvider? provider,
         [MaybeNullWhen(false)] out CueTime result)
-        => TryParse(s, formatProvider: null, out result);
+    {
+        return TryParse(s, formatProvider: null, out result);
+    }
 
     static CueTime ISpanParsable<CueTime>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
-        => Parse(s, formatProvider: null);
+    {
+        return Parse(s, formatProvider: null);
+    }
 
     static bool ISpanParsable<CueTime>.TryParse(
         ReadOnlySpan<char> s,
         IFormatProvider? provider,
         [MaybeNullWhen(false)] out CueTime result)
-        => TryParse(s, formatProvider: null, out result);
+    {
+        return TryParse(s, formatProvider: null, out result);
+    }
 
-    static CueTime IAdditiveIdentity<CueTime, CueTime>.AdditiveIdentity
-        => CueTime.Zero;
-
-    #endregion
+    static CueTime IAdditiveIdentity<CueTime, CueTime>.AdditiveIdentity => CueTime.Zero;
 
 #endif
+
+    #endregion
 
     #region Private Helper methods
 
@@ -619,8 +746,10 @@ public readonly record struct CueTime
         strb.Append(format[index + 1]);
         return 2;
     }
-    private static StringBuilder AppendPaddedInteger(StringBuilder sb, int number, int minWidth) =>
-        sb.Append(number.ToString(CultureInfo.InvariantCulture).PadRight(minWidth, '0'));
+    private static StringBuilder AppendPaddedInteger(StringBuilder sb, int number, int minWidth)
+    {
+        return sb.Append(number.ToString(CultureInfo.InvariantCulture).PadRight(minWidth, '0'));
+    }
 
     /// <summary>
     /// Returns the value of one of the time properties, depending on the <paramref name="character"/>:
@@ -655,22 +784,26 @@ public readonly record struct CueTime
             _ => 0
         };
     }
-   
+
     /// <summary>
     /// Helper function that return either string or input sliced to given range, depending on target framework.
     /// </summary>
-    /// <param name="span">Span to slice</param>
-    /// <param name="start">Inclusive start of slice</param>
-    /// <param name="end">Exclusive end of slice</param>
+    /// <param name="span">Span to slice.</param>
+    /// <param name="start">Inclusive start of slice.</param>
+    /// <param name="end">Exclusive end of slice.</param>
     /// <returns>String for NetStandard2.0, ReadOnlySpan elsewhere</returns>
 #if !NETSTANDARD2_0 // int.Parse cannot use Spans only in NETSTANDARD2.0
-    public static ReadOnlySpan<char> Slice(ReadOnlySpan<char> span, int start, int end) =>
-        span[start..end];
+    public static ReadOnlySpan<char> Slice(ReadOnlySpan<char> span, int start, int end)
+    {
+        return span[start..end];
+    }
 
 #else
     // While System.Memory adds range slices, we still need to a return string, because int.TryParse requires it.
-    private static string Slice(ReadOnlySpan<char> span, int start, int end) =>
-        span[start..end].ToString();
+    private static string Slice(ReadOnlySpan<char> span, int start, int end)
+    {
+        return span[start..end].ToString();
+    }
 #endif
     #endregion // Helper Methods
 }

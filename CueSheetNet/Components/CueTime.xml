@@ -285,10 +285,9 @@
 			<include file='CueTime.xml' path='Elements/Snippets/Snippet[@name="ReturnsCueTime"]'/>
 			<include file='CueTime.xml' path='Elements/Errors/Error[@name="FrameOverflow"]'/>
 		</Member>
-		<Member name="CalculateTotalFrames">
+		<Member name="CalculateTotalFramesDouble">
 			<summary>
-				Calculates total frames from the specified components.
-				<include file='CueTime.xml' path='Elements/Snippets/Snippet[@name="CheckedOperation"]'/>
+				Calculates total number of timecode frames from the specified components.
 			</summary>
 			<param name="minutes">
 				Number of minutes. May exceed 59.
@@ -303,6 +302,13 @@
 			<returns>
 				Total number of timecode frames representing the given time.
 			</returns>
+		</Member>
+		<Member name="CalculateTotalFrames">
+			<summary>
+				<include file='CueTime.xml' path='Elements/Members/Member[@name="CalculateTotalFramesDouble"]/summary'/>
+				<include file='CueTime.xml' path='Elements/Snippets/Snippet[@name="CheckedOperation"]'/>
+			</summary>
+			<include file='CueTime.xml' path='Elements/Members/Member[@name="CalculateTotalFramesDouble"]'/>
 			<include file='CueTime.xml' path='Elements/Errors/Error[@name="FrameOverflow"]'/>
 		</Member>
 		<Member name='Add'>

@@ -19,7 +19,7 @@ public class CueTimeTests
     public (string Text, CueTime Time)[] TestTexts { get; set; } = [];
     public string[] FailTexts { get; set; } = [];
     public (object Compared, int Result)[] TestObjectComparisons { get; set; } = [];
-    public (object Object, Type Type)[] TestObjectComparisonsThrow { get; set; } = [];
+    public (object Object, bool CanConvert)[] TestObjectComparisonsThrow { get; set; } = [];
     public (CueTime Time, object Other, Operations Operation)[] OverflowingOperations { get; set; } = [];
     public (long Ticks, int TargetFrames)[] TestTickToFrameConversion { get; set; } = [];
     [TestInitialize]
@@ -90,15 +90,17 @@ public class CueTimeTests
         ];
         TestObjectComparisonsThrow =
         [
-            (CueTime.Zero,typeof(CueTime)),
-            (2137,typeof(int)),
-            (2137D,typeof(double)),
-            (2137F,typeof(float)),
-            (2137M,typeof(decimal)),
-            ("2137",typeof(string)),
-            (DateTime.Now,typeof(DateTime)),
+            (CueTime.Zero,true),
+            (TimeSpan.Zero,true),
+            (TimeSpan.FromDays(1.5),true),
+            (2137,false),
+            (2137D,false),
+            (2137F,false),
+            (2137M,false),
+            ("2137",false),
+            (DateTime.Now,false),
 #if NET6_0_OR_GREATER
-            (DateOnly.FromDayNumber(1),typeof(DateOnly)),
+            (DateOnly.FromDayNumber(1),false),
 #endif
         ];
         CueTime One = new CueTime(1);
@@ -272,17 +274,16 @@ public class CueTimeTests
     public void ComparisonTestThrow()
     {
         CueTime baseTime = CueTime.Zero;
-        foreach ((object Object, Type _type) in TestObjectComparisonsThrow)
+        foreach ((object Object, bool canConvert) in TestObjectComparisonsThrow)
         {
-            dynamic xD = Convert.ChangeType(Object, _type);
-            if (_type == typeof(CueTime))
+            if (canConvert)
             {
-                baseTime.CompareTo(xD);
+                baseTime.CompareTo(Object);
 
             }
             else
             {
-                Assert.ThrowsException<InvalidCastException>(() => baseTime.CompareTo(xD));
+                Assert.ThrowsException<ArgumentException>(() => baseTime.CompareTo(Object));
             }
         }
     }
