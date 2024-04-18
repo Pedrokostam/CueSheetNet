@@ -179,8 +179,8 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
     }
 
     #endregion
+    
     private CueContainer Container { get; }
-    private FileInfo? _CdTextFile;
 
     internal void SetParsingMode(bool parsing)
     {
@@ -200,9 +200,11 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
     }
 
     public string? Catalog { get; set; }
+
+    private FileInfo? _cdTextFile;
     public FileInfo? CdTextFile
     {
-        get => _CdTextFile;
+        get => _cdTextFile;
     }
     public string? Composer { get; set; }
     public int? Date { get; set; }
@@ -235,56 +237,8 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
 
     public static CueSheet Clone(CueSheet cueSheet) => cueSheet.Clone();
 
-    //public void ChangeFile(FileInfo file)
-    //{
-
-    //    Files[index].SetFile(newPath);
-    //}
-    //public void ChangeFile(FileInfo file)
-    //{
-
-    //    Files[index].SetFile(newPath);
-    //}
-    /// <summary>
-    /// Change directory of the given file (zero-based index)
-    /// </summary>
-    /// <param name="index">Zero-based index</param>
-    /// <param name="newPath"></param>
-
-
-
-
-
     public bool Equals(CueSheet? other) => Equals(other, StringComparison.CurrentCulture);
 
-    //public bool HasSameContent(CueSheet? other) =>HasSameContent(other, StringComparison.CurrentCulture);
-    //public bool HasSameContent(CueSheet? other, StringComparison stringComparison) {
-    //    if (other == null) return false;
-    //    if (ReferenceEquals(this, other)) return true;
-    //    if (Container.Indexes.Count != other.Container.Indexes.Count) return false;
-    //    if (Container.Tracks.Count != other.Container.Tracks.Count) return false;
-    //    if (Container.Files.Count != other.Container.Files.Count) return false;
-    //    for (int i = 0; i < Container.Indexes.Count; i++)
-    //    {
-    //        CueIndexImpl one = Container.Indexes[i];
-    //        CueIndexImpl two = other.Container.Indexes[i];
-    //        if (one.Number != two.Number || one.Time != two.Time)
-    //            return false;
-    //    }
-    //    for (int i = 0; i < Container.Tracks.Count; i++)
-    //    {
-    //        CueTrack one = Container.Tracks[i];
-    //        CueTrack two = other.Container.Tracks[i];
-    //        if (!one.Equals(two))
-    //            return false;
-    //    }
-    //    bool finalCheck = string.Equals(CdTextFile?.Name, other.CdTextFile?.Name, StringComparison.OrdinalIgnoreCase) //Paths are compared without caring for case
-    //                   && string.Equals(SourceFile?.Name, other.SourceFile?.Name, StringComparison.OrdinalIgnoreCase)
-    //                   && string.Equals(Performer, other.Performer, stringComparison)
-    //                   && string.Equals(Catalog, other.Catalog)
-    //                   && string.Equals(Composer, other.Composer, stringComparison)
-    //                   && string.Equals(Title, other.Title, stringComparison);
-    //}
     public bool Equals(CueSheet? other, StringComparison stringComparison)
     {
         if (other == null)
@@ -388,11 +342,11 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
     public void SetCdTextFile(string? value)
     {
         if (value == null)
-            _CdTextFile = null;
+            _cdTextFile = null;
         else
         {
             string absPath = Path.Combine(SourceFile?.DirectoryName ?? ".", value);
-            _CdTextFile = new FileInfo(absPath);
+            _cdTextFile = new FileInfo(absPath);
         }
     }
 
@@ -621,7 +575,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
     /// <summary>
     /// Creates an independent deep copy of cuesheet contents.
     /// Copy is functionally the same, but may not be identical (formatting, etc.).
-    /// No objects are shared, everything is created anew
+    /// No objects are shared, everything is created anew.
     /// </summary>
     /// <returns>Deep copy of the <see cref="CueSheet"/></returns>
     public CueSheet Clone()
@@ -673,20 +627,20 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
     }
 
     /// <inheritdoc cref="CuePackage.CopyCueFiles(CueSheet, string, string?)"/>
-    public CueSheet CopyPackage(string destination, string? pattern) =>
-        CopyPackage(destination, pattern, settings: null);
+    public CueSheet CopyPackage(string destination, string? pattern)
+        => CopyPackage(destination, pattern, settings: null);
 
     /// <inheritdoc cref="CuePackage.CopyCueFiles(CueSheet, string, string?)"/>
-    public CueSheet CopyPackage(string destination, string? pattern, CueWriterSettings? settings) =>
-        CuePackage.CopyPackage(this, destination, pattern, settings);
+    public CueSheet CopyPackage(string destination, string? pattern, CueWriterSettings? settings)
+        => CuePackage.CopyPackage(this, destination, pattern, settings);
 
     /// <inheritdoc cref="CuePackage.MoveCueFiles(CueSheet, string, string?)"/>
-    public CueSheet MovePackage(string destination, string? pattern) =>
-        MovePackage(destination, pattern, settings: null);
+    public CueSheet MovePackage(string destination, string? pattern)
+        => MovePackage(destination, pattern, settings: null);
 
     /// <inheritdoc cref="CuePackage.MoveCueFiles(CueSheet, string, string?)"/>
-    public CueSheet MovePackage(string destination, string? pattern, CueWriterSettings? settings) =>
-        CuePackage.MovePackage(this, destination, pattern, settings);
+    public CueSheet MovePackage(string destination, string? pattern, CueWriterSettings? settings)
+        => CuePackage.MovePackage(this, destination, pattern, settings);
 
     public void RemovePackage() => CuePackage.RemovePackage(this);
 

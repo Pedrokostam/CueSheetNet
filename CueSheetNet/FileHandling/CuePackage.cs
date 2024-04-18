@@ -4,7 +4,7 @@ using CueSheetNet.NameParsing;
 namespace CueSheetNet.FileHandling;
 
 /// <summary>
-/// Class which takes care of file operations related to the CueSheet.
+/// Class which takes care of file operations related to CUE sheets.
 /// </summary>
 public static partial class CuePackage
 {

@@ -25,7 +25,7 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
     /// <summary>
     /// Detects file type from the file's extension. Unknown extension are assumed to be <see cref="FileType.WAVE"/>.
     /// </summary>
-    /// <param name="path">File path which extension.</param>
+    /// <param name="path">File path with extension.</param>
     /// <returns>Detected file type.</returns>
     public static FileType GetFileTypeFromPath(string path)
     {

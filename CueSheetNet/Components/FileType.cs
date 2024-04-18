@@ -27,12 +27,12 @@ public enum FileType
     MP3 = 1 << 2,
 
     /// <summary>
-    /// Little-Endian binary
+    /// Little-Endian binary.
     /// </summary>
     BINARY = 1 << 3,
 
     /// <summary>
-    /// Big-Endian binary
+    /// Big-Endian binary.
     /// </summary>
     MOTOROLA = 1 << 4,
 }

@@ -9,17 +9,19 @@ public class CueTrack(CueDataFile parentFile, TrackType type)
         IEquatable<CueTrack>,
         IRemCommentable
 {
+    private CueDataFile _parentFile = parentFile;
+
     public FieldsSet CommonFieldsSet { get; private set; }
 
     /// <summary>
-    /// Absolute index for the whole CueSheet
+    /// Absolute index for the whole CueSheet.
     /// </summary>
     public int Index { get; internal set; }
     public int Offset { get; internal set; }
     public TrackType Type { get; internal set; } = type;
     public CueTime PostGap { get; set; }
     public CueTime PreGap { get; set; }
-    private CueDataFile _ParentFile = parentFile;
+
 
     /// <summary>
     /// File in which Index 01 (or 00 if there is not 01) of Track appeared
@@ -29,15 +31,16 @@ public class CueTrack(CueDataFile parentFile, TrackType type)
         get
         {
             CheckOrphaned();
-            return _ParentFile;
+            return _parentFile;
         }
-        set { _ParentFile = value; }
+        set { _parentFile = value; }
     }
 
     /// <summary>
-    /// Number of track (does not have to be con
+    /// Number of track.
     /// </summary>
     public int Number => Index + Offset;
+
     private string? _Title;
     public string Title
     {
@@ -56,6 +59,7 @@ public class CueTrack(CueDataFile parentFile, TrackType type)
             }
         }
     }
+
     private string? _Performer;
     public string? Performer
     {
@@ -74,6 +78,7 @@ public class CueTrack(CueDataFile parentFile, TrackType type)
             }
         }
     }
+
     private string? _Composer;
     public string? Composer
     {
@@ -93,9 +98,13 @@ public class CueTrack(CueDataFile parentFile, TrackType type)
         }
     }
     public TrackFlags Flags { get; set; } = TrackFlags.None;
+
     public string? ISRC { get; set; }
+
     public bool HasZerothIndex { get; internal set; }
+
     public CueIndex[] Indexes => ParentSheet.GetIndexesOfTrack(Index);
+
     public CueIndex AudioStartIndex
     {
         get
@@ -212,7 +221,9 @@ public class CueTrack(CueDataFile parentFile, TrackType type)
             RawRems.RemoveAt(ind);
     }
     #endregion
+
     #region Comments
+
     private readonly List<string> RawComments = [];
     public ReadOnlyCollection<string> Comments => RawComments.AsReadOnly();
 
@@ -245,6 +256,7 @@ public class CueTrack(CueDataFile parentFile, TrackType type)
     public void ClearComments() => RawComments.Clear();
 
     #endregion
+
     public bool Equals(CueTrack? other) => Equals(other, StringComparison.InvariantCulture);
 
     public bool Equals(CueTrack? other, StringComparison stringComparison)
@@ -264,19 +276,23 @@ public class CueTrack(CueDataFile parentFile, TrackType type)
             || !string.Equals(ISRC, other.ISRC, stringComparison)
             || !string.Equals(Composer, other.Composer, stringComparison)
             || !string.Equals(Title, other.Title, stringComparison)
-            || Flags != other.Flags
-        )
+            || Flags != other.Flags)
+        {
             return false;
+        }
+
         for (int i = 0; i < RawComments.Count; i++)
         {
             if (!string.Equals(RawComments[i], other.RawComments[i], stringComparison))
                 return false;
         }
+
         for (int i = 0; i < RawRems.Count; i++)
         {
             if (!RawRems[i].Equals(other.RawRems[i], stringComparison))
                 return false;
         }
+
         return true;
     }
 

@@ -1,4 +1,8 @@
 ﻿namespace CueSheetNet;
+
+/// <summary>
+/// Which fields are set for a CUE object.
+/// </summary>
 [Flags]
 public enum FieldsSet
 {
