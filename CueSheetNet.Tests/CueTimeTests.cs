@@ -105,49 +105,49 @@ public class CueTimeTests
         ];
         CueTime One = new CueTime(1);
         OverflowingOperations = [
-            (CueTime.TheoreticalMax,2,Operations.Add),
-            (CueTime.TheoreticalMax,2,Operations.Add|Operations.Reversed),
-            (CueTime.TheoreticalMax,One,Operations.Add),
-            (CueTime.TheoreticalMax,One,Operations.Add|Operations.Reversed),
-            (CueTime.TheoreticalMax,2,Operations.Multiply),
-            (CueTime.TheoreticalMax,2,Operations.Multiply|Operations.Reversed),
-            (CueTime.TheoreticalMax,2,Operations.Increment),
+            (CueTime.MaxValue,2,Operations.Add),
+            (CueTime.MaxValue,2,Operations.Add|Operations.Reversed),
+            (CueTime.MaxValue,One,Operations.Add),
+            (CueTime.MaxValue,One,Operations.Add|Operations.Reversed),
+            (CueTime.MaxValue,2,Operations.Multiply),
+            (CueTime.MaxValue,2,Operations.Multiply|Operations.Reversed),
+            (CueTime.MaxValue,2,Operations.Increment),
 
-            (CueTime.ThereoticalMin,2,Operations.Subtract),
-            (CueTime.ThereoticalMin,2,Operations.Subtract|Operations.Reversed),
-            (CueTime.TheoreticalMax,One,Operations.Subtract),
-            (CueTime.TheoreticalMax,One,Operations.Subtract|Operations.Reversed),
-            (CueTime.ThereoticalMin,2,Operations.Multiply),
-            (CueTime.ThereoticalMin,2,Operations.Multiply|Operations.Reversed),
-            (CueTime.ThereoticalMin,2,Operations.Decrement),
+            (CueTime.MinValue,2,Operations.Subtract),
+            (CueTime.MinValue,2,Operations.Subtract|Operations.Reversed),
+            (CueTime.MaxValue,One,Operations.Subtract),
+            (CueTime.MaxValue,One,Operations.Subtract|Operations.Reversed),
+            (CueTime.MinValue,2,Operations.Multiply),
+            (CueTime.MinValue,2,Operations.Multiply|Operations.Reversed),
+            (CueTime.MinValue,2,Operations.Decrement),
 
-            (CueTime.TheoreticalMax,2d,Operations.Add),
-            (CueTime.TheoreticalMax,2d,Operations.Add|Operations.Reversed),
-            (CueTime.TheoreticalMax,2d,Operations.Multiply),
-            (CueTime.TheoreticalMax,2d,Operations.Multiply|Operations.Reversed),
-            (CueTime.TheoreticalMax,2d,Operations.Increment),
-            (CueTime.ThereoticalMin,2d,Operations.Subtract),
-            (CueTime.ThereoticalMin,2d,Operations.Subtract|Operations.Reversed),
-            (CueTime.ThereoticalMin,2d,Operations.Multiply),
-            (CueTime.ThereoticalMin,2d,Operations.Multiply|Operations.Reversed),
-            (CueTime.ThereoticalMin,2d,Operations.Decrement),
+            (CueTime.MaxValue,2d,Operations.Add),
+            (CueTime.MaxValue,2d,Operations.Add|Operations.Reversed),
+            (CueTime.MaxValue,2d,Operations.Multiply),
+            (CueTime.MaxValue,2d,Operations.Multiply|Operations.Reversed),
+            (CueTime.MaxValue,2d,Operations.Increment),
+            (CueTime.MinValue,2d,Operations.Subtract),
+            (CueTime.MinValue,2d,Operations.Subtract|Operations.Reversed),
+            (CueTime.MinValue,2d,Operations.Multiply),
+            (CueTime.MinValue,2d,Operations.Multiply|Operations.Reversed),
+            (CueTime.MinValue,2d,Operations.Decrement),
 
-            (CueTime.TheoreticalMax,2m,Operations.Add),
-            (CueTime.TheoreticalMax,2m,Operations.Add|Operations.Reversed),
-            (CueTime.TheoreticalMax,2m,Operations.Multiply),
-            (CueTime.TheoreticalMax,2m,Operations.Multiply|Operations.Reversed),
-            (CueTime.TheoreticalMax,2m,Operations.Increment),
-            (CueTime.ThereoticalMin,2m,Operations.Subtract),
-            (CueTime.ThereoticalMin,2m,Operations.Subtract|Operations.Reversed),
-            (CueTime.ThereoticalMin,2m,Operations.Multiply),
-            (CueTime.ThereoticalMin,2m,Operations.Multiply|Operations.Reversed),
-            (CueTime.ThereoticalMin,2m,Operations.Decrement),
+            (CueTime.MaxValue,2m,Operations.Add),
+            (CueTime.MaxValue,2m,Operations.Add|Operations.Reversed),
+            (CueTime.MaxValue,2m,Operations.Multiply),
+            (CueTime.MaxValue,2m,Operations.Multiply|Operations.Reversed),
+            (CueTime.MaxValue,2m,Operations.Increment),
+            (CueTime.MinValue,2m,Operations.Subtract),
+            (CueTime.MinValue,2m,Operations.Subtract|Operations.Reversed),
+            (CueTime.MinValue,2m,Operations.Multiply),
+            (CueTime.MinValue,2m,Operations.Multiply|Operations.Reversed),
+            (CueTime.MinValue,2m,Operations.Decrement),
             ];
     }
     [TestMethod("Convert CueTime to TimeSpan and back to CueTime")]
     public void RoundTripConversionTest_CtTsCt()
     {
-        for (int i = CueTime.Min.TotalFrames; i <= CueTime.Max.TotalFrames; i++)
+        for (int i = CueTime.StandardSheetMinValue.TotalFrames; i <= CueTime.StandardSheetMaxValue.TotalFrames; i++)
         {
             CueTime ct = new(i);
             TimeSpan ts = ct;

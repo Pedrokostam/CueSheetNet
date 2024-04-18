@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
 
@@ -83,16 +84,16 @@ public readonly record struct CueTime
     public static readonly CueTime Zero = new(0);
 
     /// <summary>CueTime corresponding to <see cref="TotalFrames">TotalFrames</see> of <see cref="int.MaxValue">MaxValue</see> of <see cref="int"/>.</summary>
-    public static readonly CueTime TheoreticalMax = new(int.MaxValue);
+    public static readonly CueTime MaxValue = new(int.MaxValue);
 
-    /// <summary>CueTime corresponding to 99:59:74, which is the maximum an ordinary CueSheet syntax can represent.</summary>
-    public static readonly CueTime Max = new(99, 59, 74);
+    /// <summary>CueTime corresponding to 99:59:74, which is the maximum the ordinary CueSheet syntax can represent.</summary>
+    public static readonly CueTime StandardSheetMaxValue = new(99, 59, 74);
 
     /// <summary>CueTime corresponding to <see cref="TotalFrames">TotalFrames</see> of <see cref="int.MinValue">MinValue</see> of <see cref="int"/>.</summary>
-    public static readonly CueTime ThereoticalMin = new(int.MinValue);
+    public static readonly CueTime MinValue = new(int.MinValue);
 
-    /// <summary>CueTime corresponding to -99:59:74.</summary>
-    public static readonly CueTime Min = new(-99, -59, -74);
+    /// <summary>CueTime corresponding to -99:59:74, which is the maximum the ordinary CueSheet syntax can represent.</summary>
+    public static readonly CueTime StandardSheetMinValue = new(-99, -59, -74);
 
     #endregion // Constants
 
