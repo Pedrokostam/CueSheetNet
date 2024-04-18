@@ -1,8 +1,6 @@
-﻿using System;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
-using System.Runtime.CompilerServices;
 
 namespace CueSheetNet;
 
@@ -34,7 +32,7 @@ public readonly record struct CueTime
 #endif
 {
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="TotalFrames"]'/>
-    public int TotalFrames { get; } // Int is sufficient - it can describe up to 331 days of continuous playback (or about 4.5 TB of WAVE)
+    public int TotalFrames { get; }  // Int is sufficient - it can describe up to 331 days of continuous playback (or about 4.5 TB of WAVE)
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="CueTimeCtorFrames"]'/>
     public CueTime(int totalFrames)
@@ -45,15 +43,6 @@ public readonly record struct CueTime
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="CueTimeCtorMinSecFrames"]'/>
     public CueTime(int minutes, int seconds, int frames)
     {
-        bool allNonNegative = minutes >= 0 && seconds >= 0 && frames >= 0;
-        bool allNonPositive = minutes <= 0 && seconds <= 0 && frames <= 0;
-        if (!(allNonNegative || allNonPositive))
-        {
-            throw new ArgumentException(
-                $"Parameters must all be either be all non-negative or all non-positive"
-            );
-        }
-
         TotalFrames = CalculateTotalFrames(minutes, seconds, frames);
     }
 
@@ -68,6 +57,7 @@ public readonly record struct CueTime
     public override int GetHashCode() => TotalFrames.GetHashCode();
 
     #region Constants
+
     /// <summary>How many seconds are in a minute: 60.</summary>
     private const int SecondsPerMinute = 60;
 
@@ -106,37 +96,49 @@ public readonly record struct CueTime
     #region Properties
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="Minutes"]'/>
-    public int Minutes => (TotalFrames - Frames - SecondsPerMinute * Seconds) / FramesPerMinute;
+    public int Minutes
+        => (TotalFrames - Frames - SecondsPerMinute * Seconds) / FramesPerMinute;
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="Seconds"]'/>
-    public int Seconds => ((TotalFrames - Frames) / FramesPerSecond) % SecondsPerMinute;
+    public int Seconds
+        => ((TotalFrames - Frames) / FramesPerSecond) % SecondsPerMinute;
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="Milliseconds"]'/>
-    public double Milliseconds => MillisecondsPerFrame * Frames;
+    public double Milliseconds
+        => MillisecondsPerFrame * Frames;
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="Frames"]'/>
-    public int Frames => TotalFrames % FramesPerSecond;
+    public int Frames
+        => TotalFrames % FramesPerSecond;
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="Negative"]'/>
-    public bool Negative => TotalFrames < 0;
+    public bool Negative
+        => TotalFrames < 0;
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="TotalSeconds"]'/>
-    public double TotalSeconds => TotalFrames / (double)FramesPerSecond;
+    public double TotalSeconds
+        => TotalFrames / (double)FramesPerSecond;
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="TotalMilliseconds"]'/>
-    public double TotalMilliseconds => TotalFrames * MillisecondsPerFrame;
+    public double TotalMilliseconds
+        => TotalFrames * MillisecondsPerFrame;
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="TotalMinutes"]'/>
-    public double TotalMinutes => TotalFrames / (double)FramesPerMinute;
+    public double TotalMinutes
+        => TotalFrames / (double)FramesPerMinute;
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="IsTickWhole"]'/>
-    public bool IsTickWhole => TotalFrames % 3 == 0;
+    public bool IsTickWhole
+        => TotalFrames % 3 == 0;
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="TotalTicks"]'/>
-    public double TotalTicks => TotalFrames * TicksPerFrame;
+    public double TotalTicks
+        => TotalFrames * TicksPerFrame;
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="LongTotalTicks"]'/>
-    public long LongTotalTicks => (long)(TotalFrames * TicksPerFrame);
+    public long LongTotalTicks
+        => (long)(TotalFrames * TicksPerFrame);
+
     #endregion // Properties
 
     #region Statics
@@ -151,15 +153,16 @@ public readonly record struct CueTime
 
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="CalculateTotalFrames"]'/>
-    public static int CalculateTotalFrames(int minutes, int seconds, int frames) => checked(frames + FramesPerSecond * seconds + FramesPerMinute * minutes);
+    public static int CalculateTotalFrames(int minutes, int seconds, int frames)
+        => checked(frames + FramesPerSecond * seconds + FramesPerMinute * minutes);
 
     #endregion // Statics
 
     #region Conversions
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="FromTimeSpan"]'/>
-    public static CueTime FromTimeSpan(TimeSpan timeSpan) =>
-        new(totalFrames: TicksToFrames(timeSpan.Ticks));
+    public static CueTime FromTimeSpan(TimeSpan timeSpan)
+        => new(totalFrames: TicksToFrames(timeSpan.Ticks));
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="ToTimeSpan"]'/>
     public TimeSpan ToTimeSpan()
@@ -181,23 +184,17 @@ public readonly record struct CueTime
 
     #region Parsing
 
-    /// <summary>
-    /// Parses ReadOnlySpan to CueTime (±mm:ss:ff). The parsed time is negative, only if the minute part is negative.
-    /// The frame and seconds parts do not affect the negativity.
-    /// </summary>
-    /// <param name="span"></param>
-    /// <returns>CueTime instance corresponding to <see cref="s"/></returns>
-    /// <exception cref="ArgumentException"></exception>
-    public static CueTime Parse(ReadOnlySpan<char> span)
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="ParseSpan"]'/>
+    public static CueTime Parse(ReadOnlySpan<char> input, IFormatProvider? formatProvider)
     {
-        ReadOnlySpan<char> spanTrimmed = span.Trim();
+        ReadOnlySpan<char> spanTrimmed = input.Trim();
         if (spanTrimmed.Length == 0)
-            throw new ArgumentException("Empty CueTime string", nameof(span));
+            throw new ArgumentException("Empty CueTime string", nameof(input));
         List<int> inds = SeekSeparator(spanTrimmed);
         if (inds.Count < 4)
             throw new ArgumentException(
-                $"CueTime string has less than 3 parts ({span.ToString()})",
-                nameof(span)
+                $"CueTime string has less than 3 parts ({input.ToString()})",
+                nameof(input)
             );
         Span<int> nums = stackalloc int[3];
         int numCount = 0;
@@ -224,53 +221,26 @@ public readonly record struct CueTime
         return new CueTime(totalFrames);
     }
 
-    /// <summary>
-    /// Finds all separators (':') in the given span.
-    /// </summary>
-    /// <param name="spanTrimmed"></param>
-    /// <returns>A list with indices of the separator occurences. The first element of the list is always -1</returns>
-    private static List<int> SeekSeparator(ReadOnlySpan<char> spanTrimmed)
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="ParseSpan"]'/>
+    public static CueTime Parse(ReadOnlySpan<char> input)
+        => Parse(input, CultureInfo.InvariantCulture);
+
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="ParseString"]'/>
+    public static CueTime Parse([NotNull] string? input, IFormatProvider? formatProvider)
     {
-        List<int> inds = new(4) { -1 };
-        for (int i = 0; i < spanTrimmed.Length; i++)
-        {
-            char czar = spanTrimmed[i];
-            if (czar == ':')
-            {
-                inds.Add(i);
-            }
-        }
-        inds.Add(spanTrimmed.Length);
-        return inds;
+        ExceptionHelper.ThrowIfNull(input);
+        return Parse(input.AsSpan(), formatProvider);
     }
 
-    /// <summary>
-    /// Parses string to CueTime (±mm:ss:ff). The parsed time is negative, only if the minute part is negative.
-    /// The frame and seconds parts do not affect the negativity.
-    /// </summary>
-    /// <param name="str"></param>
-    /// <returns></returns>
-    /// <exception cref="ArgumentException">If string is null</exception>
-    public static CueTime Parse([NotNull] string? str)
-    {
-        ExceptionHelper.ThrowIfNull(str);
-        return Parse(str.AsSpan());
-    }
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="ParseString"]'/>
+    public static CueTime Parse([NotNull] string? input)
+        => Parse(input, CultureInfo.InvariantCulture);
 
-
-
-    /// <summary>
-    /// Tries to parse string (±mm:ss:ff). The parsed time is negative, only if the minute part is negative.
-    /// The frame and seconds parts do not affect the negativity.
-    /// Only the last parts (frames) is required. Other parts are assumed to be zero, if missing.
-    /// </summary>
-    /// <param name="span">Text to be parsed. Whether the time is positive or negative depends only on the minutes part</param>
-    /// <param name="cueTime"></param>
-    /// <returns>True if parsed correctly, false if there were problems</returns>
-    public static bool TryParse(ReadOnlySpan<char> span, out CueTime cueTime)
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="TryParseSpan"]'/>
+    public static bool TryParse(ReadOnlySpan<char> input, IFormatProvider? formatProvider, out CueTime cueTime)
     {
         cueTime = default;
-        ReadOnlySpan<char> spanTrimmed = span.Trim();
+        ReadOnlySpan<char> spanTrimmed = input.Trim();
         List<int> inds = SeekSeparator(spanTrimmed);
         if (inds.Count <= 1)
             return false;
@@ -279,14 +249,14 @@ public readonly record struct CueTime
         for (int i = 1; i < inds.Count; i++)
         {
             int rangeStart = inds[i - 1] + 1; //plus one, because it was included in previous range
-            //That's why the SeekSeparator add -1 as the first element
+            //That'input why the SeekSeparator adds -1 as the first element
             //so that the first rangeStart will be equal to 0
             int rangeEnd = inds[i];
             if (
                 !int.TryParse(
                     Slice(spanTrimmed, rangeStart, rangeEnd),
                     NumberStyles.Integer,
-                    CultureInfo.InvariantCulture,
+                    formatProvider,
                     out int x
                 )
             )
@@ -312,20 +282,42 @@ public readonly record struct CueTime
         return true;
     }
 
-    /// <summary>
-    /// Tries to parse string (±mm:ss:ff)
-    /// </summary>
-    /// <param name="s">Text to be parsed. Whether the time is positive or negative depends only on the minutes part</param>
-    /// <param name="cueTime"></param>
-    /// <returns>True if parsed correctly, false if there were problems</returns>
-    public static bool TryParse([NotNullWhen(true)] string? s, out CueTime cueTime)
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="TryParseSpan"]'/>
+    public static bool TryParse(ReadOnlySpan<char> input, out CueTime cueTime)
+        => TryParse(input, CultureInfo.InvariantCulture, out cueTime);
+
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="TryParseString"]'/>
+    public static bool TryParse([NotNullWhen(true)] string? input, IFormatProvider? formatProvider, out CueTime cueTime)
     {
         cueTime = default;
-        if (s == null)
+        if (input == null)
             return false;
-        return TryParse(s.AsSpan(), out cueTime);
+        return TryParse(input.AsSpan(), formatProvider, out cueTime);
     }
 
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="TryParseString"]'/>
+    public static bool TryParse([NotNullWhen(true)] string? input, out CueTime cueTime)
+       => TryParse(input, CultureInfo.InvariantCulture, out cueTime);
+
+    /// <summary>
+    /// Finds all separators (':') in <paramref name="spanTrimmed"/>.
+    /// </summary>
+    /// <param name="spanTrimmed">Span with potential separators.</param>
+    /// <returns>A list with indices of the separator occurences. The first element of the list is always -1</returns>
+    private static List<int> SeekSeparator(ReadOnlySpan<char> spanTrimmed)
+    {
+        List<int> indexes = new(4) { -1 };
+        for (int i = 0; i < spanTrimmed.Length; i++)
+        {
+            char czar = spanTrimmed[i];
+            if (czar == ':')
+            {
+                indexes.Add(i);
+            }
+        }
+        indexes.Add(spanTrimmed.Length);
+        return indexes;
+    }
     #endregion // Parsing
 
     #region Comparison and Equality
@@ -343,6 +335,7 @@ public readonly record struct CueTime
     public int CompareTo(CueTime other) => TotalFrames.CompareTo(other.TotalFrames);
 
     public static bool Equals(CueTime ct1, CueTime ct2) => ct1.TotalFrames == ct2.TotalFrames;
+
     #endregion // Comparison and Equality
 
     #region Math
@@ -390,8 +383,7 @@ public readonly record struct CueTime
     public CueTime Multiply(double factor)
     {
         if (double.IsNaN(factor))
-
-            throw new ArgumentException("Multiplier must be a number", nameof(factor));
+            throw new ArgumentException("Factor must be a number", nameof(factor));
         return new(checked((int)(TotalFrames * factor)));
     }
 
@@ -531,7 +523,6 @@ public readonly record struct CueTime
             i += character switch
             {
                 'm' or 'M' or 's' or 'S' or 'f' or 'F' => AppendCoreTimeProperty(this, strb, span, i),
-                'd' or 'D' => AppendMilliseconds(this, strb, span, i),
                 '\\' => AppendEscaped(strb, span, i),
                 _ => AppendOther(strb, span, i),
             };
@@ -552,22 +543,23 @@ public readonly record struct CueTime
 #if NET7_0_OR_GREATER // static interface members introduced in NET7
 
     #region Explicit Interfaces
-    static CueTime IParsable<CueTime>.Parse(string s, IFormatProvider? provider) => Parse(s);
+    static CueTime IParsable<CueTime>.Parse(string s, IFormatProvider? provider)
+        => Parse(s, formatProvider: null);
 
     static bool IParsable<CueTime>.TryParse(
         [NotNullWhen(true)] string? s,
         IFormatProvider? provider,
-        [MaybeNullWhen(false)] out CueTime result
-    ) => TryParse(s, out result);
+        [MaybeNullWhen(false)] out CueTime result)
+        => TryParse(s, formatProvider: null, out result);
 
     static CueTime ISpanParsable<CueTime>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
-        => Parse(s);
+        => Parse(s, formatProvider: null);
 
     static bool ISpanParsable<CueTime>.TryParse(
         ReadOnlySpan<char> s,
         IFormatProvider? provider,
-        [MaybeNullWhen(false)] out CueTime result
-    ) => TryParse(s, out result);
+        [MaybeNullWhen(false)] out CueTime result)
+        => TryParse(s, formatProvider: null, out result);
 
     static CueTime IAdditiveIdentity<CueTime, CueTime>.AdditiveIdentity
         => CueTime.Zero;
@@ -579,7 +571,7 @@ public readonly record struct CueTime
     #region Private Helper methods
 
     /// <summary>
-    /// Appends the the time property specified at the <paramref name="index"/> of <paramref name="format"/> to <paramref name="stringBuilder"/> and return the appendee's width.
+    /// Appends the the time property specified at the <paramref name="index"/> of <paramref name="format"/> to <paramref name="stringBuilder"/> and return the appendee'input width.
     /// </summary>
     /// <remarks>
     /// Respects repeated characters.
@@ -600,20 +592,6 @@ public readonly record struct CueTime
         return charLength;
     }
 
-    /// <summary>
-    /// Appends milliseconds according to the <paramref name="format"/> at the <paramref name="index"/>.
-    /// </summary>
-    /// <inheritdoc cref="AppendCoreTimeProperty(CueTime cueTime,StringBuilder, ReadOnlySpan{char}, int)(StringBuilder, ReadOnlySpan{char}, int)"/>
-    private static int AppendMilliseconds(CueTime cueTime,
-            StringBuilder stringBuilder,
-            ReadOnlySpan<char> format,
-            int index
-        )
-    {
-        int charLength = StringHelper.CountSubsequence(format, index);
-        AppendPaddeFractionalPart(stringBuilder, cueTime.Milliseconds, charLength);
-        return charLength;
-    }
     /// <summary>
     /// Appends a characters that is not part of formatting terms.
     /// </summary>
@@ -644,19 +622,6 @@ public readonly record struct CueTime
     private static StringBuilder AppendPaddedInteger(StringBuilder sb, int number, int minWidth) =>
         sb.Append(number.ToString(CultureInfo.InvariantCulture).PadRight(minWidth, '0'));
 
-    private static StringBuilder AppendPaddeFractionalPart(
-        StringBuilder sb,
-        double number,
-        int minWidth
-    )
-    {
-        // .0000... will take care of padding/trimming, at the cost of a decimal separator at the beginning.
-        string fmt = "." + new string('0', minWidth);
-        var formatted = (Math.Abs(number) / 1000).ToString(fmt, CultureInfo.InvariantCulture);
-        // remove the first element to get the number
-        return sb.Append(formatted[1..]);
-    }
-
     /// <summary>
     /// Returns the value of one of the time properties, depending on the <paramref name="character"/>:
     /// <list type="table">
@@ -665,7 +630,7 @@ public readonly record struct CueTime
     ///        <description>Minutes</description>
     ///    </item>
     ///     <item>
-    ///        <term>s</term>
+    ///        <term>input</term>
     ///        <description>Seconds</description>
     ///    </item>
     ///     <item>
@@ -690,9 +655,9 @@ public readonly record struct CueTime
             _ => 0
         };
     }
-
+   
     /// <summary>
-    /// Helper function that return either string or span sliced to given range, depending on target framework.
+    /// Helper function that return either string or input sliced to given range, depending on target framework.
     /// </summary>
     /// <param name="span">Span to slice</param>
     /// <param name="start">Inclusive start of slice</param>
@@ -701,6 +666,7 @@ public readonly record struct CueTime
 #if !NETSTANDARD2_0 // int.Parse cannot use Spans only in NETSTANDARD2.0
     public static ReadOnlySpan<char> Slice(ReadOnlySpan<char> span, int start, int end) =>
         span[start..end];
+
 #else
     // While System.Memory adds range slices, we still need to a return string, because int.TryParse requires it.
     private static string Slice(ReadOnlySpan<char> span, int start, int end) =>
