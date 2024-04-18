@@ -5,6 +5,7 @@ namespace CueSheetNet.Helpers;
 
 internal static class ExceptionHelper
 {
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void ThrowIfNull(
         [NotNull] object? value,
         [CallerMemberName] string? name = null,
@@ -21,6 +22,7 @@ internal static class ExceptionHelper
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void ThrowIfNullOrEmpty(
         [NotNull] string? value,
         [CallerMemberName] string? name = null,
@@ -38,6 +40,7 @@ internal static class ExceptionHelper
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void ThrowIfNullOrWhitespace(
         [NotNull] string? value,
         [CallerMemberName] string? name = null,
