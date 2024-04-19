@@ -128,7 +128,8 @@ public partial class CueReader
     private CueSheet ParseCueSheet_Impl(Stream fs, string? path)
     {
         LogParseStart();
-        Sheet = new(path);
+        Sheet = new();
+        Sheet.SetCuePath(path);
         if (Encoding is null)
         {
             Stopwatch st = Stopwatch.StartNew();

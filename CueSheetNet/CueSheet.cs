@@ -186,17 +186,25 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
     {
         this.Container.ParsingMode = parsing;
     }
-
+    /// <summary>
+    /// Creates a new blank CueSheet.
+    /// <para>
+    /// To load an existing CUE sheet use <see cref="CueReader"/> or <see cref="CueSheet.Read(string)"/>.</para>
+    /// </summary>
     public CueSheet()
     {
         Container = new(this);
     }
 
-    public CueSheet(string? cuePath)
+    /// <summary>
+    /// Creates a new blank CUE sheet and sets its source path.
+    /// </summary>
+    /// <param name="cuePath"></param>
+    private CueSheet(string? cuePath)
         : this()
     {
         SetCuePath(cuePath);
-        Refresh();
+        //Refresh(); // is it needed
     }
 
     public string? Catalog { get; set; }
