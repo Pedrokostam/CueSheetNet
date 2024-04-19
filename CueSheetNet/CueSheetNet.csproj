@@ -20,15 +20,21 @@
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<PackageReference Include="System.Memory" Version="4.5.5" Condition="'$(TargetFramework)' == 'netstandard2.0'" />
-		<PackageReference Include="Microsoft.Bcl.HashCode " Version="1.1.1" Condition="'$(TargetFramework)' == 'netstandard2.0'" />
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'"> 
+		<PackageReference Include="System.Memory" Version="4.5.5" />
+		<PackageReference Include="Microsoft.Bcl.HashCode " Version="1.1.1" />
+	</ItemGroup>
+	
+	<ItemGroup>
 		<PackageReference Include="System.Text.Encoding" Version="4.3.0" />
 		<PackageReference Include="System.Text.Encoding.CodePages" Version="8.0.0" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Using Include="CueSheetNet.Helpers" />
-	  <Using Include="System.Text" />
+		<Using Include="CueSheetNet.Helpers" />
+		<Using Include="System.Text" />
 	</ItemGroup>
-	
+
 </Project>

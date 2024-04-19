@@ -405,7 +405,7 @@
 		<Member name='Decrement'>
 			<summary>
 				Subtracts one frame from the <paramref name='time'/>.
-				<include file='CueTime.xml' path='Elements/Members/Member[@name="CheckedOperation"]'/>
+				<include file='CueTime.xml' path='Elements/Snippets/Snippet[@name="CheckedOperation"]'/>
 				<include file='CueTime.xml' path='Elements/Snippets/Snippet[@name="FrameClarificationPara"]'/>
 			</summary>
 			<returns>
