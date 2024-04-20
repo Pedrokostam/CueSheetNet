@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
+using CueSheetNet.Internal;
 
-namespace CueSheetNet.Internal;
+namespace CueSheetNet.Collections;
 
 [DebuggerDisplay("Files: {Files.Count}, Track: {Tracks.Count}, Indexes: {Indexes.Count}")]
 internal sealed class CueContainer(CueSheet cueSheet)

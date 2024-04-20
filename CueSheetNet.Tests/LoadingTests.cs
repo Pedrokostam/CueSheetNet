@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace CueSheetNet.Tests;
 
@@ -27,16 +28,28 @@ public  class LoadingTests
     [TestMethod]
     public void Title()
     {
-        Assert.AreEqual(TestItemJethro.Title, "Aqualung");
-        Assert.AreEqual(TestItemBallet.Title, "True");
-        Assert.AreEqual(TestItemMulti.Title, "MultiFile");
+        Assert.AreEqual("Aqualung",TestItemJethro.Title);
+        Assert.AreEqual("True",TestItemBallet.Title);
+        Assert.AreEqual("MultiFile", TestItemMulti.Title);
     }
     [TestMethod]
     public void Performer()
     {
-        Assert.AreEqual(TestItemJethro.Performer, "Jethro Tull");
-        Assert.AreEqual(TestItemBallet.Performer, "Spandau Ballet");
-        Assert.AreEqual(TestItemMulti.Performer, "The Multis");
+        Assert.AreEqual( "Jethro Tull",TestItemJethro.Performer);
+        Assert.AreEqual( "Spandau Ballet",TestItemBallet.Performer);
+        Assert.AreEqual( "The Multis", TestItemMulti.Performer);
+    }
+    [TestMethod]
+    public void CueComment()
+    {
+        Assert.AreEqual("Comment value without quotes", TestItemJethro.Comments[0]);
+        Assert.AreEqual("Comment value with quotes", TestItemJethro.Comments[1]);
+    }
+    [TestMethod]
+    public void CueRemark()
+    {
+        Assert.AreEqual(new CueRemark("customremark","No quotes"), TestItemJethro.Remarks[0]);
+        Assert.AreEqual(new CueRemark("customremark2", "With quotes"), TestItemJethro.Remarks[1]);
     }
     //[TestMethod]
     //public void Performer()

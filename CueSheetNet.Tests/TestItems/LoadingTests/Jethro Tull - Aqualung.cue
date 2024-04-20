@@ -1,6 +1,10 @@
 REM DATE 1971
 REM DISCID 970A2F0B
+REM COMMENT Comment value without quotes
+REM COMMENT "Comment value with quotes"
 REM COMMENT ExactAudioCopy v1.6
+REM CUSTOMREMARK No quotes
+REM CUSTOMREMARK2 "With quotes"
 PERFORMER "Jethro Tull"
 TITLE "Aqualung"
 FILE "Jethro Tull - Aqualung.flac" WAVE
