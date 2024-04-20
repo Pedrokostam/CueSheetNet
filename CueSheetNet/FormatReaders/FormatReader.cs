@@ -1,22 +1,18 @@
-﻿using CueSheetNet.FormatReaders;
-using CueSheetNet.Logging;
-
+﻿using CueSheetNet.Logging;
 
 namespace CueSheetNet.FormatReaders;
-static public class FormatReader
+
+public static class FormatReader
 {
     static FormatReader()
     {
-        BaseAudioFileReaders =
-        [
-            new FlacFormatReader(),
-            new WaveFormatReader(),
-        ];
+        BaseAudioFileReaders = [new FlacFormatReader(), new WaveFormatReader(),];
         AudioFileReaders = new List<IAudioFileFormatReader>(BaseAudioFileReaders);
         CdReader = new();
         BaseFallbackReader = new FfprobeFormatReader();
         FallbackReader = BaseFallbackReader;
     }
+
     static readonly IAudioFileFormatReader[] BaseAudioFileReaders;
 
     private static readonly IAudioFileFormatReader BaseFallbackReader;
@@ -25,18 +21,31 @@ static public class FormatReader
 
     static readonly List<IAudioFileFormatReader> AudioFileReaders;
     static readonly CdFormatReader CdReader;
+
     public static void AddFileReader(IAudioFileFormatReader reader)
     {
         AudioFileReaders.Add(reader);
-        Logger.Log(LogLevel.Debug, $"Added {reader.FormatName} file format reader for a total of {AudioFileReaders.Count} readers", nameof(FormatReader), "");
+        Logger.Log(
+            LogLevel.Debug,
+            $"Added {reader.FormatName} file format reader for a total of {AudioFileReaders.Count} readers",
+            nameof(FormatReader),
+            ""
+        );
     }
+
     public static void ResetFileReader()
     {
-        Logger.Log(LogLevel.Debug, $"Reset file readers list to base state", nameof(FormatReader), "");
+        Logger.Log(
+            LogLevel.Debug,
+            $"Reset file readers list to base state",
+            nameof(FormatReader),
+            ""
+        );
         AudioFileReaders.Clear();
         AudioFileReaders.AddRange(BaseAudioFileReaders);
     }
-    static public FileMetadata? ReadMetadata(string filePath, IEnumerable<TrackType> trackTypes)
+
+    public static FileMetadata? ReadMetadata(string filePath, IEnumerable<TrackType> trackTypes)
     {
         FileMetadata meta = default;
         bool isStandardAudioFile = trackTypes.All(x => !x.CdSpecification);
@@ -52,18 +61,26 @@ static public class FormatReader
                         read = reader.ReadMetadata(filePath, out meta);
                         if (read)
                         {
-                            Logger.Log(LogLevel.Debug, "Read metadata on {File} using {Reader.FormatName} reader", filePath, reader);
+                            Logger.Log(
+                                LogLevel.Debug,
+                                "Read metadata on {File} using {Reader.FormatName} reader",
+                                filePath,
+                                reader
+                            );
                             return meta;
                         }
                     }
                     catch (Exception x) when (x is InvalidDataFormatException)
                     {
-                        Logger.Log(LogLevel.Warning, "Could not read audio file metadata of \"{File}\". Error: {Error}", filePath, x);
+                        Logger.Log(
+                            LogLevel.Warning,
+                            "Could not read audio file metadata of \"{File}\". Error: {Error}",
+                            filePath,
+                            x
+                        );
                     }
-
                 }
             }
-
         }
         else
         {

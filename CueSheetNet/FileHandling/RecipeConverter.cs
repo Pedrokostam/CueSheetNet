@@ -1,5 +1,4 @@
 ﻿using CueSheetNet.Logging;
-using System.Text;
 namespace CueSheetNet.FileHandling;
 
 public class RecipeConverter : IAudioConverter
@@ -14,7 +13,7 @@ public class RecipeConverter : IAudioConverter
     public RecipeConverter(string outputFolder, string fileName, bool append, Encoding encoding, string separator)
     {
         ExceptionHelper.ThrowIfNull(outputFolder);
-        ExceptionHelper.ThrowIfNull(fileName );
+        ExceptionHelper.ThrowIfNull(fileName);
         RecipeOutputFolder = outputFolder;
         OutputName = fileName;
         Elements = [];
@@ -22,7 +21,7 @@ public class RecipeConverter : IAudioConverter
         OutputEncoding = encoding ?? new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
         Separator = separator;
     }
-   
+
     public RecipeConverter(string recipePath) : this(Path.GetDirectoryName(recipePath)!, Path.GetFileName(recipePath)!, append: false, Encoding.UTF8, ";")
     {
 

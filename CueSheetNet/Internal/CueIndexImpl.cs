@@ -19,24 +19,37 @@ internal sealed class CueIndexImpl(CueTrack track, CueDataFile file) : CueItemBa
             Number = Number,
         };
     }
-    /// <summary>
-    /// Number of index for whole cue
-    /// </summary>
+
+    /// <inheritdoc cref="CueIndex.AbsoluteIndex"/>
     public int Index { get; internal set; }
-    /// <summary>
-    /// Number of index per track
-    /// </summary>
+
+    /// <inheritdoc cref="CueIndex.Number"/>
     public int Number { get; internal set; }
 
+    /// <inheritdoc cref="CueIndex.Time"/>
     public CueTime Time { get; set; }
+
     public override string ToString()
     {
-        return "CueIndexImpl " + Index.ToString("D2") + ", " + Number.ToString("D2") + ", " + File.Index.ToString("D2") + ", " + Track.Index.ToString("D2");
+        return "CueIndexImpl "
+            + Index.ToString("D2")
+            + ", "
+            + Number.ToString("D2")
+            + ", "
+            + File.Index.ToString("D2")
+            + ", "
+            + Track.Index.ToString("D2");
     }
+
     public override int GetHashCode()
     {
-        return HashCode.Combine(File.GetHashCode(), Track.GetHashCode(), Time.GetHashCode(), Number.GetHashCode());
+        return HashCode.Combine(
+            File.GetHashCode(),
+            Track.GetHashCode(),
+            Time.GetHashCode(),
+            Number.GetHashCode()
+        );
     }
-    public static explicit operator CueIndex(CueIndexImpl cimpl) => new(cimpl);
 
+    public static explicit operator CueIndex(CueIndexImpl cimpl) => new(cimpl);
 }

@@ -1,4 +1,5 @@
 ﻿using System.Text.RegularExpressions;
+using CueSheetNet.Helpers;
 
 namespace CueSheetNet.Tests;
 [TestClass]

@@ -1,5 +1,4 @@
 ﻿using CueSheetNet.TextParser;
-using System.Text;
 
 namespace CueSheetNet;
 
@@ -41,7 +40,7 @@ public sealed record CueWriterSettings
         set
         {
             if (!char.IsWhiteSpace(value))
-                throw new ArgumentException($"Indentation character must be whitespace (is: '{value}' - 0x{(int)value:X})",nameof(value));
+                throw new ArgumentException($"Indentation character must be whitespace (is: '{value}' - 0x{(int)value:X})", nameof(value));
             _indentationCharacter = value;
         }
     }

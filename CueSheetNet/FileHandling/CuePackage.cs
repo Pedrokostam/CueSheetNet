@@ -1,12 +1,10 @@
 ﻿using CueSheetNet.Logging;
 using CueSheetNet.NameParsing;
-using System.Globalization;
-using System.Text.RegularExpressions;
 
 namespace CueSheetNet.FileHandling;
 
 /// <summary>
-/// Class which takes care of file operations related to the CueSheet.
+/// Class which takes care of file operations related to CUE sheets.
 /// </summary>
 public static partial class CuePackage
 {
@@ -53,11 +51,7 @@ public static partial class CuePackage
                 compareNames.Add(new(file, sheet));
             }
         }
-#if NET7_0_OR_GREATER
         return compareNames.Order(PathComparer.Instance);
-#else
-        return compareNames.OrderBy(e => e.SourceFile, PathComparer.Instance);
-#endif
     }
 
     /// <summary>
@@ -67,11 +61,7 @@ public static partial class CuePackage
     private static HashSet<string> GetMatchStringHashset(CueSheet sheet)
     {
         string baseName = GetBaseNameForSearching(sheet);
-#if NET7_0_OR_GREATER
         string noSpaceName = baseName.Replace(" ", string.Empty, StringComparison.Ordinal);
-#else
-        string noSpaceName = baseName.Replace(" ", string.Empty,StringComparison.Ordinal);
-#endif
         string underscoreName = baseName.Replace(' ', '_');
         HashSet<string> hs = new(StringComparer.InvariantCultureIgnoreCase)
         {

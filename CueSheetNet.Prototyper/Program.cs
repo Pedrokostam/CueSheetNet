@@ -3,19 +3,14 @@ using CueSheetNet;
 using CueSheetNet.FormatReaders;
 using CueSheetNet.Logging;
 using CueSheetNet.Test;
-using CueSheetNet.TextParser;
-using System.Diagnostics;
-using System.Drawing;
-using System.Text;
-using System.Xml.Linq;
 
 xd();
 void xd()
 {
     DebugLogger hybridLogger = new DebugLogger(LogLevel.None);
     CueSheetNet.Logging.Logger.Register(hybridLogger);
-    var f =new AiffFormatReader();
-    f.ReadMetadata(@"C:\Users\Pedro\Downloads\ffprobetest\namakopuri-Cyberpunk 2077- Radio, Vo-01-Ponpon Shit.aiff", out _);
+    var reader = new CueReader();
+    var c = reader.ParseCueSheet(@"./TestItems/Spandau Ballet - True.cue"); 
     var s = new string[]
     {
         @"E:\Nowy folder\audiobook220805\iluzjo030_Iluzjonista.mp3",

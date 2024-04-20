@@ -1,4 +1,5 @@
 ﻿namespace CueSheetNet.Syntax;
+
 public static class Parser
 {
     public static TrackFlags Parse(string flagstring)
@@ -6,7 +7,7 @@ public static class Parser
         TrackFlags flag = TrackFlags.None;
         var parts = flagstring
             .Replace("\"", "", StringComparison.Ordinal)
-            .Replace("'", "",StringComparison.Ordinal)
+            .Replace("'", "", StringComparison.Ordinal)
             .Split(' ', StringSplitOptions.RemoveEmptyEntries);
         foreach (var part in parts)
         {
@@ -22,9 +23,11 @@ public static class Parser
         }
         return flag;
     }
+
     public static string ToCueCompatible(this TrackFlags fl)
     {
-        if (fl == TrackFlags.None) return string.Empty;
+        if (fl == TrackFlags.None)
+            return string.Empty;
         List<string> strs = [];
         if (fl.HasFlag(TrackFlags.DigitalCopyPermitted))
         {
@@ -42,7 +45,7 @@ public static class Parser
         {
             strs.Add("SCMS");
         }
-#if NETCOREAPP2_0_OR_GREATER
+#if NETCOREAPP2_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER // string.Join(char,IEnumerable<string>) added in NET Core 2.1 and NETStandard2.1
         return string.Join(' ', strs);
 #else
         return string.Join(" ", strs);

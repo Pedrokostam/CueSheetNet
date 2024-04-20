@@ -1,9 +1,11 @@
 ﻿namespace CueSheetNet.FormatReaders;
+
 internal sealed class FlacFormatReader : IAudioBinaryStreamFormatReader
 {
     public string FormatName { get; } = "Flac";
     public string[] Extensions { get; } = [".flac"];
-    private static readonly byte[] fLaC = "fLaC"u8.ToArray();// 0x66 0x4c 0x61 0x43
+    private static readonly byte[] fLaC = "fLaC"u8.ToArray(); // 0x66 0x4c 0x61 0x43
+
     public bool ExtensionMatches(string fileName)
     {
         string ext = Path.GetExtension(fileName);
@@ -21,7 +23,7 @@ internal sealed class FlacFormatReader : IAudioBinaryStreamFormatReader
     public bool ReadMetadata(Stream stream, out FileMetadata metadata)
     {
         metadata = default;
-        if(stream.Length < 22)
+        if (stream.Length < 22)
         {
             return false;
         }
@@ -51,17 +53,16 @@ internal sealed class FlacFormatReader : IAudioBinaryStreamFormatReader
             throw new InvalidDataFormatException("FLAC file cut short");
         // SHIFT OPERATORS ARE DONE AFTER ADDING!!!
         // ________ ____0000 00001111 11112222
-        int samples = (bytes[0] << 12)//12 insted of 16, because it spans only 2.5 bytes (20 bits)
-                      + (bytes[1] << 4)
-                      + (bytes[2] >> 4);
+        int samples =
+            (bytes[0] << 12) //12 insted of 16, because it spans only 2.5 bytes (20 bits)
+            + (bytes[1] << 4)
+            + (bytes[2] >> 4);
         // ________ ________ ____3333 44444444
         int numChannels = (bytes[2] & 0b00001110);
         int bitsPerSample = ((bytes[2] & 0b00000001) << 4) + (bytes[3] >> 4) + 1;
         int totalSample_24 = ((bytes[3] & 0x0F) << 16) + bytes[4];
         // ________ 55555555 66666666 77777777
-        int totalSample_0 = (bytes[5] << 16)
-                           + (bytes[6] << 8)
-                           + bytes[7];
+        int totalSample_0 = (bytes[5] << 16) + (bytes[6] << 8) + bytes[7];
         // ________ ____3333 44444444 55555555 66666666 77777777
         var totalSamples = (ulong)totalSample_0 + ((ulong)totalSample_24 << 24);
         metadata = new()

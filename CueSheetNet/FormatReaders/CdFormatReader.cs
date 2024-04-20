@@ -22,7 +22,7 @@ internal sealed class CdFormatReader : IBinaryStreamFormatReader
         }
         stream.Seek(0, SeekOrigin.Begin);
         Span<byte> twelve = stackalloc byte[12];
-        int read =stream.Read(twelve);
+        int read = stream.Read(twelve);
         if (read == twelve.Length && !twelve.SequenceEqual(Header))
             return false;
         stream.Seek(4, SeekOrigin.Current);
