@@ -64,6 +64,13 @@ public  class LoadingTests
         Assert.AreNotEqual(new CueRemark("customremark", "No quotesDIFFERENT"), TestItemJethro.Remarks[0]);
         Assert.AreNotEqual(new CueRemark("customremark2DIFFERENT", "With quotes"), TestItemJethro.Remarks[1]);
     }
+    [TestMethod]
+    public void TrackNumber()
+    {
+        var lastTrack = TestItemMulti.Tracks.Last();
+        Assert.AreEqual(2, lastTrack.Index);
+        Assert.AreEqual(99, lastTrack.Number);
+    }
     //[TestMethod]
     //public void Performer()
     //{

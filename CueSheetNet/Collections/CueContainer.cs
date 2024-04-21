@@ -72,26 +72,50 @@ internal sealed class CueContainer(CueSheet cueSheet)
         RefreshFileIndices(insertionIndex);
         return cf;
     }
-    public CueTrack AddTrack(int parsedIndex, TrackType type, int fileIndex = -1)
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="parsedNumber">The number of the track. Track number do not have to be continuous.</param>
+    /// <param name="type"></param>
+    /// <param name="fileIndex"></param>
+    /// <returns></returns>
+    /// <exception cref="InvalidOperationException"></exception>
+    public CueTrack AddTrack(int parsedNumber, TrackType type, int fileIndex = -1)
     {
         if (Files.Count == 0) throw new InvalidOperationException("Cannot add track without any file");
         if (fileIndex < 0) fileIndex = Files.Count - 1;
-        CueTrack cf = new(Files[fileIndex], type)
+
+        // If its is the first track, index is zero
+        // otherwise, its index is one larger than the index of the last track.
+        int trackIndex = Tracks.Count switch
         {
-            Index = Tracks.Count == 0 ? 0 : Tracks[^1].Index + 1,
+            0 => 0,
+            _ => Tracks[^1].Index+1,
         };
-        cf.Offset = parsedIndex - cf.Number;
-        Tracks.Add(cf);
-        return cf;
+        CueTrack track = new(Files[fileIndex], type)
+        {
+            Number = parsedNumber,
+            Index = trackIndex,
+        };
+        Tracks.Add(track);
+        return track;
     }
-    public CueTrack InsertTrack(int insertionIndex, int parsedIndex, TrackType type, int fileIndex = -1)
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="parsedNumber">The number of the track. Track number do not have to be continuous.</param>
+    /// <param name="type"></param>
+    /// <param name="fileIndex"></param>
+    /// <returns></returns>
+    /// <exception cref="InvalidOperationException"></exception>
+    public CueTrack InsertTrack(int insertionIndex, int parsedNumber, TrackType type, int fileIndex = -1)
     {
         if (fileIndex < 0) fileIndex = Files.Count - 1;
-        CueTrack cf = new(Files[fileIndex], type);
-        Tracks.Insert(insertionIndex, cf);
+        CueTrack newTrack = new(Files[fileIndex], type){ Number=parsedNumber};
+        Tracks.Insert(insertionIndex, newTrack);
         RefreshIndexIndices(insertionIndex);
-        cf.Offset = cf.Number - parsedIndex;
-        return cf;
+        return newTrack;
     }
     public CueIndexImpl AddIndex(CueTime time, int fileIndex = -1, int trackIndex = -1)
     {

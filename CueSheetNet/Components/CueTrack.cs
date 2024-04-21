@@ -15,10 +15,10 @@ public class CueTrack(CueDataFile parentFile, TrackType type)
     public FieldsSet CommonFieldsSet { get; private set; }
 
     /// <summary>
-    /// Absolute index for the whole CueSheet.
+    /// Absolute, zero-based, index for the whole CueSheet.
     /// </summary>
     public int Index { get; internal set; }
-    public int Offset { get; internal set; }
+
     public TrackType Type { get; internal set; } = type;
     public CueTime PostGap { get; set; }
     public CueTime PreGap { get; set; }
@@ -38,9 +38,12 @@ public class CueTrack(CueDataFile parentFile, TrackType type)
     }
 
     /// <summary>
-    /// Number of track.
+    /// Number of track as it appears in the CUE sheet.
+    /// <para>
+    /// CUE sheet tracks do not have to be number continuously, there can be gaps.
+    /// </para>
     /// </summary>
-    public int Number => Index + Offset;
+    public int Number { get; set; }
 
     private string? _Title;
     public string Title
@@ -196,7 +199,7 @@ public class CueTrack(CueDataFile parentFile, TrackType type)
                 ISRC = ISRC,
                 HasZerothIndex = HasZerothIndex,
                 Index = Index,
-                Offset = Offset,
+                Number = Number,
                 Orphaned = Orphaned,
             };
         newTrack.Remarks.Add(Remarks);
