@@ -25,7 +25,7 @@ public class CueTrack(CueDataFile parentFile, TrackType type)
 
 
     /// <summary>
-    /// File in which Index 01 (or 00 if there is not 01) of Track appeared
+    /// File in which the start of the content occurs (see <see cref="AudioStartIndex"/>).
     /// </summary>
     public CueDataFile ParentFile
     {
@@ -107,8 +107,17 @@ public class CueTrack(CueDataFile parentFile, TrackType type)
 
     public bool HasZerothIndex { get; internal set; }
 
+    /// <summary>
+    /// Gets the time indices of this track.
+    /// </summary>
     public CueIndex[] Indexes => ParentSheet.GetIndexesOfTrack(Index);
 
+    /// <summary>
+    /// Gets the time index at which the content start.
+    /// <para>
+    /// The content starts at the first index, unless the track has more than 1 indices and one of them is the zeroth index. In this case the first non-zeroth index is returned.
+    /// </para>
+    /// </summary>
     public CueIndex AudioStartIndex
     {
         get
@@ -164,25 +173,6 @@ public class CueTrack(CueDataFile parentFile, TrackType type)
     {
         return "Track " + Number.ToString("D2") + ": " + Title;
     }
-
-
-    //#region Rem
-    //private readonly List<CueRemark> RawRems = [];
-    //public ReadOnlyCollection<CueRemark> Remarks => RawRems.AsReadOnly();
-
-    //public void ClearRemarks() => RawRems.Clear();
-
-    //public void Remarks.Add(string type, string value) => Remarks.Add(new CueRemark(type, value));
-
-    //public void Remarks.Add(CueRemark entry) => RawRems.Add(entry);
-
-    //public void Remarks.Add(IEnumerable<CueRemark> entries)
-    //{
-    //    foreach (CueRemark remark in entries)
-    //    {
-    //        Remarks.Add(remark);
-    //    }
-    //}
 
     internal CueTrack ClonePartial(CueDataFile newOwner)
     {
