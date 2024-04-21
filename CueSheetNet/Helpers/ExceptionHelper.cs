@@ -23,6 +23,19 @@ internal static class ExceptionHelper
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void ThrowIfNotEqual<T>(
+        T expected,
+        T actual,
+        string message
+    )
+    {
+        if (Equals(expected, actual))
+        {
+            throw new InvalidOperationException(message);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void ThrowIfNullOrEmpty(
         [NotNull] string? value,
         [CallerMemberName] string? name = null,

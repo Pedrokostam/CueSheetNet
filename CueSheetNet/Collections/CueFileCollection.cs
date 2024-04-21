@@ -41,6 +41,7 @@ public class CueFileCollection : Collection<CueDataFile>
 
     protected override void InsertItem(int index, CueDataFile item)
     {
+        ExceptionHelper.ThrowIfNotEqual(ParentSheet, item.ParentSheet, "Specified file does not belong to this cuesheet");
         Items.Insert(index, item);
         Refresh(index);
     }
