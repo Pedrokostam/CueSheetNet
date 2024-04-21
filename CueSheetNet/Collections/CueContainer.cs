@@ -11,7 +11,7 @@ internal sealed class CueContainer(CueSheet cueSheet)
     public List<CueDataFile> Files { get; } = [];
     public List<CueTrack> Tracks { get; } = [];
     public List<CueIndexImpl> Indexes { get; } = [];
-    public void RefreshIndexIndices(int startFromFile = 0)
+    private void RefreshIndexIndices(int startFromFile = 0)
     {
         if (Files.Count <= startFromFile) return;
         int fileIndexStart = Indexes.FindIndex(x => x.File == Files[startFromFile]);
@@ -31,7 +31,7 @@ internal sealed class CueContainer(CueSheet cueSheet)
             numbering++;
         }
     }
-    public void RefreshTracksIndices(int startFrom = 0)
+    private void RefreshTracksIndices(int startFrom = 0)
     {
         if (Tracks.Count <= startFrom) return;
         int len = Tracks.Count - startFrom;
@@ -40,7 +40,7 @@ internal sealed class CueContainer(CueSheet cueSheet)
             Tracks[i].Index = i;
         }
     }
-    public void RefreshFileIndices(int startFrom = 0)
+    private void RefreshFileIndices(int startFrom = 0)
     {
         if (Files.Count <= startFrom) return;
         int len = Files.Count - startFrom;
@@ -48,6 +48,12 @@ internal sealed class CueContainer(CueSheet cueSheet)
         {
             Files[i].Index = i;
         }
+    }
+    public void Refresh()
+    {
+        RefreshIndexIndices();
+        RefreshTracksIndices();
+        RefreshFileIndices();
     }
 
     public CueDataFile AddFile(string filePath, FileType type)

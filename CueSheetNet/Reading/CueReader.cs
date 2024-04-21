@@ -1,6 +1,8 @@
-﻿using System.Diagnostics;
+﻿using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.Text.RegularExpressions;
+using CueSheetNet.Collections;
 using CueSheetNet.Internal;
 using CueSheetNet.Logging;
 using CueSheetNet.Reading;
@@ -202,10 +204,7 @@ public partial class CueReader
                     break;
             }
         }
-        for (int i = 0; i < TrackHasZerothIndex.Count; i++)
-        {
-            Sheet!.SetTrackHasZerothIndex(i, TrackHasZerothIndex[i]);
-        }
+        SetZerothIndices();
         Sheet!.Refresh();
         st.Stop();
         Logger.LogInformation(
@@ -217,6 +216,45 @@ public partial class CueReader
         Sheet.SetParsingMode(parsing: false);
         return Sheet;
     }
+
+    private void SetZerothIndices()
+    {
+        Debug.Assert(TrackHasZerothIndex.Count == Sheet.Tracks.Count);
+        foreach ((bool zerothIndexPresent, CueTrack track) in TrackHasZerothIndex.Zip(Sheet.Tracks, (indexPresent, track) => (indexPresent, track)))
+        {
+            (int Start, int End) = Sheet.Container.GetCueIndicesOfTrack_Range(track.Index,
+                                                                              includeDangling: true);
+            int count = End - Start;
+            
+            // track has no indices, it's bad.
+            if (count == 0)
+            {
+                throw new InvalidOperationException("Track has no indices");
+            }
+
+            // track has one index, zeroth index requires the track to have at least 2 indices.
+            if (count == 1 && zerothIndexPresent)
+            {
+                throw new InvalidOperationException("Cannot set zero index for track with only one index");
+            }
+
+            // check for split track. If the track is split and we have to set zeroth index to false
+            // that cannot be done.
+            if (count >= 2 && !zerothIndexPresent)
+            {
+                //if 0th time is larger than 1st it means the track is split
+                bool trackSplit = Sheet.Container.Indexes[Start].Time > Sheet.Container.Indexes[Start + 1].Time;
+                if (trackSplit )
+                {
+                    throw new InvalidOperationException("Cannot remove zero index in track split across 2 files");
+
+                }
+            }
+
+            track.HasZerothIndex = zerothIndexPresent;
+        }
+    }
+
 
     private void ParseTitle(string line)
     {
@@ -315,7 +353,7 @@ public partial class CueReader
         if (Sheet!.LastTrack is not CueTrack track)
         {
             Logger.LogWarning(
-                "FLAGS present before any track at line {Line number}: \"{Line}\"",
+                "FLAGS present before any item at line {Line number}: \"{Line}\"",
                 CurrentLineIndex,
                 CurrentLine
             );
@@ -379,7 +417,7 @@ public partial class CueReader
         if (Sheet!.LastTrack is null)
         {
             Logger.LogWarning(
-                "INDEX line present before any track at line {Line number}: \"{Line}\"",
+                "INDEX line present before any item at line {Line number}: \"{Line}\"",
                 CurrentLineIndex,
                 CurrentLine
             );
@@ -403,8 +441,8 @@ public partial class CueReader
             ctr.ParentFile = cfl;
         }
         CueIndexImpl c = Sheet.Container.AddIndex(cueTime);
-        (int Start, int End) = Sheet.Container.GetCueIndicesOfTrack_Range(c.Track.Index,includeDangling:true);
-        //If this is the first added index for the track (by default new track do not have 0th index so its starts at 1)
+        (int Start, int End) = Sheet.Container.GetCueIndicesOfTrack_Range(c.Track.Index, includeDangling: true);
+        //If this is the first added index for the item (by default new item do not have 0th index so its starts at 1)
         if (End - Start == 1)
             TrackHasZerothIndex.Add(num == 0);
     }
@@ -423,7 +461,7 @@ public partial class CueReader
         if (Sheet!.LastTrack is not CueTrack track)
         {
             Logger.LogWarning(
-                "GAP line present before any track at line {Line number}: \"{Line}\"",
+                "GAP line present before any item at line {Line number}: \"{Line}\"",
                 CurrentLineIndex,
                 CurrentLine
             );

@@ -285,65 +285,11 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
             return [];
         return Container.Indexes.Skip(start).Take(end - start).Select(x => (CueIndex)x).ToArray();
     }
-    public bool SetTrackHasZerothIndex(int trackIndex, bool hasZerothIndex)
-    {
-        CueTrack? track =
-            Container.Tracks.ElementAtOrDefault(trackIndex)
-            ?? throw new ArgumentOutOfRangeException(
-                nameof(trackIndex),
-                "Specified track does not exist"
-            );
-        (int Start, int End) = Container.GetCueIndicesOfTrack_Range(
-            trackIndex,
-            includeDangling: true
-        );
-        int count = End - Start;
-        //0
-        if (count == 0)
-            throw new InvalidOperationException("Track has no indices");
-        //1
-        if (count == 1)
-        {
-            if (hasZerothIndex)
-                throw new InvalidOperationException(
-                    "Cannot set zero index for track with only one index"
-                );
-
-            return SetZerothIndexImpl(hasZerothIndex, track);
-        }
-        //2+
-        if (Container.Indexes[Start].Time > Container.Indexes[Start + 1].Time) //if 0th time is larger than 1st it means the track is split
-        {
-            if (!hasZerothIndex)
-                throw new InvalidOperationException(
-                    "Cannot remove zero index in track split across 2 files"
-                );
-
-            return SetZerothIndexImpl(hasZerothIndex, track);
-        }
-        //2+ indices, one file
-        return SetZerothIndexImpl(hasZerothIndex, track);
-    }
-
-
-    internal void RefreshIndices()
-    {
-        Container.RefreshFileIndices();
-        Container.RefreshTracksIndices();
-        Container.RefreshIndexIndices();
-    }
-
-    private static bool SetZerothIndexImpl(bool hasZerothIndex, CueTrack track)
-    {
-        bool old = track.HasZerothIndex;
-        track.HasZerothIndex = hasZerothIndex;
-        return old != hasZerothIndex;
-    }
 
     public void Refresh()
     {
         RefreshFiles();
-        RefreshIndices();
+        Container.Refresh();
         UpdateGlobalPerformer();
         UpdateGlobalComposer();
         UpdateCueType();
