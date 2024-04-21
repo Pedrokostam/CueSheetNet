@@ -39,7 +39,7 @@ public abstract class StringBasedCollection<T> : Collection<T>
         }
         comparer ??= StringComparer.Ordinal;
         var found = this.FirstOrDefault(x => TestEqual(x,item,comparer));
-        return !found.Equals(default);
+        return !Equals(found,default);
     }
 
     /// <summary>

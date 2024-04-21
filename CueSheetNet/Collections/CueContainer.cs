@@ -10,13 +10,14 @@ internal sealed class CueContainer
     internal CueSheet ParentSheet { get; }
     //public List<CueDataFile> Files { get; } = [];
     public CueFileCollection Files { get; }
-    public List<CueTrack> Tracks { get; } = [];
+    public CueTrackCollection Tracks { get; }
     public List<CueIndexImpl> Indexes { get; } = [];
 
     public CueContainer(CueSheet cueSheet)
     {
         ParentSheet = cueSheet;
         Files = new(this);
+        Tracks=new(this);
     }
 
     private void RefreshIndexIndices(int startFromFile = 0)
@@ -39,67 +40,14 @@ internal sealed class CueContainer
             numbering++;
         }
     }
-    private void RefreshTracksIndices(int startFrom = 0)
-    {
-        if (Tracks.Count <= startFrom) return;
-        int len = Tracks.Count - startFrom;
-        for (int i = startFrom; i < len; i++)
-        {
-            Tracks[i].Index = i;
-        }
-    }
 
     public void Refresh()
     {
         RefreshIndexIndices();
-        RefreshTracksIndices();
+        Tracks.Refresh();
         Files.Refresh();
     }
 
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="parsedNumber">The number of the track. Track number do not have to be continuous.</param>
-    /// <param name="type"></param>
-    /// <param name="fileIndex"></param>
-    /// <returns></returns>
-    /// <exception cref="InvalidOperationException"></exception>
-    public CueTrack AddTrack(int parsedNumber, TrackType type, int fileIndex = -1)
-    {
-        if (Files.Count == 0) throw new InvalidOperationException("Cannot add track without any file");
-        if (fileIndex < 0) fileIndex = Files.Count - 1;
-
-        // If its is the first track, index is zero
-        // otherwise, its index is one larger than the index of the last track.
-        int trackIndex = Tracks.Count switch
-        {
-            0 => 0,
-            _ => Tracks[^1].Index+1,
-        };
-        CueTrack track = new(Files[fileIndex], type)
-        {
-            Number = parsedNumber,
-            Index = trackIndex,
-        };
-        Tracks.Add(track);
-        return track;
-    }
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="parsedNumber">The number of the track. Track number do not have to be continuous.</param>
-    /// <param name="type"></param>
-    /// <param name="fileIndex"></param>
-    /// <returns></returns>
-    /// <exception cref="InvalidOperationException"></exception>
-    public CueTrack InsertTrack(int insertionIndex, int parsedNumber, TrackType type, int fileIndex = -1)
-    {
-        if (fileIndex < 0) fileIndex = Files.Count - 1;
-        CueTrack newTrack = new(Files[fileIndex], type){ Number=parsedNumber};
-        Tracks.Insert(insertionIndex, newTrack);
-        RefreshIndexIndices(insertionIndex);
-        return newTrack;
-    }
     public CueIndexImpl AddIndex(CueTime time, int fileIndex = -1, int trackIndex = -1)
     {
         if (Tracks.Count == 0) throw new InvalidOperationException("Cannot add index without any tracks");
@@ -143,7 +91,7 @@ internal sealed class CueContainer
         CueIndexImpl endTime = Indexes[End - 1];
         CueIndexImpl insertedEnd = new(track, file) { Time = time, Number = endTime.Number + 1 };
         Indexes.Insert(End, insertedEnd);
-        RefreshTracksIndices(End + 1);
+        Tracks.Refresh(End + 1);
         return insertedEnd;
     }
     private CueIndexImpl AddIndex_NoIndexInTrack(CueTime time, CueDataFile file, CueTrack lastTrack)

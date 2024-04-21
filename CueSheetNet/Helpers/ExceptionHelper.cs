@@ -29,7 +29,7 @@ internal static class ExceptionHelper
         string message
     )
     {
-        if (Equals(expected, actual))
+        if (!Equals(expected, actual))
         {
             throw new InvalidOperationException(message);
         }

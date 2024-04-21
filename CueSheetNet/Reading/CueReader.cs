@@ -307,7 +307,7 @@ public partial class CueReader
             );
         }
         string type = GetKeyword(line, 6 + 1 + num.Length);
-        _ = Sheet!.AddTrack(number, TrackType.FromString(type));
+        Sheet!.Tracks.Add(number, TrackType.FromString(type));
     }
 
     private void ParsePerformer(string line)

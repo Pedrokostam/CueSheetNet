@@ -75,18 +75,18 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
     }
 
     #region Tracks
-    public ReadOnlyCollection<CueTrack> Tracks => Container.Tracks.AsReadOnly();
+    public CueTrackCollection Tracks => Container.Tracks;
     public CueTrack? LastTrack => Container.Tracks.LastOrDefault();
 
-    public CueTrack AddTrack(int index, TrackType type, CueDataFile file)
-    {
-        if (file.ParentSheet != this)
-            throw new InvalidOperationException("Specified file does not belong to this cuesheet");
-        return AddTrack(index, type, file.Index);
-    }
+    //public CueTrack AddTrack(int index, TrackType type, CueDataFile file)
+    //{
+    //    if (file.ParentSheet != this)
+    //        throw new InvalidOperationException("Specified file does not belong to this cuesheet");
+    //    return AddTrack(index, type, file.Index);
+    //}
 
-    public CueTrack AddTrack(int index, TrackType type, int fileIndex = -1) =>
-        Container.AddTrack(index, type, fileIndex);
+    //public CueTrack AddTrack(int index, TrackType type, int fileIndex = -1) =>
+    //    Container.AddTrack(index, type, fileIndex);
 
     #endregion
 
