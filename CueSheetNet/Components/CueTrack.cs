@@ -110,7 +110,7 @@ public class CueTrack(CueDataFile parentFile, TrackType type)
     {
         get
         {
-            (int Start, int End) = ParentSheet.GetIndexesOfTrack_Range(Index);
+            (int Start, int End) = ParentSheet.Container.GetCueIndicesOfTrack_Range(Index);
             // non-dangling because audio cannot start on previous file
             if (End - Start == 1) // Only one index for track - only 00 or only 01 - just take it
             {
@@ -131,7 +131,7 @@ public class CueTrack(CueDataFile parentFile, TrackType type)
     {
         get
         {
-            var (_, indexOfNextTrack) = ParentSheet.GetIndexesOfTrack_Range(Index);
+            var (_, indexOfNextTrack) = ParentSheet.Container.GetCueIndicesOfTrack_Range(Index);
             CueIndexImpl? nextTrackImplIndex = ParentSheet.GetIndexImplOrDefault(indexOfNextTrack);
             // it's the last track of cuesheet
             bool isLastTrackInCue = nextTrackImplIndex is null;

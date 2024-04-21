@@ -393,7 +393,7 @@ public partial class CueReader
                 $"Incorrect Index number format at line {CurrentLineIndex}: {line}"
             );
         }
-        if (!CueTime.TryParse(line.AsSpan(6 + number.Length + 1), out CueTime cueTime))
+        if (!CueTime.TryParse(line.AsSpan(6 + number.Length + 1), formatProvider: null, out CueTime cueTime))
         {
             //Logger.LogError("Incorrect Index format at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
             throw new FormatException($"Incorrect Index format at line {CurrentLineIndex}: {line}");
@@ -402,8 +402,8 @@ public partial class CueReader
         {
             ctr.ParentFile = cfl;
         }
-        CueIndexImpl c = Sheet.AddIndexInternal(cueTime);
-        (int Start, int End) = Sheet.GetCueIndicesOfTrack(c.Track.Index);
+        CueIndexImpl c = Sheet.Container.AddIndex(cueTime);
+        (int Start, int End) = Sheet.Container.GetCueIndicesOfTrack_Range(c.Track.Index,includeDangling:true);
         //If this is the first added index for the track (by default new track do not have 0th index so its starts at 1)
         if (End - Start == 1)
             TrackHasZerothIndex.Add(num == 0);

@@ -62,14 +62,15 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
     {
         get
         {
-            CueTime sum = CueTime.Zero;
-            foreach (var fdur in Container.Files.Select(x => x.Meta?.CueDuration))
+            CueTime totalDuration = CueTime.Zero;
+            foreach (var fileDuration in Container.Files.Select(x => x.Meta?.CueDuration))
             {
-                if (fdur == null)
+                if (fileDuration == null)
                     return null;
-                sum += fdur.Value;
+
+                totalDuration += fileDuration.Value;
             }
-            return sum;
+            return totalDuration;
         }
     }
 
@@ -103,7 +104,6 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
     public ReadOnlyCollection<ICueFile> AssociatedFiles => _associatedFiles.AsReadOnly();
 
     #endregion
-
 
     #region Index
     internal ReadOnlyCollection<CueIndexImpl> IndexesImpl => Container.Indexes.AsReadOnly();
@@ -139,10 +139,9 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
     }
 
     public CueIndex AddIndex(CueTime time, int fileIndex = -1, int trackIndex = -1) =>
-        new(AddIndexInternal(time, fileIndex, trackIndex));
+        new(Container.AddIndex(time, fileIndex, trackIndex));
 
     #endregion
-
 
     #region Fileops
     /// <summary>
@@ -167,7 +166,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
 
     #endregion
     
-    private CueContainer Container { get; }
+    internal CueContainer Container { get; }
 
     internal void SetParsingMode(bool parsing)
     {
@@ -194,11 +193,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
         //Refresh(); // is it needed
     }
 
-    
-
     public ReadOnlyCollection<CueDataFile> Files => Container.Files.AsReadOnly();
-
-
 
     public static CueSheet Clone(CueSheet cueSheet) => cueSheet.Clone();
 
@@ -255,9 +250,6 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
         return finalCheck;
     }
 
-    internal (int Start, int End) GetIndexesOfFile_Range(int fileIndex) =>
-        Container.GetCueIndicesOfFile_Range(fileIndex);
-
     public CueIndex[] GetIndexesOfFile(int fileIndex)
     {
         (int start, int end) = Container.GetCueIndicesOfFile_Range(fileIndex);
@@ -269,10 +261,6 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
             .Select(x => new CueIndex(x))
             .ToArray();
     }
-
-    internal (int Start, int End) GetTracksOfFile_Range(int fileIndex) =>
-        Container.GetCueIndicesOfTrack_Range(fileIndex);
-
     public CueTrack[] GetTracksOfFile(int fileIndex)
     {
         (int start, int end) = Container.GetCueTracksOfFile_Range(fileIndex);
@@ -289,8 +277,6 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
         return Container.Tracks.Skip(start).Take(end - start);
     }
 
-    internal (int Start, int End) GetIndexesOfTrack_Range(int trackIndex) =>
-        Container.GetCueIndicesOfTrack_Range(trackIndex);
 
     public CueIndex[] GetIndexesOfTrack(int trackIndex)
     {
@@ -299,11 +285,6 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
             return [];
         return Container.Indexes.Skip(start).Take(end - start).Select(x => (CueIndex)x).ToArray();
     }
-
-
-
-  
-
     public bool SetTrackHasZerothIndex(int trackIndex, bool hasZerothIndex)
     {
         CueTrack? track =
@@ -344,11 +325,6 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
         return SetZerothIndexImpl(hasZerothIndex, track);
     }
 
-    internal CueIndexImpl AddIndexInternal(CueTime time, int fileIndex = -1, int trackIndex = -1) =>
-        Container.AddIndex(time, fileIndex, trackIndex);
-
-    internal (int Start, int End) GetCueIndicesOfTrack(int trackIndex) =>
-        Container.GetCueIndicesOfTrack_Range(trackIndex, includeDangling: true);
 
     internal void RefreshIndices()
     {
@@ -475,7 +451,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
             bool intergaps = false;
             foreach (var file in Files)
             {
-                (int first, int afterLast) = GetIndexesOfFile_Range(file.Index);
+                (int first, int afterLast) = Container.GetCueIndicesOfFile_Range(file.Index);
                 intergaps |= IndexesImpl[afterLast - 1].Number == 0;
             }
             if (intergaps)
@@ -501,13 +477,13 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
 
     public static bool operator ==(CueSheet? left, CueSheet? right)
     {
-        if (left is not null)
-            return left.Equals(right, StringComparison.InvariantCulture); // notnull and whatever
-
-        if (right is not null)
-            return false; // null and notnull
-
-        return true; // null and null
+        return (left, right) switch
+        {
+            (null, null) => true,
+            (not null, null) => false,
+            (null, not null) => false,
+            _ => left.Equals(right, StringComparison.InvariantCulture)
+        };
     }
 
     public static bool operator !=(CueSheet? left, CueSheet? right)
@@ -518,9 +494,11 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
     /// <summary>
     /// Creates an independent deep copy of cuesheet contents.
     /// Copy is functionally the same, but may not be identical (formatting, etc.).
+    /// <para>
     /// No objects are shared, everything is created anew.
+    /// </para>
     /// </summary>
-    /// <returns>Deep copy of the <see cref="CueSheet"/></returns>
+    /// <returns>Deep copy of this <see cref="CueSheet"/> instance.</returns>
     public CueSheet Clone()
     {
         CueSheet newCue =
@@ -574,5 +552,10 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
         get => $"{Performer ?? "No Artist"} - {Title ?? "No Title"}";
     }
 
+    /// <summary>
+    /// Read the file at the specified <paramref name="path"/> using the default <see cref="CueReader">reader</see>.
+    /// </summary>
+    /// <param name="path">File path of the CUE sheet.</param>
+    /// <returns>A new instance of <see cref="CueSheet"/>.</returns>
     public static CueSheet Read(string path) => new CueReader().ParseCueSheet(path);
 }
