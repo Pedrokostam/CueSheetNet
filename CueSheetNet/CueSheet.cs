@@ -7,85 +7,8 @@ namespace CueSheetNet;
 
 public class CueSheet : IEquatable<CueSheet>, IRemCommentable
 {
-    #region Rem
-
-    internal readonly List<CueRemark> RawRems = [];
-
-    public ReadOnlyCollection<CueRemark> Remarks => RawRems.AsReadOnly();
-
-    public void AddRemark(string type, string value) => AddRemark(new CueRemark(type, value));
-
-    public void AddRemark(CueRemark entry) => RawRems.Add(entry);
-
-    public void AddRemark(IEnumerable<CueRemark> entries)
-    {
-        foreach (CueRemark remark in entries)
-        {
-            RawRems.Add(remark);
-        }
-    }
-
-    public void ClearRemarks() => RawRems.Clear();
-
-    public void RemoveRemark(int index)
-    {
-        if (index >= 0 || index < RawRems.Count)
-            RawRems.RemoveAt(index);
-    }
-
-    public void RemoveRemark(
-        string field,
-        string value,
-        StringComparison comparisonType = StringComparison.OrdinalIgnoreCase
-    ) => RemoveRemark(new CueRemark(field, value), comparisonType);
-
-    public void RemoveRemark(
-        CueRemark entry,
-        StringComparison comparisonType = StringComparison.OrdinalIgnoreCase
-    )
-    {
-        int ind = RawRems.FindIndex(x => x.Equals(entry, comparisonType));
-        if (ind >= 0)
-            RawRems.RemoveAt(ind);
-    }
-
-    #endregion Rem
-
-    #region Comments
-
-    internal readonly List<string> RawComments = [];
-
-    public ReadOnlyCollection<string> Comments => RawComments.AsReadOnly();
-
-    public void AddComment(IEnumerable<string> comments)
-    {
-        foreach (string comment in comments)
-        {
-            AddComment(comment);
-        }
-    }
-
-    public void AddComment(string comment) => RawComments.Add(comment);
-
-    public void ClearComments() => RawComments.Clear();
-
-    public void RemoveComment(
-        string comment,
-        StringComparison comparisonType = StringComparison.OrdinalIgnoreCase
-    )
-    {
-        int ind = RawComments.FindIndex(x => x.Equals(comment, comparisonType));
-        if (ind >= 0)
-            RawComments.RemoveAt(ind);
-    }
-
-    public void RemoveComment(int index)
-    {
-        if (index >= 0 && index < RawComments.Count)
-            RawComments.RemoveAt(index);
-    }
-
-    #endregion Comments
+    public RemarkCollection Remarks { get; } = [];
+    public CommentCollection Comments { get; } = [];
 
     #region Tracks
     public ReadOnlyCollection<CueTrack> Tracks => Container.Tracks.AsReadOnly();
@@ -600,8 +523,8 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
                 Title = Title,
             };
         newCue.Container.CloneFrom(Container);
-        newCue.AddComment(RawComments);
-        newCue.AddRemark(RawRems.Select(x => x with { })); // creates new remark
+        newCue.Comments.Add(Comments);
+        newCue.Remarks.Add(Remarks); // remarks are struct, so they are always copied
         newCue.SetCdTextFile(CdTextFile?.FullName);
         newCue.Refresh();
         return newCue;

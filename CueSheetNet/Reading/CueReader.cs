@@ -458,10 +458,10 @@ public partial class CueReader
                     track.Composer = value;
                     break;
                 case "COMMENT":
-                    Sheet.AddComment(value);
+                    Sheet.Comments.Add(value);
                     break;
                 default:
-                    Sheet.AddRemark(field, value);
+                    Sheet.Remarks.Add(field, value);
                     break;
             }
         }
@@ -486,10 +486,10 @@ public partial class CueReader
                     Sheet.DiscID = value;
                     break;
                 case "COMMENT":
-                    Sheet.AddComment(value);
+                    Sheet.Comments.Add(value);
                     break;
                 default:
-                    Sheet.AddRemark(field, value);
+                    Sheet.Remarks.Add(field, value);
                     break;
             }
         }

@@ -1,4 +1,5 @@
 ﻿using System.Collections.ObjectModel;
+using CueSheetNet.Collections;
 using CueSheetNet.Internal;
 using CueSheetNet.Syntax;
 
@@ -153,34 +154,32 @@ public class CueTrack(CueDataFile parentFile, TrackType type)
         }
     }
 
+    public RemarkCollection Remarks { get; } = [];
+    public CommentCollection Comments { get; } = [];
+
     public override string ToString()
     {
         return "Track " + Number.ToString("D2") + ": " + Title;
     }
 
-    #region Rem
-    private readonly List<CueRemark> RawRems = [];
-    public ReadOnlyCollection<CueRemark> Remarks => RawRems.AsReadOnly();
 
-    public void ClearRemarks() => RawRems.Clear();
+    //#region Rem
+    //private readonly List<CueRemark> RawRems = [];
+    //public ReadOnlyCollection<CueRemark> Remarks => RawRems.AsReadOnly();
 
-    public void AddRemark(string type, string value) => AddRemark(new CueRemark(type, value));
+    //public void ClearRemarks() => RawRems.Clear();
 
-    public void AddRemark(CueRemark entry) => RawRems.Add(entry);
+    //public void Remarks.Add(string type, string value) => Remarks.Add(new CueRemark(type, value));
 
-    public void AddRemark(IEnumerable<CueRemark> entries)
-    {
-        foreach (CueRemark remark in entries)
-        {
-            AddRemark(remark);
-        }
-    }
+    //public void Remarks.Add(CueRemark entry) => RawRems.Add(entry);
 
-    public void RemoveRemark(int index)
-    {
-        if (index >= 0 || index < RawRems.Count)
-            RawRems.RemoveAt(index);
-    }
+    //public void Remarks.Add(IEnumerable<CueRemark> entries)
+    //{
+    //    foreach (CueRemark remark in entries)
+    //    {
+    //        Remarks.Add(remark);
+    //    }
+    //}
 
     internal CueTrack ClonePartial(CueDataFile newOwner)
     {
@@ -200,62 +199,10 @@ public class CueTrack(CueDataFile parentFile, TrackType type)
                 Offset = Offset,
                 Orphaned = Orphaned,
             };
-        newTrack.AddRemark(RawRems.Select(x => x with { }));
-        newTrack.AddComment(RawComments);
+        newTrack.Remarks.Add(Remarks);
+        newTrack.Comments.Add(Comments);
         return newTrack;
     }
-
-    public void RemoveRemark(
-        string field,
-        string value,
-        StringComparison comparisonType = StringComparison.OrdinalIgnoreCase
-    ) => RemoveRemark(new CueRemark(field, value), comparisonType);
-
-    public void RemoveRemark(
-        CueRemark entry,
-        StringComparison comparisonType = StringComparison.OrdinalIgnoreCase
-    )
-    {
-        int ind = RawRems.FindIndex(x => x.Equals(entry, comparisonType));
-        if (ind >= 0)
-            RawRems.RemoveAt(ind);
-    }
-    #endregion
-
-    #region Comments
-
-    private readonly List<string> RawComments = [];
-    public ReadOnlyCollection<string> Comments => RawComments.AsReadOnly();
-
-    public void AddComment(IEnumerable<string> comments)
-    {
-        foreach (string comment in comments)
-        {
-            AddComment(comment);
-        }
-    }
-
-    public void AddComment(string comment) => RawComments.Add(comment);
-
-    public void RemoveComment(
-        string comment,
-        StringComparison comparisonType = StringComparison.OrdinalIgnoreCase
-    )
-    {
-        int ind = RawComments.FindIndex(x => x.Equals(comment, comparisonType));
-        if (ind >= 0)
-            RawComments.RemoveAt(ind);
-    }
-
-    public void RemoveComment(int index)
-    {
-        if (index >= 0 && index < RawComments.Count)
-            RawComments.RemoveAt(index);
-    }
-
-    public void ClearComments() => RawComments.Clear();
-
-    #endregion
 
     public bool Equals(CueTrack? other) => Equals(other, StringComparison.InvariantCulture);
 
@@ -265,9 +212,9 @@ public class CueTrack(CueDataFile parentFile, TrackType type)
             return true;
         if (other == null)
             return false;
-        if (RawComments.Count != other.RawComments.Count)
+        if (Comments.Count != other.Comments.Count)
             return false;
-        if (RawRems.Count != other.RawRems.Count)
+        if (Remarks.Count != other.Remarks.Count)
             return false;
         if (
             PostGap != other.PostGap
@@ -281,17 +228,10 @@ public class CueTrack(CueDataFile parentFile, TrackType type)
             return false;
         }
 
-        for (int i = 0; i < RawComments.Count; i++)
-        {
-            if (!string.Equals(RawComments[i], other.RawComments[i], stringComparison))
-                return false;
-        }
-
-        for (int i = 0; i < RawRems.Count; i++)
-        {
-            if (!RawRems[i].Equals(other.RawRems[i], stringComparison))
-                return false;
-        }
+        bool commentsEqual = Comments.SequenceEqual(other.Comments,StringHelper.GetComparer(stringComparison));
+        bool remarksEqual = Remarks.SequenceEqual(other.Remarks,StringHelper.GetComparer(stringComparison));
+        if(!commentsEqual || !remarksEqual)
+        { return false; }
 
         return true;
     }
@@ -309,8 +249,8 @@ public class CueTrack(CueDataFile parentFile, TrackType type)
             ISRC?.GetHashCode(StringComparison.OrdinalIgnoreCase),
             Composer?.GetHashCode(StringComparison.OrdinalIgnoreCase),
             PostGap.GetHashCode(),
-            RawComments.Count.GetHashCode(),
-            RawRems.Count.GetHashCode()
+            Comments.Count.GetHashCode(),
+            Remarks.Count.GetHashCode()
         );
     }
 }

@@ -26,25 +26,29 @@ namespace CueSheetNet
 
         public CueRemark(string field, string value) => (Field, Value) = (field, value);
 
-        /// <summary>
-        /// Compares whether the current remark is the same as the other.
-        /// They are considered equal, if their values and fields have the same value.
-        /// <para/>
-        /// Values are compared using the given StringComparison. Fields are comparaed ordinarily.
-        /// </summary>
-        public bool Equals(CueRemark other, StringComparison valueComparisonType)
+        public bool Equals(CueRemark other, IEqualityComparer<string> comparer)
         {
-            var comparer = StringHelper.GetComparer(valueComparisonType);
-
-            if (ReferenceEquals(other, this))
-                return true;
+            //if (ReferenceEquals(other, this))
+            //    return true;
 
             if (other == null)
                 return false;
 
             if (!string.Equals(Field, other.Field, StringComparison.Ordinal))
                 return false; // Fields are always uppercase
-            return comparer.Equals(Value,other.Value);
+            return comparer.Equals(Value, other.Value);
+        }
+        /// <summary>
+        /// Compares whether the current remark is the same as the other.
+        /// They are considered equal, if their values and fields have the same value.
+        /// <para/>
+        /// Values are compared using the given StringComparison. Fields are compared ordinarily.
+        /// </summary>
+        public bool Equals(CueRemark other, StringComparison valueComparisonType)
+        {
+            var comparer = StringHelper.GetComparer(valueComparisonType);
+
+            return Equals(other, comparer);
         }
 
         /// <inheritdoc cref="Equals(CueRemark?, StringComparison)"/>
