@@ -17,11 +17,11 @@ public  class LoadingTests
     [TestInitialize]
     public void Init()
     {
-        TestItemJethro = Load("Jethro Tull - Aqualung.cue");
-        TestItemBallet = Load("Spandau Ballet - True.cue");
-        TestItemMulti = Load("MultiFile.cue");
+        TestItemJethro = LoadingTests.Load("Jethro Tull - Aqualung.cue");
+        TestItemBallet = LoadingTests.Load("Spandau Ballet - True.cue");
+        TestItemMulti = LoadingTests.Load("MultiFile.cue");
     }
-    private CueSheet Load(string name)
+    private static CueSheet Load(string name)
     {
         return  CueSheet.Read(Utils.GetFile("LoadingTests", name));
     }
@@ -31,6 +31,10 @@ public  class LoadingTests
         Assert.AreEqual("Aqualung",TestItemJethro.Title);
         Assert.AreEqual("True",TestItemBallet.Title);
         Assert.AreEqual("MultiFile", TestItemMulti.Title);
+
+        Assert.AreNotEqual("DIFFERENTAqualung", TestItemJethro.Title);
+        Assert.AreNotEqual("DIFFERENTTrue", TestItemBallet.Title);
+        Assert.AreNotEqual("DIFFERENTMultiFile", TestItemMulti.Title);
     }
     [TestMethod]
     public void Performer()
@@ -38,18 +42,27 @@ public  class LoadingTests
         Assert.AreEqual( "Jethro Tull",TestItemJethro.Performer);
         Assert.AreEqual( "Spandau Ballet",TestItemBallet.Performer);
         Assert.AreEqual( "The Multis", TestItemMulti.Performer);
+
+        Assert.AreNotEqual("Jethro TullDIFFERENT", TestItemJethro.Performer);
+        Assert.AreNotEqual("Spandau BalletDIFFERENT", TestItemBallet.Performer);
+        Assert.AreNotEqual("The MultisDIFFERENT", TestItemMulti.Performer);
     }
     [TestMethod]
     public void CueComment()
     {
         Assert.AreEqual("Comment value without quotes", TestItemJethro.Comments[0]);
         Assert.AreEqual("Comment value with quotes", TestItemJethro.Comments[1]);
+
+        Assert.AreNotEqual("Comment value without quotesDIFFERENT", TestItemJethro.Comments[0]);
     }
     [TestMethod]
     public void CueRemark()
     {
         Assert.AreEqual(new CueRemark("customremark","No quotes"), TestItemJethro.Remarks[0]);
         Assert.AreEqual(new CueRemark("customremark2", "With quotes"), TestItemJethro.Remarks[1]);
+
+        Assert.AreNotEqual(new CueRemark("customremark", "No quotesDIFFERENT"), TestItemJethro.Remarks[0]);
+        Assert.AreNotEqual(new CueRemark("customremark2DIFFERENT", "With quotes"), TestItemJethro.Remarks[1]);
     }
     //[TestMethod]
     //public void Performer()
