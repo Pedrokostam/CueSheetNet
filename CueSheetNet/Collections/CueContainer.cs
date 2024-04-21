@@ -4,13 +4,21 @@ using CueSheetNet.Internal;
 namespace CueSheetNet.Collections;
 
 [DebuggerDisplay("Files: {Files.Count}, Track: {Tracks.Count}, Indexes: {Indexes.Count}")]
-internal sealed class CueContainer(CueSheet cueSheet)
+internal sealed class CueContainer
 {
     public bool ParsingMode { get; set; }
-    private CueSheet ParentSheet { get; } = cueSheet;
-    public List<CueDataFile> Files { get; } = [];
+    internal CueSheet ParentSheet { get; }
+    //public List<CueDataFile> Files { get; } = [];
+    public CueFileCollection Files { get; }
     public List<CueTrack> Tracks { get; } = [];
     public List<CueIndexImpl> Indexes { get; } = [];
+
+    public CueContainer(CueSheet cueSheet)
+    {
+        ParentSheet = cueSheet;
+        Files = new(this);
+    }
+
     private void RefreshIndexIndices(int startFromFile = 0)
     {
         if (Files.Count <= startFromFile) return;
@@ -40,37 +48,12 @@ internal sealed class CueContainer(CueSheet cueSheet)
             Tracks[i].Index = i;
         }
     }
-    private void RefreshFileIndices(int startFrom = 0)
-    {
-        if (Files.Count <= startFrom) return;
-        int len = Files.Count - startFrom;
-        for (int i = startFrom; i < len; i++)
-        {
-            Files[i].Index = i;
-        }
-    }
+
     public void Refresh()
     {
         RefreshIndexIndices();
         RefreshTracksIndices();
-        RefreshFileIndices();
-    }
-
-    public CueDataFile AddFile(string filePath, FileType type)
-    {
-        CueDataFile cf = new(ParentSheet, filePath, type)
-        {
-            Index = Files.Count,
-        };
-        Files.Add(cf);
-        return cf;
-    }
-    public CueDataFile InsertFile(int insertionIndex, string filePath, FileType type)
-    {
-        CueDataFile cf = new(ParentSheet, filePath, type);
-        Files.Insert(insertionIndex, cf);
-        RefreshFileIndices(insertionIndex);
-        return cf;
+        Files.Refresh();
     }
 
     /// <summary>

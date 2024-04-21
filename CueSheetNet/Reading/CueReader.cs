@@ -290,7 +290,7 @@ public partial class CueReader
             );
             typeEnum = FileType.WAVE;
         }
-        _ = Sheet!.AddFile(path, typeEnum);
+        Sheet!.Files.Add(path, typeEnum);
     }
 
     private void ParseTrack(string line)

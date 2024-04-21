@@ -91,12 +91,12 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
     #endregion
 
     #region Files
-    public void ChangeFile(int index, string newPath, FileType? type = null)
-    {
-        Files[index].SetFile(newPath, type);
-    }
+    //public void ChangeFile(int index, string newPath, FileType? type = null)
+    //{
+    //    Files[index].SetFile(newPath, type);
+    //}
 
-    public CueDataFile AddFile(string path, FileType type) => Container.AddFile(path, type);
+    //public CueDataFile AddFile(string path, FileType type) => Container.AddFile(path, type);
 
     public CueDataFile? LastFile => Container.Files.LastOrDefault();
 
@@ -193,7 +193,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
         //Refresh(); // is it needed
     }
 
-    public ReadOnlyCollection<CueDataFile> Files => Container.Files.AsReadOnly();
+    public CueFileCollection Files => Container.Files;
 
     public static CueSheet Clone(CueSheet cueSheet) => cueSheet.Clone();
 

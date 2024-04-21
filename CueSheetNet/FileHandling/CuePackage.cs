@@ -39,7 +39,8 @@ public static partial class CuePackage
         HashSet<CueExtraFile> compareNames = new(PathComparer.Instance);
         foreach (FileInfo file in siblingFiles)
         {
-            if (file.Extension.Equals(".cue", StringComparison.OrdinalIgnoreCase)) continue;
+            if (file.Extension.Equals(".cue", StringComparison.OrdinalIgnoreCase))
+                continue;
             string name = Path.GetFileNameWithoutExtension(file.Name);
             if (matchStrings.Contains(name))
             {
@@ -152,7 +153,7 @@ public static partial class CuePackage
         {
             transAudio.Extension = newAudioExtension;
             FileType t = CueDataFile.GetFileTypeFromPath("." + transAudio.Extension);
-            sheet.ChangeFile(fileIndex, transAudio.NewNameWithExtension, t);
+            sheet.Files[fileIndex].SetFile(transAudio.NewNameWithExtension, t);
             transFiles.Add(transAudio);
             fileIndex++;
         }
@@ -207,7 +208,8 @@ public static partial class CuePackage
     private static IEnumerable<TransFile> GetAudioTransFiles(CueSheet sheet, string filename, DirectoryInfo? relativeBase)
     {
         // One audio file, no need to change the filename
-        if (sheet.Files.Count == 0) { yield break; }
+        if (sheet.Files.Count == 0)
+        { yield break; }
         if (sheet.Files.Count == 1)
         {
             TransFile transFile = new(sheet.Files[0], relativeBase, TransFile.GeneralFileType.Audio) { NewName = filename };
