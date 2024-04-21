@@ -9,6 +9,69 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
 {
     public RemarkCollection Remarks { get; } = [];
     public CommentCollection Comments { get; } = [];
+    public string? Catalog { get; set; }
+    public string? Composer { get; set; }
+    public int? Date { get; set; }
+    public string? DiscID { get; set; }
+    public string? Performer { get; set; }
+    /// <summary>
+    /// AKA Album Name
+    /// </summary>
+    public string? Title { get; set; }
+    public CueType SheetType { get; internal set; }
+    public Encoding? SourceEncoding { get; internal set; }
+    #region CD text file
+    private FileInfo? _cdTextFile;
+    public FileInfo? CdTextFile
+    {
+        get => _cdTextFile;
+    }
+    
+    public void RemoveCdTextFile() => SetCdTextFile(value: null);
+
+    public void SetCdTextFile(string? value)
+    {
+        if (value == null)
+            _cdTextFile = null;
+        else
+        {
+            string absPath = Path.Combine(SourceFile?.DirectoryName ?? ".", value);
+            _cdTextFile = new FileInfo(absPath);
+        }
+    }
+    #endregion
+
+    #region Source file
+
+    public FileInfo? SourceFile { get; private set; }
+    public void RemoveCuePath() => SetCuePath(value: null);
+    internal void SetCuePath(string? value)
+    {
+        if (value == null)
+            SourceFile = null;
+        else
+        {
+            SourceFile = new FileInfo(value);
+        }
+        RefreshFiles();
+    }
+
+    #endregion
+
+    public CueTime? Duration
+    {
+        get
+        {
+            CueTime sum = CueTime.Zero;
+            foreach (var fdur in Container.Files.Select(x => x.Meta?.CueDuration))
+            {
+                if (fdur == null)
+                    return null;
+                sum += fdur.Value;
+            }
+            return sum;
+        }
+    }
 
     #region Tracks
     public ReadOnlyCollection<CueTrack> Tracks => Container.Tracks.AsReadOnly();
@@ -131,41 +194,11 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
         //Refresh(); // is it needed
     }
 
-    public string? Catalog { get; set; }
+    
 
-    private FileInfo? _cdTextFile;
-    public FileInfo? CdTextFile
-    {
-        get => _cdTextFile;
-    }
-    public string? Composer { get; set; }
-    public int? Date { get; set; }
-    public string? DiscID { get; set; }
-    public CueTime? Duration
-    {
-        get
-        {
-            CueTime sum = CueTime.Zero;
-            foreach (var fdur in Container.Files.Select(x => x.Meta?.CueDuration))
-            {
-                if (fdur == null)
-                    return null;
-                sum += fdur.Value;
-            }
-            return sum;
-        }
-    }
-
-    public FileInfo? SourceFile { get; private set; }
     public ReadOnlyCollection<CueDataFile> Files => Container.Files.AsReadOnly();
-    public string? Performer { get; set; }
-    public CueType SheetType { get; internal set; }
-    public Encoding? SourceEncoding { get; internal set; }
 
-    /// <summary>
-    /// AKA Album Name
-    /// </summary>
-    public string? Title { get; set; }
+
 
     public static CueSheet Clone(CueSheet cueSheet) => cueSheet.Clone();
 
@@ -267,31 +300,9 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
         return Container.Indexes.Skip(start).Take(end - start).Select(x => (CueIndex)x).ToArray();
     }
 
-    public void RemoveCdTextFile() => SetCdTextFile(value: null);
 
-    public void RemoveCuePath() => SetCuePath(value: null);
 
-    public void SetCdTextFile(string? value)
-    {
-        if (value == null)
-            _cdTextFile = null;
-        else
-        {
-            string absPath = Path.Combine(SourceFile?.DirectoryName ?? ".", value);
-            _cdTextFile = new FileInfo(absPath);
-        }
-    }
-
-    internal void SetCuePath(string? value)
-    {
-        if (value == null)
-            SourceFile = null;
-        else
-        {
-            SourceFile = new FileInfo(value);
-        }
-        RefreshFiles();
-    }
+  
 
     public bool SetTrackHasZerothIndex(int trackIndex, bool hasZerothIndex)
     {
@@ -556,29 +567,6 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
             Remarks.Count,
             Comments.Count
         );
-    }
-
-    /// <inheritdoc cref="CuePackage.CopyCueFiles(CueSheet, string, string?)"/>
-    public CueSheet CopyPackage(string destination, string? pattern)
-        => CopyPackage(destination, pattern, settings: null);
-
-    /// <inheritdoc cref="CuePackage.CopyCueFiles(CueSheet, string, string?)"/>
-    public CueSheet CopyPackage(string destination, string? pattern, CueWriterSettings? settings)
-        => CuePackage.CopyPackage(this, destination, pattern, settings);
-
-    /// <inheritdoc cref="CuePackage.MoveCueFiles(CueSheet, string, string?)"/>
-    public CueSheet MovePackage(string destination, string? pattern)
-        => MovePackage(destination, pattern, settings: null);
-
-    /// <inheritdoc cref="CuePackage.MoveCueFiles(CueSheet, string, string?)"/>
-    public CueSheet MovePackage(string destination, string? pattern, CueWriterSettings? settings)
-        => CuePackage.MovePackage(this, destination, pattern, settings);
-
-    public void RemovePackage() => CuePackage.RemovePackage(this);
-
-    public void DeleteFiles()
-    {
-        CuePackage.RemovePackage(this);
     }
 
     internal string DefaultFilename

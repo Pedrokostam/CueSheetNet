@@ -255,7 +255,7 @@ public static partial class CuePackage
     }
 
 
-    public static void RemovePackage(CueSheet sheet)
+    public static void RemovePackage(this CueSheet sheet)
     {
         IEnumerable<ICueFile> audioFiles = sheet.Files.Select(x => x);
         var allFiles = audioFiles.Concat(sheet.AssociatedFiles).Select(x => x.SourceFile);
@@ -293,7 +293,7 @@ public static partial class CuePackage
     ///     <para>Pattern can be a directory structure (slashes are allowed), so this pattern is permitted: %artist%/%year%/%title%/%old%.cue</para>
     /// </param>
     /// <returns>Newly copied cuesheet</returns>
-    public static CueSheet CopyPackage(CueSheet sheet,
+    public static CueSheet CopyPackage(this CueSheet sheet,
                                        string destinationDirectory,
                                        string? pattern = null,
                                        CueWriterSettings? settings = null,
@@ -342,7 +342,7 @@ public static partial class CuePackage
     /// </summary>
     /// <returns>Newly moved sheet</returns>
     /// <inheritdoc cref="CopyCueFiles(CueSheet, string, string?)"/>
-    public static CueSheet MovePackage(CueSheet sheet,
+    public static CueSheet MovePackage(this CueSheet sheet,
                                        string destinationDirectory,
                                        string? pattern = null,
                                        CueWriterSettings? settings = null,
