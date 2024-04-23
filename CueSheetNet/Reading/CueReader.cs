@@ -12,7 +12,20 @@ using CueSheetNet.TextParser;
 namespace CueSheetNet;
 
 public partial class CueReader
-{
+{/*
+  * DISCID - sheet
+  * CATALOG - sheet
+  * CDTEXTFILE -
+  * 
+  * DATE - sheet, track
+  * PERFORMER - sheet, track
+  * TITLE - sheet, track
+  * COMMENT - sheet, track
+  * 
+  * ISRC - track
+  * FLAGS - track
+  * PREGAP/POSTGAP - track
+  */
     public const char DefaultQuotation = '"';
     public int CurrentLineIndex { get; private set; } = -1;
 

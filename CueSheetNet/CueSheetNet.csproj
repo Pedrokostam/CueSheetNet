@@ -37,4 +37,8 @@
 		<Using Include="System.Text" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Folder Include="Reading\Interim\" />
+	</ItemGroup>
+
 </Project>

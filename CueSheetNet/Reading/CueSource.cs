@@ -6,7 +6,7 @@ public readonly record struct CueSource
     public SourceType Type { get; private init; }
     public object? Data { get; private init; }
     public Type? Datatype => Data?.GetType();
-    public CueSource(object? data)
+    internal CueSource(object? data)
     {
         Type = data switch
         {
