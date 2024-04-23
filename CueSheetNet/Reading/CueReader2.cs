@@ -18,103 +18,10 @@ namespace CueSheetNet;
 
 public partial class CueReader2
 {
-    private interface IChainLink<T>
-    {
-        public T? Previous { get; set; }
-        public T? Next { get; set; }
-    }
-    private class Chain<T> : IEnumerable<T> where T : class, IChainLink<T>
-    {
-        public T? First { get; private set; }
-        public T? Last { get; private set; }
-
-        public void Add(T item)
-        {
-            if (Last is null)
-            {
-                First = item;
-                Last = item;
-            }
-            else
-            {
-                var lastElem = Last;
-                item.Previous = lastElem;
-                lastElem.Next = item;
-                Last = item;
-            }
-        }
-        public IEnumerator<T> GetEnumerator()
-        {
-            var item = First;
-            while (item is not null)
-            {
-                yield return item;
-                item = item.Next;
-            }
-        }
-        public IEnumerator<T> Reverse()
-        {
-            var item = Last;
-            while (item is not null)
-            {
-                yield return item;
-                item = item.Previous;
-            }
-        }
-
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-    }
-    private readonly record struct Line(int Number, string Text)
-    {
-        public static implicit operator Line((int index, string value) tuple) => new(tuple.index, tuple.value);
-    }
-    private class Index(int number) : IChainLink<Index>
-    {
-        public Index? Previous { get; set; }
-        public Index? Next { get; set; }
-        public int Number { get; } = number;
-        public CueTime Time { get; set; }
-    }
-    private class Track(int number) : IChainLink<Track>
-    {
-        public string? Performer { get; set; }
-        public string? Title { get; set; }
-        public string? ISRC { get; set; }
-        public TrackFlags Flags { get; set; }
-        public CueTime PreGap { get; set; }
-        public CueTime PostGap { get; set; }
-        public string? OriginalContent { get; set; }
-
-        public Track? Previous { get; set; }
-        public Track? Next { get; set; }
-        public int Number { get; } = number;
-        public Chain<Index> Indexes { get; } = [];
-        public List<CueRemark> Remarks { get; } = [];
-    }
-
-    private class File(string path, FileType type) : IChainLink<File>
-    {
-        public File? Previous { get; set; }
-        public File? Next { get; set; }
-        public string Path { get; } = path;
-        public FileType Type { get; } = type;
-        public Chain<Track> Tracks { get; } = [];
-    }
-    private class InfoBag()
-    {
-        public string? Performer { get; set; }
-        public string? Title { get; set; }
-        public string? CdTextFile { get; set; }
-        public string? Catalog { get; set; }
-        public string? OriginalContent { get; set; }
-        public Line CurrentLine { get; set; } = new Line(-1, "");
-        public Chain<File> Files=[];
-        public List<CueRemark> Remarks { get; } = [];
-    }
     public const char DefaultQuotation = '"';
     public char Quotation { get; set; } = DefaultQuotation;
 
-    public CueSheet Read(string filePath)
+    public void Read(string filePath)
     {
         var data = new InfoBag();
         using  FileStream fs = new FileStream(filePath,FileMode.Open);
@@ -159,171 +66,118 @@ public partial class CueReader2
         }
     }
 
-    private void ParseFiles(IList<IList<KeywordedLine>> filesLines, InfoBag data)
-    {
-        if (filesLines.Count == 0)
-        {
-            throw new InvalidDataException("CUE sheet has no files.");
-        }
-        File? previousFile = null;
-        foreach (var fileLines in filesLines)
-        {
-            ParseFile(fileLines, data, previousFile);
-        }
-    }
+    //private void ParseFiles(IList<IList<KeywordedLine>> filesLines, InfoBag data)
+    //{
+    //    if (filesLines.Count == 0)
+    //    {
+    //        throw new InvalidDataException("CUE sheet has no files.");
+    //    }
+    //    File? previousFile = null;
+    //    foreach (var fileLines in filesLines)
+    //    {
+    //        ParseFile(fileLines, data, previousFile);
+    //    }
+    //}
 
-    private File ParseFile(IList<KeywordedLine> fileLines, InfoBag data, File? previousFile)
-    {
-        // first line has to be file declaration
-        File currentFile = ParseFileLine(fileLines[0].Line);
-        currentFile.Previous = previousFile;
+    //private File ParseFile(IList<KeywordedLine> fileLines, InfoBag data, File? previousFile)
+    //{
+    //    // first line has to be file declaration
+    //    File currentFile = ParseFileLine(fileLines[0].Line);
+    //    currentFile.Previous = previousFile;
 
-        IList<IList<KeywordedLine>> tracksLines = [[]];
-        int trackCount = 0;
-        foreach (var fileLine in fileLines)
-        {
-            (Keywords key, Line line) = fileLine;
+    //    IList<IList<KeywordedLine>> tracksLines = [[]];
+    //    int trackCount = 0;
+    //    foreach (var fileLine in fileLines)
+    //    {
+    //        (Keywords key, Line line) = fileLine;
 
-            if (key == Keywords.TRACK)
-            {
-                trackCount++;
-                tracksLines.Add([]);
-            }
-            tracksLines[trackCount].Add(fileLine);
-        }
-        if (tracksLines[0].Count != 0)
-        {
-            // dangling eac-style track
-        }
-        tracksLines.RemoveAt(0);
+    //        if (key == Keywords.TRACK)
+    //        {
+    //            trackCount++;
+    //            tracksLines.Add([]);
+    //        }
+    //        tracksLines[trackCount].Add(fileLine);
+    //    }
+    //    if (tracksLines[0].Count != 0)
+    //    {
+    //        // dangling eac-style track
+    //    }
+    //    tracksLines.RemoveAt(0);
 
-        if (fileLines[1].Keyword == Keywords.INDEX)
-        {
-            // first line of file is index, we have a dangling eac-style track
-            Track currentTrack = (currentFile.Previous?.Tracks.Last) ?? throw new InvalidDataException("Index was specified with no track");
-            /// parseindex -> add
-        }
-        else if (fileLines[1].Keyword == Keywords.TRACK)
-        {
-            //parsetrack
-        }
-        else
-        {
-            throw new InvalidDataException($"Unexpected line at {fileLines[0]}");
-        }
-    }
+    //    if (fileLines[1].Keyword == Keywords.INDEX)
+    //    {
+    //        // first line of file is index, we have a dangling eac-style track
+    //        Track currentTrack = (currentFile.Previous?.Tracks.Last) ?? throw new InvalidDataException("Index was specified with no track");
+    //        /// parseindex -> add
+    //    }
+    //    else if (fileLines[1].Keyword == Keywords.TRACK)
+    //    {
+    //        //parsetrack
+    //    }
+    //    else
+    //    {
+    //        throw new InvalidDataException($"Unexpected line at {fileLines[0]}");
+    //    }
+    //}
 
-    private void ParseTracks(IList<IList<KeywordedLine>> tracksLines, InfoBag data)
-    {
-        File currentFile = data.Files.Last ?? throw new InvalidDataException("Parsing tracks with no file.");
-        Track? lastTrack = currentFile.Tracks.Last;
-        foreach (IList<KeywordedLine> trackLines in tracksLines)
-        {
-            if (trackLines[0].Keyword != Keywords.TRACK)
-            {
-                throw new InvalidDataException("Expected a TRACK keyword.");
-            }
-        }
-    }
 
-    private File ParseFileLine(Line line)
-    {
-        (string path, string type) = GetFilePath(line.Text, 5); // FILE_
-        if (!Enum.TryParse<FileType>(type.Trim().ToUpperInvariant(), out FileType typeEnum))
-        {
-            Logger.LogWarning(
-                "Text {type} does not match eny file type - assigning type WAVE",
-                type
-            );
-            typeEnum = FileType.WAVE;
-        }
-        return new File(path, typeEnum);
-    }
 
-    private Track ParseTrack(IList<KeywordedLine> trackLines, Track? lastTrack)
-    {
-        if (trackLines[0].Keyword != Keywords.TRACK)
-        {
-            throw new InvalidDataException("Expected a TRACK keyword.");
-        }
-        string num = GetKeyword(trackLines[0].Line.Text, 6); // TRACK_
-        if (!int.TryParse(num, NumberStyles.Integer, CultureInfo.InvariantCulture, out int number))
-        {
-            number = lastTrack?.Number + 1 ?? 1;
-            Logger.LogWarning("Invalid TRACK number at line {line}. Substituting {Substitute number:d2}", trackLines[0].Line, number);
-        }
-        string type = GetKeyword(trackLines[0].Line.Text, 6 + 1 + num.Length);
-        Track currentTrack = new Track(number){ Previous=lastTrack};
-        for (int i = 1; i < trackLines.Count; i++)
-        {
-            KeywordedLine kwline = trackLines[i];
-            Line line = kwline.Line;
-            switch (kwline.Keyword)
-            {
-                case Keywords.REM:
-                    currentTrack.Remarks.AddNotNull(ParseREM(line));
-                    break;
-                case Keywords.PERFORMER:
-                    currentTrack.Performer=ParsePerformer(line);
-                    break;
-                case Keywords.TITLE:
-                    currentTrack.Title=ParseTitle(line);
-                    break;
-                case Keywords.FLAGS:
-                    currentTrack.Flags = ParseFlags(line);
-                    break;
-                case Keywords.INDEX:
-                    break;
-                case Keywords.POSTGAP:
-                    break;
-                case Keywords.PREGAP:
-                    break;
-                case Keywords.ISRC:
-                    break;
-            }
-        }
-    }
+    //private File ParseFileLine(Line line)
+    //{
+    //    (string path, string type) = GetFilePath(line.Text, 5); // FILE_
+    //    if (!Enum.TryParse<FileType>(type.Trim().ToUpperInvariant(), out FileType typeEnum))
+    //    {
+    //        Logger.LogWarning(
+    //            "Text {type} does not match eny file type - assigning type WAVE",
+    //            type
+    //        );
+    //        typeEnum = FileType.WAVE;
+    //    }
+    //    return new File(path, typeEnum);
+    //}
 
-    /// <summary>
-    /// Get the filename and file type. If quotation marks are present, simple iterating algorithm is used. Otherwise Regex is used
-    /// </summary>
-    /// <param name="s">String to get values from</param>
-    /// <returns><see cref="ValueTuple"/> of filename and type</returns>
-    private (string Path, string Type) GetFilePath(string s, int start)
-    {
-        ReadOnlySpan<char> span = s.AsSpan(start).Trim();
-        string path,
-            type;
-        if (span[0] == Quotation)
-        {
-            int end = -1;
-            for (int i = span.Length - 1; i >= 1; i--)
-            {
-                if (span[i] == Quotation)
-                {
-                    end = i;
-                    break;
-                }
-            }
-            if (end > 0)
-            {
-                path = span[1..end].ToString();
-                type = GetSuffix(s.AsSpan()[end..]);
-                return (path, type);
-            }
-        }
-        // Line does not have Quotation, need to use regex
-        string emer = span.ToString();
-        Match m = NonQuotedFileRegex().Match(emer);
-        if (m.Success)
-        {
-            path = m.Groups["PATH"].Value;
-            type = m.Groups["TYPE"].Value;
-            return (path, type);
-        }
-        // Could not properly parse Path Type. Return Line as path, no type
-        return (emer, "");
-    }
+
+
+    ///// <summary>
+    ///// Get the filename and file type. If quotation marks are present, simple iterating algorithm is used. Otherwise Regex is used
+    ///// </summary>
+    ///// <param name="s">String to get values from</param>
+    ///// <returns><see cref="ValueTuple"/> of filename and type</returns>
+    //private (string Path, string Type) GetFilePath(string s, int start)
+    //{
+    //    ReadOnlySpan<char> span = s.AsSpan(start).Trim();
+    //    string path,
+    //        type;
+    //    if (span[0] == Quotation)
+    //    {
+    //        int end = -1;
+    //        for (int i = span.Length - 1; i >= 1; i--)
+    //        {
+    //            if (span[i] == Quotation)
+    //            {
+    //                end = i;
+    //                break;
+    //            }
+    //        }
+    //        if (end > 0)
+    //        {
+    //            path = span[1..end].ToString();
+    //            type = GetSuffix(s.AsSpan()[end..]);
+    //            return (path, type);
+    //        }
+    //    }
+    //    // Line does not have Quotation, need to use regex
+    //    string emer = span.ToString();
+    //    Match m = NonQuotedFileRegex().Match(emer);
+    //    if (m.Success)
+    //    {
+    //        path = m.Groups["PATH"].Value;
+    //        type = m.Groups["TYPE"].Value;
+    //        return (path, type);
+    //    }
+    //    // Could not properly parse Path Type. Return Line as path, no type
+    //    return (emer, "");
+    //}
 
     /// <summary>
     /// GEts the last word of the string (string from the last whitespace till the end)
@@ -366,6 +220,9 @@ public partial class CueReader2
 
 
 
+        var AllTracks = data.Files.First.Tracks.First.FollowSince().ToList();
+        var  AllIndexes = data.Files.First.Tracks.First.Indexes.First.FollowSince().ToList();
+
         // no file yet
 
         // we have started the first file
@@ -386,19 +243,6 @@ public partial class CueReader2
         return cata;
     }
 
-    private string? ParseISRC(Line line)
-    {
-        string? isrc = GetValue(line.Text, 5); // ISRC_
-        if (isrc == null)
-        {
-            Logger.LogWarning(
-                "Invalid ISRC at line {line}",
-                line
-            );
-
-        }
-        return isrc;
-    }
 
     private string? ParseCdTextFile(Line line)
     {
@@ -535,19 +379,6 @@ public partial class CueReader2
         new(@"(?<PATH>\w+)\s+(?<TYPE>\w*)", RegexOptions.Compiled, TimeSpan.FromMilliseconds(500));
 
     private static Regex NonQuotedFileRegex() => NonQuotedFileRegexImpl;
+
 #endif
-
-    [StructLayout(LayoutKind.Auto)]
-    private record struct KeywordedLine(Keywords Keyword, Line Line)
-    {
-        public static implicit operator (Keywords Keyword, Line Line)(KeywordedLine value)
-        {
-            return (value.Keyword, value.Line);
-        }
-
-        public static implicit operator KeywordedLine((Keywords Keyword, Line Line) value)
-        {
-            return new KeywordedLine(value.Keyword, value.Line);
-        }
-    }
 }

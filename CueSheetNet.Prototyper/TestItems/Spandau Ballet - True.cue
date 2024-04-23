@@ -11,6 +11,7 @@ FILE "Spandau Ballet - True.flac" WAVE
     INDEX 01 00:00:20
   TRACK 02 AUDIO
     TITLE "Communication"
+	REM COMMENT Is good
     INDEX 00 03:33:25
     INDEX 01 03:35:25
   TRACK 03 AUDIO

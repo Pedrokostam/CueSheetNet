@@ -12,6 +12,12 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <Compile Remove="Reading\Interim\**" />
+	  <EmbeddedResource Remove="Reading\Interim\**" />
+	  <None Remove="Reading\Interim\**" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="Meziantou.Analyzer" Version="2.0.146">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -35,10 +41,6 @@
 	<ItemGroup>
 		<Using Include="CueSheetNet.Helpers" />
 		<Using Include="System.Text" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Reading\Interim\" />
 	</ItemGroup>
 
 </Project>
