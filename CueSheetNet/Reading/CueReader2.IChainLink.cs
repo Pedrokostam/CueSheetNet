@@ -6,6 +6,8 @@ public partial class CueReader2
     {
         public T? Previous { get; set; }
         public T? Next { get; set; }
+
+        public void GetPromoted();
     }
 
 }

@@ -13,6 +13,19 @@ public partial class CueReader2
         public Chain<T>? FollowingChain { get; private set; }
         public Chain<T>? PrecedingChain { get; private set; }
 
+        public void PromoteLastItemToFollowingChain()
+        {
+            Debug.Assert(FollowingChain is not null);
+            var promotedItem = Last;
+            Last = promotedItem.Previous;
+            FollowingChain.First = promotedItem;
+            if(FollowingChain.Last is null)
+            {
+                FollowingChain.Last=promotedItem;
+            }
+            promotedItem.GetPromoted();
+        }
+
         public void JoinChainAfter(Chain<T>? chain)
         {
             Debug.Assert(chain != this);
@@ -27,6 +40,43 @@ public partial class CueReader2
             {
                 First.Previous = PrecedingChain.Last;
                 PrecedingChain.Last.Next = First.Previous;
+            }
+        }
+
+        public void RemoveFirst()
+        {
+            var removed = First;
+            var newFirst = removed.Next;
+            First = newFirst;
+            if(PrecedingChain is not null)
+            {
+                PrecedingChain.Last.Next=newFirst;
+                if(newFirst is not null)
+                    newFirst.Previous = PrecedingChain.Last;
+            }
+            removed.Next = null;
+            removed.Previous = null;
+            if(First is null)
+            {
+                Last = null;
+            }
+        }
+        public void RemoveLast()
+        {
+            var removed = Last;
+            var newLast = removed.Previous;
+            Last= newLast;  
+            if (FollowingChain is not null)
+            {
+                FollowingChain.First.Previous = newLast;
+                if(newLast is not null)
+                    newLast.Next = FollowingChain.First;
+            }
+            removed.Next = null;
+            removed.Previous = null;
+            if (Last is null)
+            {
+                First = null;
             }
         }
 

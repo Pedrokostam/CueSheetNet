@@ -1,4 +1,6 @@
-﻿using System.Globalization;
+﻿using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using CueSheetNet.Extensions;
 using CueSheetNet.Internal;
 using CueSheetNet.Logging;
@@ -19,16 +21,18 @@ public partial class CueReader2
         public Track? Previous { get; set; }
         public Track? Next { get; set; }
         public int Number { get; }
-        public File ParentFile { get; }
+        public File ParentFile { get; private set; }
         public Chain<Index> Indexes { get; } = [];
         public List<CueRemark> Remarks { get; } = [];
+
+        public Index? EacEndIndex { get; private set; }
 
         /// <summary>
         /// Creates track and adds it as the last track of <paramref name="parent"/>
         /// </summary>
         /// <param name="number"></param>
         /// <param name="parent"></param>
-        public Track(int number,File parent)
+        public Track(int number, File parent)
         {
             Number = number;
             ParentFile = parent;
@@ -51,6 +55,20 @@ public partial class CueReader2
                 i = i.Next;
             }
         }
+
+        public void GetPromoted()
+        {
+            // This track actually begins in the next file
+            ParentFile = ParentFile.Next;
+            // the previous track has the eac end index
+            ExceptionHelper.ThrowIfNotEqual(Indexes.First.Number, 0,"When promoting a track to new file it must have a 0th index.");
+            ExceptionHelper.ThrowIfNotEqual(Indexes.Last, Indexes.First,"When promoting a track to new file it must have only 1 index.");
+
+            var eacIndex=Indexes.First;
+            Previous.EacEndIndex = eacIndex;
+            // This index should no longer be a part of the chains
+            Indexes.RemoveFirst();
+        }
     }
 
     private void ParseTracks(IList<IList<KeywordedLine>> tracksLines, File currentFile)
@@ -61,7 +79,7 @@ public partial class CueReader2
             {
                 throw new InvalidDataException("Expected a TRACK keyword.");
             }
-            ParseTrack(trackLines,currentFile);
+            ParseTrack(trackLines, currentFile);
 
         }
     }
@@ -80,6 +98,12 @@ public partial class CueReader2
         }
         //string type = GetKeyword(trackLines[0].Line.Text, 6 + 1 + num.Length);
         Track currentTrack = new Track(number,currentFile);
+        ParseTrackImpl(trackLines, currentTrack);
+
+    }
+
+    private void ParseTrackImpl(IList<KeywordedLine> trackLines, Track currentTrack)
+    {
         for (int i = 1; i < trackLines.Count; i++)
         {
             KeywordedLine kwline = trackLines[i];
@@ -99,7 +123,7 @@ public partial class CueReader2
                     currentTrack.Flags = ParseFlags(line);
                     break;
                 case Keywords.INDEX:
-                    ParseIndex(line,currentTrack);
+                    ParseIndex(line, currentTrack);
                     break;
                 case Keywords.POSTGAP:
                 case Keywords.PREGAP:
@@ -110,11 +134,11 @@ public partial class CueReader2
                     break;
             }
         }
-
     }
+
     private TrackFlags ParseFlags(Line line)
     {
-       
+
         TrackFlags flags = TrackFlags.None;
         string[] parts = line.Text[6..] // FLAGS_
             .Replace("\"", "", StringComparison.Ordinal)
@@ -135,16 +159,16 @@ public partial class CueReader2
         return flags;
     }
 
-   /// <summary>
-   /// Parse gap and adds it to track
-   /// </summary>
-   /// <param name="line"></param>
-   /// <param name="gapType"></param>
-   /// <param name="track"></param>
-   /// <exception cref="FormatException"></exception>
-    private void ParseGap(Line line, string gapType,Track track)
+    /// <summary>
+    /// Parse gap and adds it to track
+    /// </summary>
+    /// <param name="line"></param>
+    /// <param name="gapType"></param>
+    /// <param name="track"></param>
+    /// <exception cref="FormatException"></exception>
+    private void ParseGap(Line line, string gapType, Track track)
     {
-        if (!CueTime.TryParse(line.Text.AsSpan(6 + gapType.Length + 1),null, out CueTime cueTime))
+        if (!CueTime.TryParse(line.Text.AsSpan(6 + gapType.Length + 1), null, out CueTime cueTime))
         {
             //Logger.LogError("Incorrect Gap format at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
             throw new FormatException($"Incorrect Gap format at line {line}");

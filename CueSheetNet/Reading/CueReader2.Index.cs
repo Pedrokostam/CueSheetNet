@@ -15,8 +15,12 @@ public partial class CueReader2
             get => previous; set
             {
                 previous = value;
-                Debug.Assert(previous!=next);
-                Debug.Assert(previous!=this);
+                if (previous is not null)
+                {
+
+                    Debug.Assert(previous != next);
+                    Debug.Assert(previous != this);
+                }
             }
         }
         public Index? Next
@@ -24,14 +28,17 @@ public partial class CueReader2
             get => next; set
             {
                 next = value;
-                Debug.Assert(previous!=next);
-                Debug.Assert(next != this);
+                if (next is not null)
+                {
+                    Debug.Assert(previous != next);
+                    Debug.Assert(next != this);
+                }
             }
         }
         public int Number { get; }
         public CueTime Time { get; set; }
 
-        public Track ParentTrack { get; set; }
+        public Track ParentTrack { get; private set; }
 
         /// <summary>
         /// Creates index and adds it as the last index of <paramref name="parent"/>
@@ -41,7 +48,7 @@ public partial class CueReader2
         public Index(int number, CueTime time, Track parent)
         {
             Number = number;
-            Time = time;    
+            Time = time;
             ParentTrack = parent;
             ParentTrack.Indexes.Add(this);
         }
@@ -53,12 +60,18 @@ public partial class CueReader2
         {
             yield return this;
             var i = this.Next;
-            while(i is not null)
+            while (i is not null)
             {
                 yield return i;
                 i = i.Next;
             }
         }
+
+        public void GetPromoted()
+        {
+            ParentTrack = Next.ParentTrack;
+        }
+
     }
 
     /// <summary>

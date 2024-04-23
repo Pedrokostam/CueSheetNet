@@ -40,6 +40,11 @@ public partial class CueReader2
                 i = i.Next;
             }
         }
+
+        public void GetPromoted()
+        {
+            
+        }
     }
 
     /// <summary>
@@ -119,8 +124,11 @@ public partial class CueReader2
         if (tracksLines[0].Count != 0)
         {
             // dangling eac-style track
+            currentFile.Previous.Tracks.PromoteLastItemToFollowingChain();
+            ParseTrackImpl(tracksLines[0], currentFile.Tracks.First);
         }
         tracksLines.RemoveAt(0);
+        ParseTracks(tracksLines, currentFile);
 
         if (fileLines[1].Keyword == Keywords.INDEX)
         {
@@ -130,7 +138,6 @@ public partial class CueReader2
         }
         else if (fileLines[1].Keyword == Keywords.TRACK)
         {
-            ParseTracks(tracksLines, currentFile);
             //parsetrack
         }
         else
