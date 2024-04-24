@@ -21,7 +21,7 @@ public partial class CueReader2
             Path = path;
             Type = type;
             Parent = parent;
-            Tracks.JoinChainAfter(parent.Files.Last?.Tracks);
+            Tracks.JoinChainAfter(parent.Files.ChainEnd?.Tracks);
             parent.Files.Add(this);
         }
 
@@ -43,7 +43,7 @@ public partial class CueReader2
 
         public void GetPromoted()
         {
-            
+
         }
     }
 
@@ -123,20 +123,22 @@ public partial class CueReader2
 
         if (tracksLines[0].Count != 0)
         {
+            if (currentFile.Previous is null)
+            {
+                throw new InvalidDataException("Sheet contains tracks with no file.");
+            }
+            if (currentFile.Tracks.ChainStart is null)
+            {
+                throw new InvalidDataException("No tracks for an EAC-style index.");
+            }
             // dangling eac-style track
             currentFile.Previous.Tracks.PromoteLastItemToFollowingChain();
-            ParseTrackImpl(tracksLines[0], currentFile.Tracks.First);
+            ParseTrackImpl(tracksLines[0], currentFile.Tracks.ChainStart);
         }
         tracksLines.RemoveAt(0);
         ParseTracks(tracksLines, currentFile);
 
-        if (fileLines[1].Keyword == Keywords.INDEX)
-        {
-            // first line of file is index, we have a dangling eac-style track
-            Track currentTrack = (currentFile.Previous?.Tracks.Last) ?? throw new InvalidDataException("Index was specified with no track");
-            /// parseindex -> add
-        }
-        else if (fileLines[1].Keyword == Keywords.TRACK)
+        if (fileLines[1].Keyword == Keywords.TRACK)
         {
             //parsetrack
         }

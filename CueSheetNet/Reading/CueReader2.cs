@@ -107,7 +107,7 @@ public partial class CueReader2
     //    if (fileLines[1].Keyword == Keywords.INDEX)
     //    {
     //        // first line of file is index, we have a dangling eac-style track
-    //        Track currentTrack = (currentFile.Previous?.Tracks.Last) ?? throw new InvalidDataException("Index was specified with no track");
+    //        Track currentTrack = (currentFile.Previous?.Tracks.ChainEnd) ?? throw new InvalidDataException("Index was specified with no track");
     //        /// parseindex -> add
     //    }
     //    else if (fileLines[1].Keyword == Keywords.TRACK)
@@ -220,8 +220,8 @@ public partial class CueReader2
 
 
 
-        var AllTracks = data.Files.First.Tracks.First.FollowSince().ToList();
-        var  AllIndexes = data.Files.First.Tracks.First.Indexes.First.FollowSince().ToList();
+        var AllTracks = data.Files.ChainStart.Tracks.ChainStart?.FollowSince().ToList();
+        var  AllIndexes = data.Files.ChainStart.Tracks.ChainStart.Indexes.ChainStart?.FollowSince().ToList();
 
         // no file yet
 

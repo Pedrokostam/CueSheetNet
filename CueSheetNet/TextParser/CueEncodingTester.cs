@@ -187,7 +187,7 @@ internal sealed class CueEncodingTester(Stream stream, CueSource source)
             else
             {
                 Logger.LogInformation(
-                    "Non-UTF8 bytes detected. Last 4 bytes: 0x{Byte1:X2}, 0x{Byte2:X2}, 0x{Byte3:X2}, 0x{Byte4:X2}",
+                    "Non-UTF8 bytes detected. ChainEnd 4 bytes: 0x{Byte1:X2}, 0x{Byte2:X2}, 0x{Byte3:X2}, 0x{Byte4:X2}",
                     allBytes[i],
                     allBytes[i + 1],
                     allBytes[i + 2],
@@ -331,7 +331,7 @@ internal sealed class CueEncodingTester(Stream stream, CueSource source)
             throw new InvalidDataException($"Input data has fewer than 16 bytes {Source}");
         /**/
         // There is a small possibility, that the text is a constant-width multi-byte encoding, but the BOM is missing
-        // First letter of a cuesheet should be a standard ASCII letter (one byte of data and whatever padding)
+        // ChainStart letter of a cuesheet should be a standard ASCII letter (one byte of data and whatever padding)
         Encoding? naiveApproach = bomArea switch
         {
             [

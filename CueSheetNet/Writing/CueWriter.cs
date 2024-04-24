@@ -253,7 +253,7 @@ public sealed class CueWriter
     /// <item>Source <see cref="Encoding"/> of <paramref name="sheet"/> </item>
     /// <item><see cref="CueWriterSettings.DefaultEncoding"/> </item>
     /// </list>
-    /// First non-null object will be used.
+    /// ChainStart non-null object will be used.
     /// <para/>The <see cref="Encoding"/> will be modified to include <see cref="EncoderFallback.ExceptionFallback"/>.
     /// <para/>If <see cref="Encoding"/><see cref="Encoding"/> cannot write the contents of the sheet, it will be replaced with <see cref="CueWriterSettings.DefaultEncoding"/>
     /// </summary>

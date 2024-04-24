@@ -36,7 +36,7 @@ public partial class CueReader2
         {
             Number = number;
             ParentFile = parent;
-            Indexes.JoinChainAfter(ParentFile.Tracks.Last?.Indexes);
+            Indexes.JoinChainAfter(ParentFile.Tracks.ChainEnd?.Indexes);
             ParentFile.Tracks.Add(this);
         }
 
@@ -61,10 +61,10 @@ public partial class CueReader2
             // This track actually begins in the next file
             ParentFile = ParentFile.Next;
             // the previous track has the eac end index
-            ExceptionHelper.ThrowIfNotEqual(Indexes.First.Number, 0,"When promoting a track to new file it must have a 0th index.");
-            ExceptionHelper.ThrowIfNotEqual(Indexes.Last, Indexes.First,"When promoting a track to new file it must have only 1 index.");
+            ExceptionHelper.ThrowIfNotEqual(Indexes.ChainStart.Number, 0,"When promoting a track to new file it must have a 0th index.");
+            ExceptionHelper.ThrowIfNotEqual(Indexes.ChainEnd, Indexes.ChainStart,"When promoting a track to new file it must have only 1 index.");
 
-            var eacIndex=Indexes.First;
+            var eacIndex=Indexes.ChainStart;
             Previous.EacEndIndex = eacIndex;
             // This index should no longer be a part of the chains
             Indexes.RemoveFirst();
@@ -93,7 +93,7 @@ public partial class CueReader2
         string num = GetKeyword(trackLines[0].Line.Text, 6); // TRACK_
         if (!int.TryParse(num, NumberStyles.Integer, CultureInfo.InvariantCulture, out int number))
         {
-            number = currentFile.Tracks.Last?.Number + 1 ?? 1;
+            number = currentFile.Tracks.ChainEnd?.Number + 1 ?? 1;
             Logger.LogWarning("Invalid TRACK number at line {line}. Substituting {Substitute number:d2}", trackLines[0].Line, number);
         }
         //string type = GetKeyword(trackLines[0].Line.Text, 6 + 1 + num.Length);
@@ -104,7 +104,7 @@ public partial class CueReader2
 
     private void ParseTrackImpl(IList<KeywordedLine> trackLines, Track currentTrack)
     {
-        for (int i = 1; i < trackLines.Count; i++)
+        for (int i = 0; i < trackLines.Count; i++)
         {
             KeywordedLine kwline = trackLines[i];
             Line line = kwline.Line;
@@ -132,6 +132,12 @@ public partial class CueReader2
                 case Keywords.ISRC:
                     currentTrack.ISRC = ParseISRC(line);
                     break;
+                case Keywords.TRACK:
+                    // the initial track line, already handled
+                    // we cannot just skip firt element because we might be finishing reading of eac track.
+                    continue;
+                default:
+                    throw new InvalidOperationException("Unexpected keyword in track");
             }
         }
     }

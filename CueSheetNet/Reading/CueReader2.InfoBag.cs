@@ -13,6 +13,9 @@ public partial class CueReader2
         public Chain<File> Files=[];
         public List<CueRemark> Remarks { get; } = [];
 
+        public IEnumerable<Track> Tracks => Files.First().Tracks.ChainStart?.FollowSince() ?? [];
+        public IEnumerable<Index> Indexes => Files.First().Tracks.ChainStart?.Indexes.ChainStart?.FollowSince() ?? [];
+
     }
 
 }

@@ -7,8 +7,8 @@ public partial class CueReader2
 {
     private class Chain<T> : IEnumerable<T> where T : class, IChainLink<T>
     {
-        public T? First { get; private set; }
-        public T? Last { get; private set; }
+        public T? ChainStart { get; private set; }
+        public T? ChainEnd { get; private set; }
 
         public Chain<T>? FollowingChain { get; private set; }
         public Chain<T>? PrecedingChain { get; private set; }
@@ -16,14 +16,14 @@ public partial class CueReader2
         public void PromoteLastItemToFollowingChain()
         {
             Debug.Assert(FollowingChain is not null);
-            var promotedItem = Last;
-            Last = promotedItem.Previous;
-            FollowingChain.First = promotedItem;
-            if(FollowingChain.Last is null)
+            var promotedItem = ChainEnd;
+            ChainEnd = promotedItem?.Previous;
+            FollowingChain.ChainStart = promotedItem;
+            if (FollowingChain.ChainEnd is null)
             {
-                FollowingChain.Last=promotedItem;
+                FollowingChain.ChainEnd = promotedItem;
             }
-            promotedItem.GetPromoted();
+            promotedItem?.GetPromoted();
         }
 
         public void JoinChainAfter(Chain<T>? chain)
@@ -36,75 +36,79 @@ public partial class CueReader2
             chain.FollowingChain = this;
             this.PrecedingChain = chain;
 
-            if (First is not null)
-            {
-                First.Previous = PrecedingChain.Last;
-                PrecedingChain.Last.Next = First.Previous;
-            }
+            Link(PrecedingChain?.ChainEnd, ChainStart);
+
         }
 
         public void RemoveFirst()
         {
-            var removed = First;
-            var newFirst = removed.Next;
-            First = newFirst;
-            if(PrecedingChain is not null)
+            var removed = ChainStart;
+            var newFirst = removed?.Next;
+            ChainStart = newFirst;
+            Link(PrecedingChain?.ChainEnd, newFirst);
+
+            Orphanize(removed);
+            if (ChainStart is null)
             {
-                PrecedingChain.Last.Next=newFirst;
-                if(newFirst is not null)
-                    newFirst.Previous = PrecedingChain.Last;
-            }
-            removed.Next = null;
-            removed.Previous = null;
-            if(First is null)
-            {
-                Last = null;
+                ChainEnd = null;
             }
         }
         public void RemoveLast()
         {
-            var removed = Last;
-            var newLast = removed.Previous;
-            Last= newLast;  
-            if (FollowingChain is not null)
+            var removed = ChainEnd;
+            var newLast = removed?.Previous;
+            ChainEnd = newLast;
+
+            Link(newLast, FollowingChain?.ChainStart);
+
+            Orphanize(removed);
+            if (ChainEnd is null)
             {
-                FollowingChain.First.Previous = newLast;
-                if(newLast is not null)
-                    newLast.Next = FollowingChain.First;
+                ChainStart = null;
             }
-            removed.Next = null;
-            removed.Previous = null;
-            if (Last is null)
+        }
+
+        private void Link(T? first, T? second)
+        {
+            if (first is not null)
             {
-                First = null;
+                first.Next = second;
             }
+            if (second is not null)
+            {
+                second.Previous = first;
+            }
+        }
+
+        public static void Orphanize(T? item)
+        {
+            if (item is null)
+                return;
+            item.Next = null;
+            item.Previous = null;
         }
 
         public void Add(T item)
         {
-            if (Last is null && First is null)
+            if (ChainEnd is null && ChainStart is null)
             {
-                First = item;
-                Last = item;
+                ChainStart = item;
+                ChainEnd = item;
 
-                if (PrecedingChain is not null)
-                {
-                   var  precedingsLast = PrecedingChain.Last;
-                    First.Previous = precedingsLast;
-                    precedingsLast.Next = First;
-                }
+                Link(PrecedingChain?.ChainEnd, item);
             }
             else
             {
-                var lastElem = Last;
+                var lastElem = ChainEnd;
                 item.Previous = lastElem;
-                lastElem.Next = item;
-                Last = item;
+                Link(lastElem, item);
+                ChainEnd = item;
+
             }
         }
         public IEnumerator<T> GetEnumerator()
         {
-            var item = First;
+            var item = ChainStart;
             while (item is not null)
             {
                 yield return item;
@@ -113,7 +117,7 @@ public partial class CueReader2
         }
         public IEnumerator<T> Reverse()
         {
-            var item = Last;
+            var item = ChainEnd;
             while (item is not null)
             {
                 yield return item;
