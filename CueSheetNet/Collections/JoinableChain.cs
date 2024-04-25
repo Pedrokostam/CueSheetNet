@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace CueSheetNet.Collections;
-internal class JoinableChain<T>(Action<T>? validator) : Chain<T> where T : class, IChainLink<T>
+internal class JoinableChain<T>(Action<T>? validator) : ChainOld<T> where T : class, IChainLink<T>
 {
     public JoinableChain() : this(null)
     {

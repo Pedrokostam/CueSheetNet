@@ -1,6 +1,6 @@
 ﻿namespace CueSheetNet.Collections;
 
-internal interface IChainLink<T>
+public interface IChainLink<T>
 {
     public T? Previous { get; set; }
     public T? Next { get; set; }
