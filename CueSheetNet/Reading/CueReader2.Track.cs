@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using CueSheetNet.Collections;
 using CueSheetNet.Extensions;
 using CueSheetNet.Internal;
 using CueSheetNet.Logging;
@@ -22,7 +23,7 @@ public partial class CueReader2
         public Track? Next { get; set; }
         public int Number { get; }
         public File ParentFile { get; private set; }
-        public Chain<Index> Indexes { get; } = [];
+        public JoinableChain<Index> Indexes { get; }
         public List<CueRemark> Remarks { get; } = [];
 
         public Index? EacEndIndex { get; private set; }
@@ -34,10 +35,21 @@ public partial class CueReader2
         /// <param name="parent"></param>
         public Track(int number, File parent)
         {
+            Indexes = new(x => ValidateIndex(x));
             Number = number;
             ParentFile = parent;
             Indexes.JoinChainAfter(ParentFile.Tracks.ChainEnd?.Indexes);
             ParentFile.Tracks.Add(this);
+        }
+        private void ValidateIndex(Index index)
+        {
+            if (Indexes.ChainEnd is not null)
+            {
+                if (index.Time <= Indexes.ChainEnd.Time)
+                {
+                    throw new InvalidOperationException("Index too small");
+                }
+            }
         }
 
         public override string ToString()
@@ -59,10 +71,12 @@ public partial class CueReader2
         public void GetPromoted()
         {
             // This track actually begins in the next file
+            ExceptionHelper.ThrowIfNull(ParentFile.Next);
+            ExceptionHelper.ThrowIfNull(Previous);
             ParentFile = ParentFile.Next;
             // the previous track has the eac end index
-            ExceptionHelper.ThrowIfNotEqual(Indexes.ChainStart.Number, 0,"When promoting a track to new file it must have a 0th index.");
-            ExceptionHelper.ThrowIfNotEqual(Indexes.ChainEnd, Indexes.ChainStart,"When promoting a track to new file it must have only 1 index.");
+            ExceptionHelper.ThrowIfNotEqual(Indexes.ChainStart?.Number, 0, "When promoting a track to new file it must have a 0th index.");
+            ExceptionHelper.ThrowIfNotEqual(Indexes.ChainEnd, Indexes.ChainStart, "When promoting a track to new file it must have only 1 index.");
 
             var eacIndex=Indexes.ChainStart;
             Previous.EacEndIndex = eacIndex;

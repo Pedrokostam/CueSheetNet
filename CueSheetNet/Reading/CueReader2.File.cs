@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Text.RegularExpressions;
+using CueSheetNet.Collections;
 using CueSheetNet.Logging;
 using CueSheetNet.Syntax;
 
@@ -14,7 +15,7 @@ public partial class CueReader2
         public string Path { get; }
         public FileType Type { get; }
         public InfoBag Parent { get; }
-        public Chain<Track> Tracks { get; } = [];
+        public JoinableChain<Track> Tracks { get; } = [];
 
         public File(string path, FileType type, InfoBag parent)
         {
@@ -127,25 +128,13 @@ public partial class CueReader2
             {
                 throw new InvalidDataException("Sheet contains tracks with no file.");
             }
-            if (currentFile.Tracks.ChainStart is null)
-            {
-                throw new InvalidDataException("No tracks for an EAC-style index.");
-            }
             // dangling eac-style track
             currentFile.Previous.Tracks.PromoteLastItemToFollowingChain();
-            ParseTrackImpl(tracksLines[0], currentFile.Tracks.ChainStart);
+            ParseTrackImpl(tracksLines[0], currentFile.Tracks.ChainStart!);
         }
         tracksLines.RemoveAt(0);
         ParseTracks(tracksLines, currentFile);
 
-        if (fileLines[1].Keyword == Keywords.TRACK)
-        {
-            //parsetrack
-        }
-        else
-        {
-            throw new InvalidDataException($"Unexpected line at {fileLines[0]}");
-        }
     }
 
     private void ParseFiles(IList<IList<KeywordedLine>> filesLines, InfoBag data)

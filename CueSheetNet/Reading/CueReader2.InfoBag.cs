@@ -1,4 +1,6 @@
-﻿namespace CueSheetNet;
+﻿using CueSheetNet.Collections;
+
+namespace CueSheetNet;
 
 public partial class CueReader2
 {
@@ -10,7 +12,7 @@ public partial class CueReader2
         public string? Catalog { get; set; }
         public string? OriginalContent { get; set; }
         public Line CurrentLine { get; set; } = new Line(-1, "");
-        public Chain<File> Files=[];
+        public JoinableChain<File> Files=[];
         public List<CueRemark> Remarks { get; } = [];
 
         public IEnumerable<Track> Tracks => Files.First().Tracks.ChainStart?.FollowSince() ?? [];
