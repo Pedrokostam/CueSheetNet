@@ -1,0 +1,31 @@
+TITLE "MultiFile"
+PERFORMER "The Multis"
+FILE "Uno.wav" WAVE
+ TRACK 01 AUDIO
+    TITLE "Uno"
+    INDEX 01 00:00:00
+  TRACK 02 AUDIO
+    TITLE "Dos"
+    INDEX 00 02:47:74
+FILE "Dos.wav" WAVE
+     INDEX 01 00:00:00
+  TRACK 03 AUDIO
+    TITLE "Tres"
+    INDEX 00 03:10:74
+FILE "Tres.wav" WAVE
+    INDEX 01 00:00:00
+  TRACK 04 AUDIO
+    TITLE "Cuatro"
+    INDEX 00 09:10:51
+FILE "Cuatro.wav" WAVE
+    INDEX 01 00:00:00
+  TRACK 04 AUDIO
+    TITLE "Cinco"
+    INDEX 00 19:10:38
+FILE "Cinco.wav" WAVE
+    INDEX 01 00:00:00
+  TRACK 04 AUDIO
+    TITLE "Seis"
+    INDEX 00 04:20:11
+FILE "Seis.wav" WAVE
+    INDEX 01 00:00:00

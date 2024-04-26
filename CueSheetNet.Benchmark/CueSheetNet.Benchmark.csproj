@@ -15,4 +15,25 @@
     <ProjectReference Include="..\CueSheetNet\CueSheetNet.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="TestItems\Jethro Tull - Aqualung.cue">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="TestItems\Long.cue">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="TestItems\Multi.cue">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="TestItems\MultiFile.cue">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="TestItems\Normal.cue">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="TestItems\Spandau Ballet - True.cue">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

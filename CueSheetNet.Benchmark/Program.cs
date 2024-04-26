@@ -2,5 +2,5 @@
 using BenchmarkDotNet.Running;
 using CueSheetNet.Benchmark;
 
-var r = new Benchmark();
-BenchmarkRunner.Run<Benchmark>();
+var r = new ReadingBenchmark();
+BenchmarkRunner.Run<ReadingBenchmark>();
