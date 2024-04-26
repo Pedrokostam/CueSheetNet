@@ -6,11 +6,7 @@ namespace CueSheetNet.Helpers;
 internal static class ExceptionHelper
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void ThrowIfNull(
-        [NotNull] object? value,
-        [CallerMemberName] string? name = null,
-        string? message = null
-    )
+    public static void ThrowIfNull([NotNull] object? value, string name, string? message = null)
     {
         if (value == null)
         {
@@ -23,11 +19,7 @@ internal static class ExceptionHelper
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void ThrowIfNotEqual<T>(
-        T expected,
-        T actual,
-        string message
-    )
+    public static void ThrowIfNotEqual<T>(T expected, T actual, string message)
     {
         if (!Equals(expected, actual))
         {
@@ -35,12 +27,9 @@ internal static class ExceptionHelper
         }
     }
 
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void ThrowIfNullOrEmpty(
-        [NotNull] string? value,
-        [CallerMemberName] string? name = null,
-        string? message = null
-    )
+    public static void ThrowIfNullOrEmpty([NotNull] string? value, string name, string? message = null)
     {
         message ??= "The value cannot be an empty string.";
         if (string.IsNullOrEmpty(value))
@@ -54,11 +43,7 @@ internal static class ExceptionHelper
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void ThrowIfNullOrWhitespace(
-        [NotNull] string? value,
-        [CallerMemberName] string? name = null,
-        string? message = null
-    )
+    public static void ThrowIfNullOrWhitespace([NotNull] string? value, string name , string? message = null)
     {
         message ??= "The value cannot be an empty string or composed entirely of whitespace.";
         if (string.IsNullOrWhiteSpace(value))

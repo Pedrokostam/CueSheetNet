@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using CueSheetNet.Collections;
 using CueSheetNet.FileHandling;
 using CueSheetNet.FormatReaders;
 using CueSheetNet.Internal;
@@ -21,6 +22,8 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
     /// File types which contain binary data.
     /// </summary>
     public const FileType DataTypes = FileType.BINARY | FileType.MOTOROLA;
+
+    public FileTrackCollection Tracks { get; }
 
     /// <summary>
     /// Detects file type from the file's extension. Unknown extension are assumed to be <see cref="FileType.WAVE"/>.
@@ -50,6 +53,7 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
         : base(parent)
     {
         SetFile(filePath, type);
+        Tracks = new(this);
     }
 
     internal CueDataFile ClonePartial(CueSheet newOwner)

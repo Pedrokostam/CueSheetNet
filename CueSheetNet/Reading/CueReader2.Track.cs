@@ -71,8 +71,8 @@ public partial class CueReader2
         public void GetPromoted()
         {
             // This track actually begins in the next file
-            ExceptionHelper.ThrowIfNull(ParentFile.Next);
-            ExceptionHelper.ThrowIfNull(Previous);
+            ExceptionHelper.ThrowIfNull(ParentFile.Next, nameof(ParentFile));
+            ExceptionHelper.ThrowIfNull(Previous,nameof(Previous));
             ParentFile = ParentFile.Next;
             // the previous track has the eac end index
             ExceptionHelper.ThrowIfNotEqual(Indexes.ChainStart?.Number, 0, "When promoting a track to new file it must have a 0th index.");

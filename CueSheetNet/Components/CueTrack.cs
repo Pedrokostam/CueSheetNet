@@ -1,4 +1,5 @@
 ﻿using System.Collections.ObjectModel;
+using System.Drawing;
 using CueSheetNet.Collections;
 using CueSheetNet.Internal;
 using CueSheetNet.Syntax;
@@ -8,7 +9,8 @@ namespace CueSheetNet;
 public class CueTrack(CueDataFile parentFile, TrackType type)
     : CueItemBase(parentFile.ParentSheet),
         IEquatable<CueTrack>,
-        IRemCommentable
+        IRemCommentable,
+    IIndexValidator
 {
     private CueDataFile _parentFile = parentFile;
 
@@ -23,6 +25,9 @@ public class CueTrack(CueDataFile parentFile, TrackType type)
     public CueTime PostGap { get; set; }
     public CueTime PreGap { get; set; }
 
+    public CueTime? EacEndIndex { get; private set; }
+
+    public TrackIndexCollection Indices { get; }
 
     /// <summary>
     /// File in which the start of the content occurs (see <see cref="AudioStartIndex"/>).
@@ -131,7 +136,7 @@ public class CueTrack(CueDataFile parentFile, TrackType type)
 
             if (ParentSheet.IndexesImpl[Start].Number == 0)
             {
-                // first index is 00, so audio starts at 01 - next
+                // first index is 00, so audio starts at 01 - prev
                 return ParentSheet.GetCueIndexAt(Start + 1);
             }
 
@@ -223,7 +228,7 @@ public class CueTrack(CueDataFile parentFile, TrackType type)
 
         bool commentsEqual = Comments.SequenceEqual(other.Comments,StringHelper.GetComparer(stringComparison));
         bool remarksEqual = Remarks.SequenceEqual(other.Remarks,StringHelper.GetComparer(stringComparison));
-        if(!commentsEqual || !remarksEqual)
+        if (!commentsEqual || !remarksEqual)
         { return false; }
 
         return true;
@@ -245,5 +250,54 @@ public class CueTrack(CueDataFile parentFile, TrackType type)
             Comments.Count.GetHashCode(),
             Remarks.Count.GetHashCode()
         );
+    }
+
+    public bool ValidateIndex(int index, CueTime time, int number, bool replacesItem)
+    {
+        int prevIndex= index-1;
+        int nextIndex = replacesItem switch
+        {
+            true => index+1,// replaces at index, so index+1 is the prev element
+            false => index // insert before index, so index will be the prev element
+        };
+        // next and prev is within this track
+        if (prevIndex >= 0 && nextIndex < Indices.Count) // [0 , Count)
+        {
+            var prev = Indices[index - 1];
+            var next = Indices[index + 1];
+            bool numberGit = prev.Number<number && next.Number>number;
+            bool timeGit = prev.Time<time && next.Time>time;
+            return numberGit && timeGit;
+        }
+        if (prevIndex == -1) // [-1 , Count)
+        {
+            var next = Indices[nextIndex];
+            var indexOfPreviousTrack = ParentFile.Tracks.IndexOfPreviousTrack(this);
+            bool nextGit = time < next.Time && number < next.Number;
+            bool prevGit = true;
+            if (indexOfPreviousTrack >= 0 && ParentFile.Tracks[indexOfPreviousTrack].Indices.Count > 0)
+            {
+                var prev = ParentFile.Tracks[indexOfPreviousTrack].Indices[^1];
+                prevGit = time > prev.Time && number > prev.Number;
+            }
+            return prevGit && nextGit;
+        }
+        if (nextIndex > Indices.Count) // [-1, Count]
+        {
+            var prev = Indices[nextIndex];
+            var indexOfNextTrack = ParentFile.Tracks.IndexOfNextTrack(this);
+            bool prevGit = time > prev.Time && number > prev.Number;
+            bool nextGit = true;
+            if (indexOfNextTrack >= 0 && ParentFile.Tracks[indexOfNextTrack].Indices.Count > 0)
+            {
+                var next = ParentFile.Tracks[indexOfNextTrack].Indices[0];
+                nextGit = time < next.Time && number < next.Number;
+            }
+            return nextGit && prevGit;
+        }
+        //if (prevIndex < -1 || nextIndex > Indices.Count)
+        // an attempt was made to insert the index outside the track
+        return false;
+
     }
 }
