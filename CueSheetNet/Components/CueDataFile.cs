@@ -146,6 +146,16 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
         RefreshIfNeeded();
     }
 
+    public bool CheckPathEqual(string otherPath, StringComparison stringComparison = StringComparison.OrdinalIgnoreCase)
+    {
+        // TODO sprawdź czy to na pewno git jest!!!
+        string referencePath =Path.IsPathRooted(otherPath) ? SourceFile.FullName : GetRelativePath();
+        char[] seps = [Path.DirectorySeparatorChar,Path.AltDirectorySeparatorChar  ];
+        var parts = referencePath.Split(seps,StringSplitOptions.RemoveEmptyEntries);
+        var otherParts = otherPath.Split(seps,StringSplitOptions.RemoveEmptyEntries);
+        return parts.SequenceEqual(otherParts, StringHelper.GetComparer(stringComparison));
+    }
+
     /// <summary>
     /// Gets all CUE indices of this file.
     /// </summary>

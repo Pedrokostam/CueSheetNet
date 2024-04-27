@@ -6,17 +6,17 @@
 //using System.Threading.Tasks;
 
 //namespace CueSheetNet.Collections;
-//public abstract class CueComponentCollection<T> : IList<T>
+//public abstract class CueComponentCollection<IItem> : IList<IItem>
 //{
-//    protected readonly IList<T> _components;
+//    protected readonly IList<IItem> _components;
 
 //    protected CueComponentCollection( int initialCapacity)
 //    {
-//        _components = new List<T>(initialCapacity);
+//        _components = new List<IItem>(initialCapacity);
 //    }
 
 
-//    public T this[int index]
+//    public IItem this[int index]
 //    {
 //        get => _components[index];
 //        //set => _components[index] = value;
@@ -26,28 +26,28 @@
 
 //    public bool IsReadOnly => false;
 
-//    public  void Add(T item) => _components.Add(item);
+//    public  void Add(IItem item) => _components.Add(item);
 
 //    public void Clear() => _components.Clear();
 
-//    public  bool Contains(T item) => _components.Contains(item);
-//    public  bool Contains(T item,IEqualityComparer<T> comparer) => _components.Contains(item,comparer);
+//    public  bool Contains(IItem item) => _components.Contains(item);
+//    public  bool Contains(IItem item,IEqualityComparer<IItem> comparer) => _components.Contains(item,comparer);
 
-//    public void CopyTo(T[] array, int arrayIndex) => _components.CopyTo(array, arrayIndex);
+//    public void CopyTo(IItem[] array, int arrayIndex) => _components.CopyTo(array, arrayIndex);
 
-//    public IEnumerator<T> GetEnumerator() => _components.GetEnumerator();
+//    public IEnumerator<IItem> GetEnumerator() => _components.GetEnumerator();
 
-//    public int IndexOf(T item) => _components.IndexOf(item);
+//    public int IndexOf(IItem item) => _components.IndexOf(item);
 
-//    public void Insert(int index, T item) => _components.Insert(index, item);
+//    public void Insert(int index, IItem item) => _components.Insert(index, item);
 
-//    public bool Remove(T item) => _components.Remove(item);
+//    public bool Remove(IItem item) => _components.Remove(item);
 
 //    public void RemoveAt(int index) => _components.RemoveAt(index);
 
 //    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-//    private bool SequenceEquals_Ordered(IEnumerable<T> other, IEqualityComparer<T> comparer)
+//    private bool SequenceEquals_Ordered(IEnumerable<IItem> other, IEqualityComparer<IItem> comparer)
 //    {
 //        int index = 0;
 //        foreach (var item in other)
@@ -64,7 +64,7 @@
 //        return true;
 //    }
 
-//    private bool SequenceEquals_Unordered(IEnumerable<T> other, IEqualityComparer<T> comparer)
+//    private bool SequenceEquals_Unordered(IEnumerable<IItem> other, IEqualityComparer<IItem> comparer)
 //    {
 //        foreach (var thatItem in other)
 //        {
@@ -75,7 +75,7 @@
 //        return true;
 //    }
 
-//    protected bool SequenceEquals(IEnumerable<T>? other, bool unordered, IEqualityComparer<T>? comparer)
+//    protected bool SequenceEquals(IEnumerable<IItem>? other, bool unordered, IEqualityComparer<IItem>? comparer)
 //    {
 //        if (other is null)
 //            return false;
@@ -83,7 +83,7 @@
 //        if (other is ICollection col && col.Count != Count)
 //            return false;
 
-//        comparer ??= EqualityComparer<T>.Default;
+//        comparer ??= EqualityComparer<IItem>.Default;
 
 //        return unordered ? SequenceEquals_Unordered(other, comparer) : SequenceEquals_Ordered(other, comparer);
 //    }

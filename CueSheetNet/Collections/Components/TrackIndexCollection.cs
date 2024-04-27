@@ -1,9 +1,11 @@
 ﻿using System.Collections;
+using System.Collections.ObjectModel;
 using System.Runtime.CompilerServices;
+using CueSheetNet.Collections;
 
 namespace CueSheetNet.Collections;
 
-public class TrackIndexCollection(CueTrack parentTrack) : IIndexCollection
+public class TrackIndexCollection :  IEditableIndexCollection
 {
     private class IndexItem(int absoluteIndex, int number, CueTime time)
     {
@@ -15,15 +17,20 @@ public class TrackIndexCollection(CueTrack parentTrack) : IIndexCollection
             return new CueIndex(Number, AbsoluteIndex, parentTrack.ParentFile, parentTrack, Time);
         }
     }
-    private readonly List<IndexItem> _indexes=[];
+    private readonly ObservableCollection<IndexItem> _indexes=[];
+
+    internal TrackIndexCollection(CueTrack parentTrack)
+    {
+        ParentTrack = parentTrack;
+    }
+
     public CueIndex this[int index]
     {
         get => _indexes[index].ToIndex(ParentTrack);
     }
 
-    CueTrack ParentTrack { get; } = parentTrack;
-
-    public int Count { get; }
+    CueTrack ParentTrack { get; }
+    public  int Count => _indexes.Count;
 
     /// <inheritdoc cref="IIndexValidator.ValidateIndex(int, CueTime, int, bool)"/>
     protected void ValidateIndex(int index, CueTime time, int number, bool replacesItem)
@@ -36,8 +43,6 @@ public class TrackIndexCollection(CueTrack parentTrack) : IIndexCollection
     }
 
     public void Add(CueTime time, int? number = null) => Insert(Count - 1, time, number);
-
-
 
     public IEnumerator<CueIndex> GetEnumerator()
     {
@@ -86,7 +91,7 @@ public class TrackIndexCollection(CueTrack parentTrack) : IIndexCollection
         CueTime time = newTime ?? _indexes[index].Time;
         if (number < 1)
         {
-            bool hasNonZerothIndex = _indexes.Exists(x=>x.Number>0);
+            bool hasNonZerothIndex = _indexes.Any(x=>x.Number>0);
             if (!hasNonZerothIndex)
             {
                 throw new InvalidOperationException("Cannot add a zeroth index without any other indices in the track.");

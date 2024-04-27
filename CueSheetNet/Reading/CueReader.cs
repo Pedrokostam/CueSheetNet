@@ -135,7 +135,7 @@ public partial class CueReader
     /// <returns>Parsed <see cref="CueSheet"/></returns>
     public CueSheet ParseCueSheet(ReadOnlySpan<char> cueContentChars)
     {
-        // ToString is overriden for T = char and results in concatenation of all elements
+        // ToString is overriden for IItem = char and results in concatenation of all elements
         string spanString = cueContentChars.ToString();
         return ParseCueSheetFromStringContent(spanString);
     }

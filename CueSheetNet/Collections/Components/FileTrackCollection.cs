@@ -2,14 +2,21 @@
 
 namespace CueSheetNet.Collections;
 
-public class FileTrackCollection(CueDataFile parentFile) : ITrackCollection
+
+public sealed class FileTrackCollection : IEditableTrackCollection
 {
-    private readonly CueDataFile _parentFile =parentFile;
+    private readonly CueDataFile _parentFile;
     readonly List<CueTrack> _tracks = [];
     readonly Dictionary<CueTrack,int> _trackPositions= new Dictionary<CueTrack, int>(ReferenceEqualityComparer.Instance);
+
+    internal FileTrackCollection(CueDataFile parentFile)
+    {
+        _parentFile = parentFile;
+    }
+
     public CueTrack this[int index] => _tracks[index];
 
-    public int Count => _tracks.Count;
+    public  int Count => _tracks.Count;
 
     private void InsertImpl(int index, CueTrack track)
     {
