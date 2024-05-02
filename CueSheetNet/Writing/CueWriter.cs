@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using CueSheetNet.Internal;
 using CueSheetNet.Logging;
@@ -157,49 +158,50 @@ public sealed class CueWriter
 
     private void FillStringBuilder(CueSheet sheet)
     {
-        Builder.Clear();
-        AppendRems(sheet.Remarks, 0);
-        AppendComments(sheet.Comments, 0);
-        AppendStringify("REM DATE", sheet.Date, 0, quoteAllowed: true);
-        AppendStringify("REM DISCID", sheet.DiscID, 0, quoteAllowed: true);
-        AppendStringify("CDTEXTFILE", sheet.CdTextFile?.Name, 0, quoteAllowed: true);
-        AppendStringify("CATALOG", sheet.Catalog, 0, quoteAllowed: true);
-        AppendStringify("PERFORMER", Replace(sheet.Performer), 0, quoteAllowed: true);
-        AppendStringify("REM COMPOSER", Replace(sheet.Composer), 0, quoteAllowed: true);
-        AppendStringify("TITLE", Replace(sheet.Title), 0, quoteAllowed: true);
-        CueTrack? track = null;
-        CueDataFile? file = null;
-        foreach (CueIndexImpl ind in sheet.IndexesImpl)
-        {
-            if (file != ind.File)
-            {
-                file = ind.File;
-                AppendFileHeader(file);
-            }
-            if (track != ind.Track)
-            {
-                AppendPostgap(track);
+        throw new NotImplementedException();
+        //Builder.Clear();
+        //AppendRems(sheet.Remarks, 0);
+        //AppendComments(sheet.Comments, 0);
+        //AppendStringify("REM DATE", sheet.Date, 0, quoteAllowed: true);
+        //AppendStringify("REM DISCID", sheet.DiscID, 0, quoteAllowed: true);
+        //AppendStringify("CDTEXTFILE", sheet.CdTextFile?.Name, 0, quoteAllowed: true);
+        //AppendStringify("CATALOG", sheet.Catalog, 0, quoteAllowed: true);
+        //AppendStringify("PERFORMER", Replace(sheet.Performer), 0, quoteAllowed: true);
+        //AppendStringify("REM COMPOSER", Replace(sheet.Composer), 0, quoteAllowed: true);
+        //AppendStringify("TITLE", Replace(sheet.Title), 0, quoteAllowed: true);
+        //CueTrack? track = null;
+        //CueDataFile? file = null;
+        //foreach (CueIndexImpl ind in sheet.IndexesImpl)
+        //{
+        //    if (file != ind.File)
+        //    {
+        //        file = ind.File;
+        //        AppendFileHeader(file);
+        //    }
+        //    if (track != ind.Track)
+        //    {
+        //        AppendPostgap(track);
 
-                track = ind.Track;
+        //        track = ind.Track;
 
-                AppendTrackHeader(track);
+        //        AppendTrackHeader(track);
 
-                AppendOptionalField(track, FieldsSet.Title);
-                AppendOptionalField(track, FieldsSet.Performer);
-                AppendISRC(track);
-                AppendOptionalField(track, FieldsSet.Composer);
-                AppendFlags(track);
-                AppendTrackRems(track);
-                AppendTrackComments(track);
-                AppendPregap(track);
-            }
-            AppendIndex(ind);
-            var s = Builder.ToString();
-        }
-        if (!string.Equals(Settings.NewLine, Environment.NewLine, StringComparison.Ordinal))
-        {
-            Builder.Replace(Environment.NewLine, Settings.NewLine);
-        }
+        //        AppendOptionalField(track, FieldsSet.Title);
+        //        AppendOptionalField(track, FieldsSet.Performer);
+        //        AppendISRC(track);
+        //        AppendOptionalField(track, FieldsSet.Composer);
+        //        AppendFlags(track);
+        //        AppendTrackRems(track);
+        //        AppendTrackComments(track);
+        //        AppendPregap(track);
+        //    }
+        //    AppendIndex(ind);
+        //    var s = Builder.ToString();
+        //}
+        //if (!string.Equals(Settings.NewLine, Environment.NewLine, StringComparison.Ordinal))
+        //{
+        //    Builder.Replace(Environment.NewLine, Settings.NewLine);
+        //}
     }
 
     private void AppendFileHeader(CueDataFile file)
@@ -284,7 +286,7 @@ public sealed class CueWriter
 
     public void SaveCueSheet(CueSheet sheet)
     {
-        ExceptionHelper.ThrowIfNull(sheet.SourceFile);
+        ExceptionHelper.ThrowIfNull(sheet.SourceFile,nameof(sheet.SourceFile));
         string textData = WriteToString(sheet);
         sheet.SourceFile.Directory!.Create();
         Encoding encoding = GetProperEncoding(sheet);

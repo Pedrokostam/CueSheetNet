@@ -8,45 +8,45 @@ namespace CueSheetNet;
 
 public partial class CueReader2
 {
-    private class File : IChainLink<File>
-    {
-        public File? Previous { get; set; }
-        public File? Next { get; set; }
-        public string Path { get; }
-        public FileType Type { get; }
-        public InfoBag Parent { get; }
-        public JoinableChain<Track> Tracks { get; } = [];
+    //private class File : IChainLink<File>
+    //{
+    //    public File? Previous { get; set; }
+    //    public File? Next { get; set; }
+    //    public string Path { get; }
+    //    public FileType Type { get; }
+    //    public InfoBag Parent { get; }
+    //    public JoinableChain<Track> Tracks { get; } = [];
 
-        public File(string path, FileType type, InfoBag parent)
-        {
-            Path = path;
-            Type = type;
-            Parent = parent;
-            Tracks.JoinChainAfter(parent.Files.ChainEnd?.Tracks);
-            parent.Files.Add(this);
-        }
+    //    public File(string path, FileType type, InfoBag parent)
+    //    {
+    //        Path = path;
+    //        Type = type;
+    //        Parent = parent;
+    //        Tracks.JoinChainAfter(parent.Files.ChainEnd?.Tracks);
+    //        parent.Files.Add(this);
+    //    }
 
-        public override string ToString()
-        {
-            return $"{System.IO.Path.GetFileName(Path)}";
-        }
+    //    public override string ToString()
+    //    {
+    //        return $"{System.IO.Path.GetFileName(Path)}";
+    //    }
 
-        public IEnumerable<File> FollowSince()
-        {
-            yield return this;
-            var i = this.Next;
-            while (i is not null)
-            {
-                yield return i;
-                i = i.Next;
-            }
-        }
+    //    public IEnumerable<File> FollowSince()
+    //    {
+    //        yield return this;
+    //        var i = this.Next;
+    //        while (i is not null)
+    //        {
+    //            yield return i;
+    //            i = i.Next;
+    //        }
+    //    }
 
-        public void GetPromoted()
-        {
+    //    public void GetPromoted()
+    //    {
 
-        }
-    }
+    //    }
+    //}
 
     /// <summary>
     /// Get the filename and file type. If quotation marks are present, simple iterating algorithm is used. Otherwise Regex is used
@@ -89,7 +89,7 @@ public partial class CueReader2
         return (emer, "");
     }
 
-    private File ParseFileLine(Line line, InfoBag parent)
+    private CueDataFile ParseFileLine(Line line, CueSheet parent)
     {
         (string path, string type) = GetFilePath(line.Text, 5); // FILE_
         if (!Enum.TryParse<FileType>(type.Trim().ToUpperInvariant(), out FileType typeEnum))
@@ -100,13 +100,13 @@ public partial class CueReader2
             );
             typeEnum = FileType.WAVE;
         }
-        return new File(path, typeEnum, parent);
+        return parent.Files.Add(path, typeEnum);
     }
 
-    private void ParseFile(IList<KeywordedLine> fileLines, InfoBag data)
+    private void ParseFile(IList<KeywordedLine> fileLines, CueSheet data)
     {
         // first line has to be file declaration
-        File currentFile = ParseFileLine(fileLines[0].Line,data);
+        var currentFile = ParseFileLine(fileLines[0].Line,data);
 
         IList<IList<KeywordedLine>> tracksLines = [[]];
         int trackCount = 0;
@@ -124,20 +124,18 @@ public partial class CueReader2
 
         if (tracksLines[0].Count != 0)
         {
-            if (currentFile.Previous is null)
-            {
-                throw new InvalidDataException("Sheet contains tracks with no file.");
-            }
+            var prevFile = data.Files.GetPreviousFile(currentFile) ?? throw new InvalidDataException("Sheet contains tracks with no file.");
             // dangling eac-style track
-            currentFile.Previous.Tracks.PromoteLastItemToFollowingChain();
-            ParseTrackImpl(tracksLines[0], currentFile.Tracks.ChainStart!);
+            var promotedTrack = prevFile.Tracks[^1];
+            prevFile.Tracks.HandleEacTrack();
+            ParseTrackImpl(tracksLines[0], currentFile.Tracks[0]);
         }
         tracksLines.RemoveAt(0);
         ParseTracks(tracksLines, currentFile);
 
     }
 
-    private void ParseFiles(IList<IList<KeywordedLine>> filesLines, InfoBag data)
+    private void ParseFiles(IList<IList<KeywordedLine>> filesLines, CueSheet data)
     {
         if (filesLines.Count == 0)
         {

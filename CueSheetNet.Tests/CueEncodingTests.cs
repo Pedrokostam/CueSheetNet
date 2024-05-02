@@ -10,7 +10,7 @@ public partial class CueEncodingTests
     {
         System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
     }
-    readonly CueReader _reader = new();
+    readonly CueReader2 _reader = new();
 #if NET7_0_OR_GREATER
     [GeneratedRegex(@"UTF-(?<BIT>\d+)")]
     public static partial Regex UtfBitFinder();
@@ -45,7 +45,7 @@ public partial class CueEncodingTests
     private void TestParsing(string filepath)
     {
         Encoding target = ParseEncodingFromName(filepath);
-        var cue = _reader.ParseCueSheet(filepath);
+        var cue = _reader.Read(filepath);
         Encoding cueEnc = cue.SourceEncoding!;
         bool match = target.GetPreamble().SequenceEqual(cueEnc.GetPreamble())
             && target.EncodingName == cueEnc.EncodingName;
@@ -66,9 +66,9 @@ public partial class CueEncodingTests
     public void TestParsingMinimum()
     {
         string minimalPath = Utils.GetFile("Parsing", "MinimalFoobarCue.cue");
-        var cue = _reader.ParseCueSheet(minimalPath);
+        var cue = _reader.Read(minimalPath);
         Assert.AreEqual(cue.Files[0].SourceFile.Name, "A");
         Assert.AreEqual(cue.Tracks[0].Title, "A");
-        Assert.AreEqual(cue.Tracks[0].Indexes[0].Time, new CueTime(99));
+        Assert.AreEqual(cue.Tracks[0].Indices[0].Time, new CueTime(99));
     }
 }

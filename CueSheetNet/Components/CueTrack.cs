@@ -1,18 +1,20 @@
 ﻿using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
+using System.Runtime.CompilerServices;
 using CueSheetNet.Collections;
 using CueSheetNet.Internal;
 using CueSheetNet.Syntax;
 
 namespace CueSheetNet;
 
-public class CueTrack(CueDataFile parentFile, TrackType type)
-    : CueItemBase(parentFile.ParentSheet),
+public class CueTrack : CueItemBase,
         IEquatable<CueTrack>,
         IRemCommentable,
     IIndexValidator
 {
-    private CueDataFile _parentFile = parentFile;
+    private CueDataFile _parentFile;
 
     public FieldsSet CommonFieldsSet { get; private set; }
 
@@ -21,11 +23,11 @@ public class CueTrack(CueDataFile parentFile, TrackType type)
     /// </summary>
     public int Index { get; internal set; }
 
-    public TrackType Type { get; internal set; } = type;
+    public TrackType Type { get; internal set; }
     public CueTime PostGap { get; set; }
     public CueTime PreGap { get; set; }
 
-    public CueTime? EacEndIndex { get; private set; }
+    public CueTime? EacEndIndex { get; internal set; }
 
     public TrackIndexCollection Indices { get; }
 
@@ -51,6 +53,7 @@ public class CueTrack(CueDataFile parentFile, TrackType type)
     public int Number { get; set; }
 
     private string? _Title;
+    [AllowNull]
     public string Title
     {
         get => _Title ?? Path.ChangeExtension(ParentFile.SourceFile.Name, extension: null);
@@ -89,6 +92,14 @@ public class CueTrack(CueDataFile parentFile, TrackType type)
     }
 
     private string? _Composer;
+
+    public CueTrack(CueDataFile parentFile, TrackType type) : base(parentFile.ParentSheet)
+    {
+        _parentFile = parentFile;
+        Type = type;
+        Indices = new(this);
+    }
+
     public string? Composer
     {
         get => _Composer ?? ParentSheet.Composer;
@@ -113,61 +124,30 @@ public class CueTrack(CueDataFile parentFile, TrackType type)
     public bool HasZerothIndex { get; internal set; }
 
     /// <summary>
-    /// Gets the time indices of this track.
-    /// </summary>
-    public CueIndex[] Indexes => ParentSheet.GetIndexesOfTrack(Index);
-
-    /// <summary>
     /// Gets the time index at which the content start.
     /// <para>
     /// The content starts at the first index, unless the track has more than 1 indices and one of them is the zeroth index. In this case the first non-zeroth index is returned.
     /// </para>
     /// </summary>
-    public CueIndex AudioStartIndex
-    {
-        get
-        {
-            (int Start, int End) = ParentSheet.Container.GetCueIndicesOfTrack_Range(Index);
-            // non-dangling because audio cannot start on previous file
-            if (End - Start == 1) // Only one index for track - only 00 or only 01 - just take it
-            {
-                return ParentSheet.GetCueIndexAt(Start);
-            }
-
-            if (ParentSheet.IndexesImpl[Start].Number == 0)
-            {
-                // first index is 00, so audio starts at 01 - prev
-                return ParentSheet.GetCueIndexAt(Start + 1);
-            }
-
-            // first index is 01, this is audio start
-            return ParentSheet.GetCueIndexAt(Start);
-        }
-    }
+    public CueIndex AudioStartIndex => Indices.GetAudioStartIndex();
     public CueTime? Duration
     {
         get
         {
-            var (_, indexOfNextTrack) = ParentSheet.Container.GetCueIndicesOfTrack_Range(Index);
-            CueIndexImpl? nextTrackImplIndex = ParentSheet.GetIndexImplOrDefault(indexOfNextTrack);
-            // it's the last track of cuesheet
-            bool isLastTrackInCue = nextTrackImplIndex is null;
-            // it's the last track of its file
-            bool isLastTrackInFile = nextTrackImplIndex?.File != ParentFile;
-            if (isLastTrackInCue || isLastTrackInFile)
+            if (EacEndIndex is not null)
             {
-                // Only way to get track's duration is to subtract its start from the file duration
-                CueTime? fileDur = ParentFile.Meta?.CueDuration;
-                if (fileDur.HasValue)
-                {
-                    return fileDur.Value - AudioStartIndex.Time;
-                }
-
-                // File meta is unknown / no file
-                return null;
+                return EacEndIndex.Value;
             }
-
-            return nextTrackImplIndex!.Time - AudioStartIndex.Time;
+            if (ParentFile.Tracks.GetNextTrack(this) is CueTrack nextTrack && nextTrack.Indices.Count > 0)
+            {
+                return nextTrack.Indices[0].Time;
+            }
+            if (ParentSheet.Files.GetNextFile(ParentFile) is CueDataFile nextFile)
+            {
+                var timeByTrack =nextFile.Tracks.FirstOrDefault()?.Indices.FirstOrDefault()?.Time;
+                return nextFile.Tracks.FirstOrDefault()?.Indices.FirstOrDefault()?.Time ?? ParentFile.Meta?.CueDuration;
+            }
+            return null;
         }
     }
 
@@ -179,26 +159,27 @@ public class CueTrack(CueDataFile parentFile, TrackType type)
         return "Track " + Number.ToString("D2") + ": " + Title;
     }
 
+    internal void ClonePartial(CueTrack newTrack)
+    {
+        newTrack.CommonFieldsSet = CommonFieldsSet;
+        newTrack.Composer = Composer;
+        newTrack.Flags = Flags;
+        newTrack.Title = Title;
+        newTrack.PostGap = PostGap;
+        newTrack.PreGap = PreGap;
+        newTrack.Performer = Performer;
+        newTrack.ISRC = ISRC;
+        newTrack.HasZerothIndex = HasZerothIndex;
+        newTrack.Index = Index;
+        newTrack.Number = Number;
+        newTrack.Remarks.Add(Remarks);
+        newTrack.Comments.Add(Comments);
+    }
     internal CueTrack ClonePartial(CueDataFile newOwner)
     {
         CueTrack newTrack =
-            new(newOwner, Type)
-            {
-                CommonFieldsSet = CommonFieldsSet,
-                Composer = Composer,
-                Flags = Flags,
-                Title = Title,
-                PostGap = PostGap,
-                PreGap = PreGap,
-                Performer = Performer,
-                ISRC = ISRC,
-                HasZerothIndex = HasZerothIndex,
-                Index = Index,
-                Number = Number,
-                Orphaned = Orphaned,
-            };
-        newTrack.Remarks.Add(Remarks);
-        newTrack.Comments.Add(Comments);
+            new(newOwner, Type);
+        ClonePartial(newTrack);
         return newTrack;
     }
 
@@ -254,50 +235,50 @@ public class CueTrack(CueDataFile parentFile, TrackType type)
 
     public bool ValidateIndex(int index, CueTime time, int number, bool replacesItem)
     {
+        Debug.Assert(index >= 0 && index <= Indices.Count);
+        var prevTrack = ParentFile.Tracks.GetPreviousTrack(this);
+        var nextTrack = ParentFile.Tracks.GetNextTrack(this);
+        var virtualIndexes = new List<(CueIndex? index, bool thisTrack)>(Indices.Count+2);
+
+        virtualIndexes.Add((prevTrack?.Indices.LastOrDefault(), false));
+        foreach (var i in Indices)
+        {
+            virtualIndexes.Add((i, true));
+        }
+        virtualIndexes.Add((nextTrack?.Indices.FirstOrDefault(), false));
+
+        CueIndex?[] virtualCueIndex = [prevTrack?.Indices.LastOrDefault(), ..Indices, nextTrack?.Indices.FirstOrDefault()];
+        //The first index is from the previous track, so offset it by 1
+        index += 1;
         int prevIndex= index-1;
         int nextIndex = replacesItem switch
         {
             true => index+1,// replaces at index, so index+1 is the prev element
             false => index // insert before index, so index will be the prev element
         };
-        // next and prev is within this track
-        if (prevIndex >= 0 && nextIndex < Indices.Count) // [0 , Count)
-        {
-            var prev = Indices[index - 1];
-            var next = Indices[index + 1];
-            bool numberGit = prev.Number<number && next.Number>number;
-            bool timeGit = prev.Time<time && next.Time>time;
-            return numberGit && timeGit;
-        }
-        if (prevIndex == -1) // [-1 , Count)
-        {
-            var next = Indices[nextIndex];
-            var indexOfPreviousTrack = ParentFile.Tracks.IndexOfPreviousTrack(this);
-            bool nextGit = time < next.Time && number < next.Number;
-            bool prevGit = true;
-            if (indexOfPreviousTrack >= 0 && ParentFile.Tracks[indexOfPreviousTrack].Indices.Count > 0)
-            {
-                var prev = ParentFile.Tracks[indexOfPreviousTrack].Indices[^1];
-                prevGit = time > prev.Time && number > prev.Number;
-            }
-            return prevGit && nextGit;
-        }
-        if (nextIndex > Indices.Count) // [-1, Count]
-        {
-            var prev = Indices[nextIndex];
-            var indexOfNextTrack = ParentFile.Tracks.IndexOfNextTrack(this);
-            bool prevGit = time > prev.Time && number > prev.Number;
-            bool nextGit = true;
-            if (indexOfNextTrack >= 0 && ParentFile.Tracks[indexOfNextTrack].Indices.Count > 0)
-            {
-                var next = ParentFile.Tracks[indexOfNextTrack].Indices[0];
-                nextGit = time < next.Time && number < next.Number;
-            }
-            return nextGit && prevGit;
-        }
-        //if (prevIndex < -1 || nextIndex > Indices.Count)
-        // an attempt was made to insert the index outside the track
-        return false;
+        var precedingValue = virtualIndexes[prevIndex];
+        var followingValue = virtualIndexes[nextIndex];
+        bool prevGit=true;
+        bool nextGit=true;
 
+        if (precedingValue.index is CueIndex preC)
+        {
+            prevGit = preC.Time < time;
+            if (precedingValue.thisTrack)
+            {
+                prevGit &= preC.Number < number;
+            }
+        }
+
+        if (followingValue.index is CueIndex postC)
+        {
+            nextGit = postC.Time > time;
+            if (followingValue.thisTrack)
+            {
+                nextGit &= postC.Number > number;
+            }
+        }
+
+        return prevGit && nextGit;
     }
 }

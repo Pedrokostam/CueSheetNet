@@ -307,7 +307,7 @@ public readonly record struct CueTime
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="ParseString"]'/>
     public static CueTime Parse([NotNull] string? input, IFormatProvider? formatProvider)
     {
-        ExceptionHelper.ThrowIfNull(input);
+        ExceptionHelper.ThrowIfNull(input,nameof(input));
         return Parse(input.AsSpan(), formatProvider);
     }
 

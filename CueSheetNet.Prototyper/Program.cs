@@ -11,9 +11,9 @@ void xd()
     DebugLogger hybridLogger = new DebugLogger(LogLevel.None);
     CueSheetNet.Logging.Logger.Register(hybridLogger);
     Stopwatch sw = new Stopwatch();
-    var reader = new CueReader();
+    //var reader = new CueReader();
     sw.Start();
-    var c = reader.ParseCueSheet(@"C:\Users\Pedro\Documents\Github\CueSheetNet\CueSheetNet.Prototyper\TestItems\MultiFile.cue");
+    //var c = reader.ParseCueSheet(@"C:\Users\Pedro\Documents\Github\CueSheetNet\CueSheetNet.Prototyper\TestItems\MultiFile.cue");
     sw.Stop();
     Console.WriteLine(sw.ElapsedTicks);
     sw.Restart();

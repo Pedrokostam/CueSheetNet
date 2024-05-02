@@ -12,8 +12,8 @@ public class RecipeConverter : IAudioConverter
     readonly List<(string input, string output)> Elements;
     public RecipeConverter(string outputFolder, string fileName, bool append, Encoding encoding, string separator)
     {
-        ExceptionHelper.ThrowIfNull(outputFolder);
-        ExceptionHelper.ThrowIfNull(fileName);
+        ExceptionHelper.ThrowIfNull(outputFolder, nameof(outputFolder));
+        ExceptionHelper.ThrowIfNull(fileName, nameof(fileName));
         RecipeOutputFolder = outputFolder;
         OutputName = fileName;
         Elements = [];

@@ -11,81 +11,81 @@ namespace CueSheetNet;
 
 public partial class CueReader2
 {
-    private class Track : IChainLink<Track>
-    {
-        public string? Performer { get; set; }
-        public string? Title { get; set; }
-        public string? ISRC { get; set; }
-        public TrackFlags Flags { get; set; }
-        public CueTime PreGap { get; set; }
-        public CueTime PostGap { get; set; }
-        public Track? Previous { get; set; }
-        public Track? Next { get; set; }
-        public int Number { get; }
-        public File ParentFile { get; private set; }
-        public JoinableChain<Index> Indexes { get; }
-        public List<CueRemark> Remarks { get; } = [];
+    //private class Track : IChainLink<Track>
+    //{
+    //    public string? Performer { get; set; }
+    //    public string? Title { get; set; }
+    //    public string? ISRC { get; set; }
+    //    public TrackFlags Flags { get; set; }
+    //    public CueTime PreGap { get; set; }
+    //    public CueTime PostGap { get; set; }
+    //    public Track? Previous { get; set; }
+    //    public Track? Next { get; set; }
+    //    public int Number { get; }
+    //    public File ParentFile { get; private set; }
+    //    public JoinableChain<Index> Indexes { get; }
+    //    public List<CueRemark> Remarks { get; } = [];
 
-        public Index? EacEndIndex { get; private set; }
+    //    public Index? EacEndIndex { get; private set; }
 
-        /// <summary>
-        /// Creates track and adds it as the last track of <paramref name="parent"/>
-        /// </summary>
-        /// <param name="number"></param>
-        /// <param name="parent"></param>
-        public Track(int number, File parent)
-        {
-            Indexes = new(x => ValidateIndex(x));
-            Number = number;
-            ParentFile = parent;
-            Indexes.JoinChainAfter(ParentFile.Tracks.ChainEnd?.Indexes);
-            ParentFile.Tracks.Add(this);
-        }
-        private void ValidateIndex(Index index)
-        {
-            if (Indexes.ChainEnd is not null)
-            {
-                if (index.Time <= Indexes.ChainEnd.Time)
-                {
-                    throw new InvalidOperationException("Index too small");
-                }
-            }
-        }
+    //    /// <summary>
+    //    /// Creates track and adds it as the last track of <paramref name="parent"/>
+    //    /// </summary>
+    //    /// <param name="number"></param>
+    //    /// <param name="parent"></param>
+    //    public Track(int number, File parent)
+    //    {
+    //        Indexes = new(x => ValidateIndex(x));
+    //        Number = number;
+    //        ParentFile = parent;
+    //        Indexes.JoinChainAfter(ParentFile.Tracks.ChainEnd?.Indexes);
+    //        ParentFile.Tracks.Add(this);
+    //    }
+    //    private void ValidateIndex(Index index)
+    //    {
+    //        if (Indexes.ChainEnd is not null)
+    //        {
+    //            if (index.Time <= Indexes.ChainEnd.Time)
+    //            {
+    //                throw new InvalidOperationException("Index too small");
+    //            }
+    //        }
+    //    }
 
-        public override string ToString()
-        {
-            return $"{Number}-{Title}-{Path.GetFileName(ParentFile.Path)}";
-        }
+    //    public override string ToString()
+    //    {
+    //        return $"{Number}-{Title}-{Path.GetFileName(ParentFile.Path)}";
+    //    }
 
-        public IEnumerable<Track> FollowSince()
-        {
-            yield return this;
-            var i = this.Next;
-            while (i is not null)
-            {
-                yield return i;
-                i = i.Next;
-            }
-        }
+    //    public IEnumerable<Track> FollowSince()
+    //    {
+    //        yield return this;
+    //        var i = this.Next;
+    //        while (i is not null)
+    //        {
+    //            yield return i;
+    //            i = i.Next;
+    //        }
+    //    }
 
-        public void GetPromoted()
-        {
-            // This track actually begins in the next file
-            ExceptionHelper.ThrowIfNull(ParentFile.Next, nameof(ParentFile));
-            ExceptionHelper.ThrowIfNull(Previous,nameof(Previous));
-            ParentFile = ParentFile.Next;
-            // the previous track has the eac end index
-            ExceptionHelper.ThrowIfNotEqual(Indexes.ChainStart?.Number, 0, "When promoting a track to new file it must have a 0th index.");
-            ExceptionHelper.ThrowIfNotEqual(Indexes.ChainEnd, Indexes.ChainStart, "When promoting a track to new file it must have only 1 index.");
+    //    public void GetPromoted()
+    //    {
+    //        // This track actually begins in the next file
+    //        ExceptionHelper.ThrowIfNull(ParentFile.Next, nameof(ParentFile));
+    //        ExceptionHelper.ThrowIfNull(Previous, nameof(Previous));
+    //        ParentFile = ParentFile.Next;
+    //        // the previous track has the eac end index
+    //        ExceptionHelper.ThrowIfNotEqual(Indexes.ChainStart?.Number, 0, "When promoting a track to new file it must have a 0th index.");
+    //        ExceptionHelper.ThrowIfNotEqual(Indexes.ChainEnd, Indexes.ChainStart, "When promoting a track to new file it must have only 1 index.");
 
-            var eacIndex=Indexes.ChainStart;
-            Previous.EacEndIndex = eacIndex;
-            // This index should no longer be a part of the chains
-            Indexes.RemoveFirst();
-        }
-    }
+    //        var eacIndex=Indexes.ChainStart;
+    //        Previous.EacEndIndex = eacIndex;
+    //        // This index should no longer be a part of the chains
+    //        Indexes.RemoveFirst();
+    //    }
+    //}
 
-    private void ParseTracks(IList<IList<KeywordedLine>> tracksLines, File currentFile)
+    private void ParseTracks(IList<IList<KeywordedLine>> tracksLines, CueDataFile currentFile)
     {
         foreach (IList<KeywordedLine> trackLines in tracksLines)
         {
@@ -98,25 +98,28 @@ public partial class CueReader2
         }
     }
 
-    private void ParseTrack(IList<KeywordedLine> trackLines, File currentFile)
+    private void ParseTrack(IList<KeywordedLine> trackLines, CueDataFile currentFile)
     {
         if (trackLines[0].Keyword != Keywords.TRACK)
         {
             throw new InvalidDataException("Expected a TRACK keyword.");
         }
         string num = GetKeyword(trackLines[0].Line.Text, 6); // TRACK_
-        if (!int.TryParse(num, NumberStyles.Integer, CultureInfo.InvariantCulture, out int number))
-        {
-            number = currentFile.Tracks.ChainEnd?.Number + 1 ?? 1;
-            Logger.LogWarning("Invalid TRACK number at line {line}. Substituting {Substitute number:d2}", trackLines[0].Line, number);
-        }
+        string type = GetKeyword(trackLines[0].Line.Text, 6+num.Length+1); // TRACK_00_
+        var trackType = TrackType.FromString(type);
+        var currentTrack = currentFile.Tracks.Add(trackType);
+        // TODO track numbering
+        //if (!int.TryParse(num, NumberStyles.Integer, CultureInfo.InvariantCulture, out int number))
+        //{
+        //    number = currentFile.Tracks.ChainEnd?.Number + 1 ?? 1;
+        //    Logger.LogWarning("Invalid TRACK number at line {line}. Substituting {Substitute number:d2}", trackLines[0].Line, number);
+        //}
         //string type = GetKeyword(trackLines[0].Line.Text, 6 + 1 + num.Length);
-        Track currentTrack = new Track(number,currentFile);
         ParseTrackImpl(trackLines, currentTrack);
 
     }
 
-    private void ParseTrackImpl(IList<KeywordedLine> trackLines, Track currentTrack)
+    private void ParseTrackImpl(IList<KeywordedLine> trackLines, CueTrack currentTrack)
     {
         for (int i = 0; i < trackLines.Count; i++)
         {
@@ -186,7 +189,7 @@ public partial class CueReader2
     /// <param name="gapType"></param>
     /// <param name="track"></param>
     /// <exception cref="FormatException"></exception>
-    private void ParseGap(Line line, string gapType, Track track)
+    private void ParseGap(Line line, string gapType, CueTrack track)
     {
         if (!CueTime.TryParse(line.Text.AsSpan(6 + gapType.Length + 1), null, out CueTime cueTime))
         {

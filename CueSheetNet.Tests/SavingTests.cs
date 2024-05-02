@@ -6,14 +6,14 @@ public class SavingTests
     public void Init()
     {
     }
-    readonly CueReader reader = new();
+    readonly CueReader2 reader = new();
     readonly CueWriter writer = new();
     [TestMethod("Test if cloned sheet is equal to its source")]
     public void LoadCloneSame()
     {
         foreach (var file in Utils.GetFiles("*.cue", "SavingTests"))
         {
-            var cue = reader.ParseCueSheet(file);
+            var cue = reader.Read(file);
             var clone = cue.Clone();
             if (Path.GetFileNameWithoutExtension(file).Contains("wrong", StringComparison.OrdinalIgnoreCase))
             {
@@ -30,11 +30,11 @@ public class SavingTests
     {
         foreach (var file in Utils.GetFiles("*.cue", "SavingTests"))
         {
-            var cue = reader.ParseCueSheet(file);
+            var cue = reader.Read(file);
             var clone = cue.Clone();
             var temp = Path.GetTempFileName();
             writer.SaveCueSheet(cue, temp);
-            var cue2 = reader.ParseCueSheet(temp);
+            var cue2 = reader.Read(temp);
             if (Path.GetFileNameWithoutExtension(file).Contains("wrong", StringComparison.OrdinalIgnoreCase))
             {
                 Assert.AreNotEqual(clone, cue2, Path.GetFileNameWithoutExtension(file));
@@ -51,7 +51,7 @@ public class SavingTests
     {
         foreach (var file in Utils.GetFiles("*.cue", "SavingTests"))
         {
-            var cue = reader.ParseCueSheet(file);
+            var cue = reader.Read(file);
             var clone = cue.Clone();
             var temp = Path.GetTempFileName();
             writer.SaveCueSheet(cue, temp);

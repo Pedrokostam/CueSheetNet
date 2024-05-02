@@ -1,4 +1,6 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
+using System.Runtime.InteropServices;
 
 namespace CueSheetNet.Collections;
 
@@ -6,8 +8,9 @@ namespace CueSheetNet.Collections;
 public sealed class FileTrackCollection : IEditableTrackCollection
 {
     private readonly CueDataFile _parentFile;
-    readonly List<CueTrack> _tracks = [];
-    readonly Dictionary<CueTrack,int> _trackPositions= new Dictionary<CueTrack, int>(ReferenceEqualityComparer.Instance);
+    private SheetFileCollection AllFiles => _parentFile.ParentSheet.Files;
+
+    readonly ReferenceKeyedCollection<CueTrack> _tracks = [];
 
     internal FileTrackCollection(CueDataFile parentFile)
     {
@@ -16,11 +19,11 @@ public sealed class FileTrackCollection : IEditableTrackCollection
 
     public CueTrack this[int index] => _tracks[index];
 
-    public  int Count => _tracks.Count;
+    public int Count => _tracks.Count;
 
     private void InsertImpl(int index, CueTrack track)
     {
-        if (index == Count && _tracks[^1].EacEndIndex is not null)
+        if (index == Count && _tracks.LastOrDefault()?.EacEndIndex is not null)
         {
             throw new InvalidOperationException("Cannot add tracks after a track with EAC-style gap trim.");
         }
@@ -29,20 +32,63 @@ public sealed class FileTrackCollection : IEditableTrackCollection
         UpdatePositionsAndNumber(index);
     }
 
+    internal CueTrack? FirstOrDefault()=> Count> 0?  _tracks[0] : null;
+    internal CueTrack? LastOrDefault()=> Count> 0?  _tracks[^1] : null;
+
+
     /// <summary>
     /// 
     /// </summary>
     /// <param name="index"></param>
     private void UpdatePositionsAndNumber(int index)
     {
-        for (; index < Count; index++)
+        int currentNumber;
+        if (index < 0)
         {
-            CueTrack cueTrack = _tracks[index];
-            // CUE sheet starts track numbering at 1
-            cueTrack.Number = index + 1;
-            _trackPositions[cueTrack] = index;
+            throw new ArgumentOutOfRangeException(nameof(index));
+        }
+        if (index == 0) // last track of previous file
+        {
+            currentNumber = (AllFiles.GetPreviousFile(_parentFile)?.Tracks[^1].Number + 1) ?? 1;
+        }
+        else // previous track
+        {
+            currentNumber = _tracks[index-1].Number+1;
+        }
+        // CUE sheet starts track numbering at 1
+        for (int i = index; i < Count; i++)
+        {
+            CueTrack cueTrack = _tracks[i];
+            if (cueTrack.Number < currentNumber)
+            {
+                cueTrack.Number = currentNumber;
+            }
+            currentNumber = cueTrack.Number+1;
+        }
+        foreach(var file in AllFiles.GetNextFiles(_parentFile))
+        {
+            file.Tracks.UpdatePositionsAndNumber(0);
         }
     }
+
+    internal void HandleEacTrack()
+    {
+        var eacTrack = _tracks[^1];
+        // mark second to last track as having eac index
+        _tracks[^2].EacEndIndex = eacTrack.Indices.FirstOrDefault()?.Time;
+        eacTrack.Indices.RemoveAt(0);
+        var nextFile = AllFiles.GetNextFile(_parentFile);
+        if(nextFile?.Tracks.Count != 0)
+        {
+            throw new InvalidOperationException();
+        }
+        var newTrack = nextFile.Tracks.Add(eacTrack.Type);
+        eacTrack.ClonePartial(newTrack);
+        Remove(eacTrack);
+    }
+
+    internal CueTrack? GetPreviousTrack(CueTrack track) => _tracks.GetPreviousItem(track);
+    internal CueTrack? GetNextTrack(CueTrack track) => _tracks.GetNextItem(track);
 
     public CueTrack Add(TrackType trackType)
     {
@@ -67,38 +113,18 @@ public sealed class FileTrackCollection : IEditableTrackCollection
 
     public int IndexOf(CueTrack track)
     {
-        if (_trackPositions.TryGetValue(track, out var index))
+        for (int i = 0; i < Count; i++)
         {
-            return index;
+            if (_tracks[i].Equals(track, StringComparison.CurrentCulture))
+            {
+                return i;
+            }
         }
         return -1;
     }
 
-    internal int IndexOfNextTrack(CueTrack track)
-    {
-        var index = IndexOf(track);
-        if (index < 0)
-        {
-            return -1;
-        }
-        if (index == Count - 1)
-        {
-            return -1;
-        }
-        return index + 1;
-    }
-
-    internal int IndexOfPreviousTrack(CueTrack track)
-    {
-        var index= IndexOf(track);
-        if (index < 0)
-        {
-            return -1;
-        }
-
-        return index - 1;
-    }
-
+    internal CueTrack? PreviousTrack(CueTrack track)=> _tracks.GetPreviousItem(track);
+    internal CueTrack? NextTrack(CueTrack track) => _tracks.GetNextItem(track);
     public CueTrack Insert(int index, TrackType trackType)
     {
         var track = new CueTrack(_parentFile, trackType);
@@ -108,7 +134,8 @@ public sealed class FileTrackCollection : IEditableTrackCollection
 
     public bool Remove(CueTrack track)
     {
-        if (_trackPositions.TryGetValue(track, out int index))
+        var index = _tracks.GetIndexOrNegative(track);
+        if (index>=0)
         {
             RemoveAt(index);
             return true;
@@ -116,13 +143,17 @@ public sealed class FileTrackCollection : IEditableTrackCollection
         return false;
     }
 
-    public void RemoveAt(int index) => RemoveAtImpl(index);
-
-    private void RemoveAtImpl(int index)
+    public void RemoveAt(int index)
     {
-        _trackPositions.Remove(_tracks[index]);
+        var removed = _tracks[index];
         _tracks.RemoveAt(index);
+        removed.Invalidate();
     }
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+    public override string ToString()
+    {
+        return $"{Count} tracks";
+    }
 }

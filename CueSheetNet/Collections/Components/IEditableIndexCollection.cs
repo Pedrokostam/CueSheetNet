@@ -112,7 +112,7 @@ public interface IEditableTrackCollection : ITrackCollection
 
 }
 
-public interface IFileCollection : IReadOnlyCollection<CueDataFile>
+public interface IFileCollection : IReadOnlyList<CueDataFile>
 {
     /// <summary>
     /// Creates and inserts a new <see cref="CueDataFile"/> after every other element in the container.

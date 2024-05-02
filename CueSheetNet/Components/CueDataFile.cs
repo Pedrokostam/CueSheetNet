@@ -52,10 +52,9 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
     public CueDataFile(CueSheet parent, string filePath, FileType type)
         : base(parent)
     {
-        SetFile(filePath, type);
         Tracks = new(this);
+        SetFile(filePath, type);
     }
-
     internal CueDataFile ClonePartial(CueSheet newOwner)
     {
         return new(newOwner, SourceFile.FullName, Type);
@@ -89,6 +88,7 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
 
     private void RefreshIfNeeded()
     {
+        //return;
         if (!NeedsRefresh || ParentSheet.Files.Count <= Index)
             return;
         Debug.WriteLine($"Refreshing file meta: {_sourceFile}");
@@ -96,7 +96,7 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
         {
             FileMetadata? resMeta = FormatReader.ReadMetadata(
                 _sourceFile.FullName,
-                ParentSheet.GetTracksOfFile_IEnum(Index).Select(x => x.Type)
+                Tracks.Select(x => x.Type)
             );
             Meta = resMeta;
         }
@@ -155,11 +155,6 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
         var otherParts = otherPath.Split(seps,StringSplitOptions.RemoveEmptyEntries);
         return parts.SequenceEqual(otherParts, StringHelper.GetComparer(stringComparison));
     }
-
-    /// <summary>
-    /// Gets all CUE indices of this file.
-    /// </summary>
-    public CueIndex[] CueIndexes => ParentSheet.GetIndexesOfFile(Index);
 
     public override string ToString()
     {
@@ -297,6 +292,8 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
             Debug.WriteLine($"{e.OldName} renamed back to {e.Name}");
         }
     }
+
+   
 
     private void Watcher_Deleted(object sender, FileSystemEventArgs e)
     {

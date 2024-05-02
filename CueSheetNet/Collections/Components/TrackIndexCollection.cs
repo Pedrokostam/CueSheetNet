@@ -24,6 +24,9 @@ public class TrackIndexCollection :  IEditableIndexCollection
         ParentTrack = parentTrack;
     }
 
+    internal CueIndex? FirstOrDefault() => Count > 0 ? this[0] : null;
+    internal CueIndex? LastOrDefault() => Count > 0 ? this[^1] : null;
+
     public CueIndex this[int index]
     {
         get => _indexes[index].ToIndex(ParentTrack);
@@ -42,7 +45,7 @@ public class TrackIndexCollection :  IEditableIndexCollection
         }
     }
 
-    public void Add(CueTime time, int? number = null) => Insert(Count - 1, time, number);
+    public void Add(CueTime time, int? number = null) => Insert(Count, time, number);
 
     public IEnumerator<CueIndex> GetEnumerator()
     {
@@ -61,7 +64,7 @@ public class TrackIndexCollection :  IEditableIndexCollection
             int i => i.Clamp(prevNumber + 1, nextNumber - 1),
             null => prevNumber+1
         };
-        ValidateIndex(Count - 1, time, num, replacesItem: false);
+        ValidateIndex(index, time, num, replacesItem: false);
         _indexes.Insert(index, new(index, num, time));
         UpdateAbsoluteIndex(++index);
     }
@@ -153,4 +156,17 @@ public class TrackIndexCollection :  IEditableIndexCollection
         return -1;
     }
 
+    public CueIndex GetAudioStartIndex()
+    {
+        return Count switch
+        {
+            0 => throw new InvalidOperationException("Attempted to get audio start index from a track with no indices."),
+            1 => _indexes[0].ToIndex(ParentTrack),
+            _ => _indexes.First(x=>x.Number >0).ToIndex(ParentTrack),
+        };
+    }
+    public override string ToString()
+    {
+        return $"{Count} indices";
+    }
 }

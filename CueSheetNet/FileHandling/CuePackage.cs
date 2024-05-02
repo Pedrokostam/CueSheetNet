@@ -221,10 +221,9 @@ public static partial class CuePackage
             foreach (CueDataFile cueFile in sheet.Files)
             {
                 string audiofilename = $"{filename} - {cueFile.Index.Pad(numOfDigits)}";// add index if file to filename
-                var trackOfFile = sheet.GetTracksOfFile(cueFile.Index);
-                if (trackOfFile.Length == 1)// If the file has one song, add the song title to filename
+                if (cueFile.Tracks.Count == 1)// If the file has one song, add the song title to filename
                 {
-                    audiofilename += $" - {trackOfFile[0].Title}";
+                    audiofilename += $" - {cueFile.Tracks[0].Title}";
                 }
                 TransFile currAudio = new(cueFile, relativeBase, TransFile.GeneralFileType.Audio) { NewName = audiofilename };
                 yield return currAudio;
@@ -239,9 +238,9 @@ public static partial class CuePackage
     /// <returns>Non-null filename</returns>
     private static string GetNotNullName(string? path)
     {
-        string? name = Path.GetFileNameWithoutExtension(path);
-        ExceptionHelper.ThrowIfNullOrEmpty(name);
-        return name;
+        string? filename = Path.GetFileNameWithoutExtension(path);
+        ExceptionHelper.ThrowIfNullOrEmpty(filename,nameof(filename));
+        return filename;
     }
 
     /// <summary>
@@ -252,7 +251,7 @@ public static partial class CuePackage
     private static string GetNotNullDestination(string? path)
     {
         string destination = Path.GetDirectoryName(path)!;
-        ExceptionHelper.ThrowIfNullOrEmpty(destination);
+        ExceptionHelper.ThrowIfNullOrEmpty(destination,nameof(destination));
         return destination;
     }
 
@@ -423,7 +422,7 @@ public static partial class CuePackage
                                    bool preserveSubfolders = true,
                                    IAudioConverter? converter = null)
     {
-        ExceptionHelper.ThrowIfNullOrEmpty(format);
+        ExceptionHelper.ThrowIfNullOrEmpty(format,nameof(format));
         format = format.Trim().Trim('.').ToLowerInvariant();
         converter ??= new RecipeConverter(sheet.SourceFile?.DirectoryName ?? destinationDirectory, "converted.txt");
         CueSheet activeSheet = sheet.Clone();

@@ -21,9 +21,9 @@ public partial class CueReader2
     public const char DefaultQuotation = '"';
     public char Quotation { get; set; } = DefaultQuotation;
 
-    public void Read(string filePath)
+    public CueSheet Read(string filePath)
     {
-        var data = new InfoBag();
+        var data = new CueSheet(filePath);
         using  FileStream fs = new FileStream(filePath,FileMode.Open);
         //var tester = new CueEncodingTester(fs, Source);
         Encoding encoding=default!;
@@ -36,8 +36,9 @@ public partial class CueReader2
             index++;
         }
         Parse(lines, data);
+        throw new NotImplementedException();
     }
-    private void ParseSheetLines(IList<KeywordedLine> lines, InfoBag data)
+    private void ParseSheetLines(IList<KeywordedLine> lines, CueSheet data)
     {
         foreach (KeywordedLine kwline in lines)
         {
@@ -55,7 +56,7 @@ public partial class CueReader2
                     data.Title = ParseTitle(line);
                     break;
                 case Keywords.CDTEXTFILE:
-                    data.CdTextFile = ParseCdTextFile(line);
+                    data.SetCdTextFile (ParseCdTextFile(line));
                     break;
                 case Keywords.CATALOG:
                     data.Catalog = ParseCatalog(line);
@@ -195,7 +196,7 @@ public partial class CueReader2
         return string.Empty;
     }
 
-    private void Parse(ICollection<Line> lines, InfoBag data)
+    private void Parse(ICollection<Line> lines, CueSheet data)
     {
         IList<IList<KeywordedLine>> partLines = [[]]; // list of lists with one list
         int fileCount = 0;
@@ -220,8 +221,6 @@ public partial class CueReader2
 
 
 
-        var AllTracks = data.Files.ChainStart.Tracks.ChainStart?.FollowSince().ToList();
-        var  AllIndexes = data.Files.ChainStart.Tracks.ChainStart.Indexes.ChainStart?.FollowSince().ToList();
 
         // no file yet
 

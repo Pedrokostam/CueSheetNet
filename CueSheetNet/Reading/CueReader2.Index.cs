@@ -6,74 +6,74 @@ namespace CueSheetNet;
 
 public partial class CueReader2
 {
-    private class Index : IChainLink<Index>
-    {
-        private Index? next;
-        private Index? previous;
+    //private class Index : IChainLink<Index>
+    //{
+    //    private Index? next;
+    //    private Index? previous;
 
-        public Index? Previous
-        {
-            get => previous; set
-            {
-                previous = value;
-                if (previous is not null)
-                {
+    //    public Index? Previous
+    //    {
+    //        get => previous; set
+    //        {
+    //            previous = value;
+    //            if (previous is not null)
+    //            {
 
-                    Debug.Assert(previous != next);
-                    Debug.Assert(previous != this);
-                }
-            }
-        }
-        public Index? Next
-        {
-            get => next; set
-            {
-                next = value;
-                if (next is not null)
-                {
-                    Debug.Assert(previous != next);
-                    Debug.Assert(next != this);
-                }
-            }
-        }
-        public int Number { get; }
-        public CueTime Time { get; set; }
+    //                Debug.Assert(previous != next);
+    //                Debug.Assert(previous != this);
+    //            }
+    //        }
+    //    }
+    //    public Index? Next
+    //    {
+    //        get => next; set
+    //        {
+    //            next = value;
+    //            if (next is not null)
+    //            {
+    //                Debug.Assert(previous != next);
+    //                Debug.Assert(next != this);
+    //            }
+    //        }
+    //    }
+    //    public int Number { get; }
+    //    public CueTime Time { get; set; }
 
-        public Track ParentTrack { get; private set; }
+    //    public Track ParentTrack { get; private set; }
 
-        /// <summary>
-        /// Creates index and adds it as the last index of <paramref name="parent"/>
-        /// </summary>
-        /// <param name="number"></param>
-        /// <param name="parent"></param>
-        public Index(int number, CueTime time, Track parent)
-        {
-            Number = number;
-            Time = time;
-            ParentTrack = parent;
-            ParentTrack.Indexes.Add(this);
-        }
-        public override string ToString()
-        {
-            return $"{Number}-{Time}-{ParentTrack.Number}";
-        }
-        public IEnumerable<Index> FollowSince()
-        {
-            yield return this;
-            var i = this.Next;
-            while (i is not null)
-            {
-                yield return i;
-                i = i.Next;
-            }
-        }
+    //    /// <summary>
+    //    /// Creates index and adds it as the last index of <paramref name="parent"/>
+    //    /// </summary>
+    //    /// <param name="number"></param>
+    //    /// <param name="parent"></param>
+    //    public Index(int number, CueTime time, Track parent)
+    //    {
+    //        Number = number;
+    //        Time = time;
+    //        ParentTrack = parent;
+    //        ParentTrack.Indexes.Add(this);
+    //    }
+    //    public override string ToString()
+    //    {
+    //        return $"{Number}-{Time}-{ParentTrack.Number}";
+    //    }
+    //    public IEnumerable<Index> FollowSince()
+    //    {
+    //        yield return this;
+    //        var i = this.Next;
+    //        while (i is not null)
+    //        {
+    //            yield return i;
+    //            i = i.Next;
+    //        }
+    //    }
 
-        public void GetPromoted()
-        {
-            ParentTrack = Next.ParentTrack;
-        }
+    //    public void GetPromoted()
+    //    {
+    //        ParentTrack = Next.ParentTrack;
+    //    }
 
-    }
+    //}
 
     /// <summary>
     /// Parses index and adds it to the track.
@@ -81,7 +81,7 @@ public partial class CueReader2
     /// <param name="line"></param>
     /// <param name="lastTrack"></param>
     /// <exception cref="FormatException"></exception>
-    private void ParseIndex(Line line, Track lastTrack)
+    private void ParseIndex(Line line, CueTrack lastTrack)
     {
 
         string number = GetKeyword(line.Text, 6); // INDEX_
@@ -97,6 +97,6 @@ public partial class CueReader2
             //Logger.LogError("Incorrect Index format at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
             throw new FormatException($"Incorrect Index format at line {line}");
         }
-        var index = new Index(num,cueTime, lastTrack);
+        lastTrack.Indices.Add(cueTime, num);
     }
 }

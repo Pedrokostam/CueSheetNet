@@ -6,7 +6,7 @@ namespace CueSheetNet.Collections;
 
 public class SheetIndexCollection : IIndexCollection
 {
-    readonly CueTrackCollection _tracks;
+    readonly SheetTrackCollection _tracks;
     public CueIndex this[int index]
     {
         get
@@ -33,7 +33,7 @@ public class SheetIndexCollection : IIndexCollection
     public int Count => _tracks.Sum(x=>x.Indices.Count);
 
 
-    internal SheetIndexCollection(CueTrackCollection cueTracks)
+    internal SheetIndexCollection(SheetTrackCollection cueTracks)
     {
         _tracks = cueTracks;
     }
@@ -87,9 +87,9 @@ public class SheetIndexCollection : IIndexCollection
 
 public class SheetTrackCollection : ITrackCollection
 {
-    readonly CueFileCollection _files;
+    readonly SheetFileCollection _files;
 
-    internal SheetTrackCollection(CueFileCollection cueFiles)
+    internal SheetTrackCollection(SheetFileCollection cueFiles)
     {
         _files = cueFiles;
     }
@@ -164,5 +164,9 @@ public class SheetTrackCollection : ITrackCollection
         return -1;
     }
 
+    public override string ToString()
+    {
+        return $"{Count} tracks";
+    }
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }

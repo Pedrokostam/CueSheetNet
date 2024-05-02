@@ -30,5 +30,11 @@ namespace CueSheetNet.Internal
             if (Orphaned)
                 throw new ArgumentNullException(GetType().Name + " does not belong to any object");
         }
+
+        internal void Invalidate()
+        {
+            Orphaned = true;
+        }
+
     }
 }
