@@ -36,7 +36,7 @@ public partial class CueReader2
             index++;
         }
         Parse(lines, data);
-        throw new NotImplementedException();
+        return data;
     }
     private void ParseSheetLines(IList<KeywordedLine> lines, CueSheet data)
     {
