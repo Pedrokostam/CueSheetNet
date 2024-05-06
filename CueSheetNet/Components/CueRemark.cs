@@ -1,11 +1,12 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using CueSheetNet.Extensions;
 
 namespace CueSheetNet
 {
     /// <summary>
     /// Represents an optional remark found in a CUE sheet.
     /// </summary>
-    public readonly record struct CueRemark : IEquatable<CueRemark>
+    public readonly record struct CueRemark
     {
         private readonly string field;
 
@@ -16,7 +17,7 @@ namespace CueSheetNet
         {
             get => field;
             [MemberNotNull(nameof(field))]
-            init => field = value.ToUpperInvariant();
+            init => field = value?.ToUpperInvariant() ?? string.Empty; 
         }
 
         /// <summary>
@@ -26,16 +27,14 @@ namespace CueSheetNet
 
         public CueRemark(string field, string value) => (Field, Value) = (field, value);
 
-        public bool Equals(CueRemark other, IEqualityComparer<string> comparer)
+        public bool Equals(CueRemark other, IEqualityComparer<string>? comparer)
         {
-            //if (ReferenceEquals(other, this))
-            //    return true;
-
-            if (other == null)
-                return false;
-
-            if (!string.Equals(Field, other.Field, StringComparison.Ordinal))
+            if (!Field.OrdEquals(other.Field))
+            {
                 return false; // Fields are always uppercase
+            }
+
+            comparer ??= StringComparer.Ordinal;
             return comparer.Equals(Value, other.Value);
         }
         /// <summary>
@@ -57,10 +56,15 @@ namespace CueSheetNet
         /// </remarks>
         public bool Equals(CueRemark other)
         {
-            return Equals(other, StringComparison.CurrentCulture);
+            return Equals(other, StringComparison.Ordinal);
         }
 
-        public override int GetHashCode() => HashCode.Combine(Field, Value);
+
+        public override int GetHashCode()
+        {
+            // Hashcode combine uses parameters' gethashocd. For string it is case-sensitive.
+            return HashCode.Combine(Field, Value);
+        }
 
         public override string ToString()
         {

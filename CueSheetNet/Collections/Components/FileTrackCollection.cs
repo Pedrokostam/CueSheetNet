@@ -32,8 +32,8 @@ public sealed class FileTrackCollection : IEditableTrackCollection
         UpdatePositionsAndNumber(index);
     }
 
-    internal CueTrack? FirstOrDefault()=> Count> 0?  _tracks[0] : null;
-    internal CueTrack? LastOrDefault()=> Count> 0?  _tracks[^1] : null;
+    internal CueTrack? FirstOrDefault() => Count > 0 ? _tracks[0] : null;
+    internal CueTrack? LastOrDefault() => Count > 0 ? _tracks[^1] : null;
 
 
     /// <summary>
@@ -53,7 +53,7 @@ public sealed class FileTrackCollection : IEditableTrackCollection
         }
         else // previous track
         {
-            currentNumber = _tracks[index-1].Number+1;
+            currentNumber = _tracks[index - 1].Number + 1;
         }
         // CUE sheet starts track numbering at 1
         for (int i = index; i < Count; i++)
@@ -63,9 +63,9 @@ public sealed class FileTrackCollection : IEditableTrackCollection
             {
                 cueTrack.Number = currentNumber;
             }
-            currentNumber = cueTrack.Number+1;
+            currentNumber = cueTrack.Number + 1;
         }
-        foreach(var file in AllFiles.GetNextFiles(_parentFile))
+        foreach (var file in AllFiles.GetNextFiles(_parentFile))
         {
             file.Tracks.UpdatePositionsAndNumber(0);
         }
@@ -78,7 +78,7 @@ public sealed class FileTrackCollection : IEditableTrackCollection
         _tracks[^2].EacEndIndex = eacTrack.Indices.FirstOrDefault()?.Time;
         eacTrack.Indices.RemoveAt(0);
         var nextFile = AllFiles.GetNextFile(_parentFile);
-        if(nextFile?.Tracks.Count != 0)
+        if (nextFile?.Tracks.Count != 0)
         {
             throw new InvalidOperationException();
         }
@@ -97,25 +97,30 @@ public sealed class FileTrackCollection : IEditableTrackCollection
 
     public IEnumerator<CueTrack> GetEnumerator() => _tracks.GetEnumerator();
 
-    public int IndexOf(string title, StringComparison stringComparison)
+    public int IndexOf(string title, IEqualityComparer<string>? comparer)
     {
+        comparer ??= StringComparer.Ordinal;
         for (int i = 0; i < Count; i++)
         {
-            if (_tracks[i].Title.Equals(title, stringComparison))
+            if (comparer.Equals(_tracks[i].Title,title))
             {
                 return i;
             }
         }
         return -1;
     }
+    public int IndexOf(string title, StringComparison stringComparison)
+    {
+        return IndexOf(title,StringHelper.GetComparer(stringComparison));   
+    }
 
-    public int IndexOf(string title) => IndexOf(title, StringComparison.CurrentCulture);
+    public int IndexOf(string title) => IndexOf(title, comparer: null);
 
     public int IndexOf(CueTrack track)
     {
         for (int i = 0; i < Count; i++)
         {
-            if (_tracks[i].Equals(track, StringComparison.CurrentCulture))
+            if (Equals(_tracks[i], track))
             {
                 return i;
             }
@@ -123,7 +128,7 @@ public sealed class FileTrackCollection : IEditableTrackCollection
         return -1;
     }
 
-    internal CueTrack? PreviousTrack(CueTrack track)=> _tracks.GetPreviousItem(track);
+    internal CueTrack? PreviousTrack(CueTrack track) => _tracks.GetPreviousItem(track);
     internal CueTrack? NextTrack(CueTrack track) => _tracks.GetNextItem(track);
     public CueTrack Insert(int index, TrackType trackType)
     {
@@ -135,7 +140,7 @@ public sealed class FileTrackCollection : IEditableTrackCollection
     public bool Remove(CueTrack track)
     {
         var index = _tracks.GetIndexOrNegative(track);
-        if (index>=0)
+        if (index >= 0)
         {
             RemoveAt(index);
             return true;
@@ -155,5 +160,14 @@ public sealed class FileTrackCollection : IEditableTrackCollection
     public override string ToString()
     {
         return $"{Count} tracks";
+    }
+
+    public bool SequenceEqual(FileTrackCollection? other)
+    {
+        if (other is null)
+        {
+            return false;
+        }
+        return _tracks.SequenceEqual(other._tracks);
     }
 }

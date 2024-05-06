@@ -27,7 +27,7 @@
 //  * PREGAP/POSTGAP - track
 //  */
 
-    
+
 
 //    public const char DefaultQuotation = '"';
 //    public int CurrentLineIndex { get; private set; } = -1;
@@ -241,7 +241,7 @@
 //            (int Start, int End) = Sheet.Container.GetCueIndicesOfTrack_Range(track.Index,
 //                                                                              includeDangling: true);
 //            int count = End - Start;
-            
+
 //            // track has no indices, it's bad.
 //            if (count == 0)
 //            {
@@ -260,7 +260,7 @@
 //            {
 //                //if 0th time is larger than 1st it means the track is split
 //                bool trackSplit = Sheet.Container.Indexes[Start].Time > Sheet.Container.Indexes[Start + 1].Time;
-//                if (trackSplit )
+//                if (trackSplit)
 //                {
 //                    throw new InvalidOperationException("Cannot remove zero index in track split across 2 files");
 

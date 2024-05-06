@@ -14,6 +14,7 @@ public sealed class CommentCollection : StringBasedCollection<string>
 {
     protected override bool TestEqual(string one, string other, IEqualityComparer<string> comparer)
     {
+        comparer ??= StringComparer.Ordinal;
         return comparer.Equals(one, other);
     }
 }

@@ -5,7 +5,7 @@ using CueSheetNet.Collections;
 
 namespace CueSheetNet.Collections;
 
-public class TrackIndexCollection :  IEditableIndexCollection
+public class TrackIndexCollection : IEditableIndexCollection
 {
     private class IndexItem(int absoluteIndex, int number, CueTime time)
     {
@@ -14,7 +14,7 @@ public class TrackIndexCollection :  IEditableIndexCollection
         public CueTime Time { get; set; } = time;
         public CueIndex ToIndex(CueTrack parentTrack)
         {
-            return new CueIndex(Number, AbsoluteIndex, parentTrack.ParentFile, parentTrack, Time);
+            return new CueIndex(Number, AbsoluteIndex,  Time);
         }
     }
     private readonly ObservableCollection<IndexItem> _indexes=[];
@@ -33,7 +33,7 @@ public class TrackIndexCollection :  IEditableIndexCollection
     }
 
     CueTrack ParentTrack { get; }
-    public  int Count => _indexes.Count;
+    public int Count => _indexes.Count;
 
     /// <inheritdoc cref="IIndexValidator.ValidateIndex(int, CueTime, int, bool)"/>
     protected void ValidateIndex(int index, CueTime time, int number, bool replacesItem)
@@ -162,11 +162,21 @@ public class TrackIndexCollection :  IEditableIndexCollection
         {
             0 => throw new InvalidOperationException("Attempted to get audio start index from a track with no indices."),
             1 => _indexes[0].ToIndex(ParentTrack),
-            _ => _indexes.First(x=>x.Number >0).ToIndex(ParentTrack),
+            _ => _indexes.First(x => x.Number > 0).ToIndex(ParentTrack),
         };
     }
     public override string ToString()
     {
         return $"{Count} indices";
     }
+
+    //public bool SequenceEqual(TrackIndexCollection? other)
+    //{
+    //    if(other is null)
+    //    {
+    //        return false;
+    //    }
+    //    return _indexes.SequenceEqual(other._indexes);
+    //}
+
 }

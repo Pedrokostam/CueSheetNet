@@ -43,60 +43,50 @@ public readonly record struct CueIndex
     /// <summary>
     /// The file which contains this index.
     /// </summary>
-    public CueDataFile File { get; init; }
+    //public CueDataFile File { get; init; }
 
     /// <summary>
     /// The track which contains this index.
     /// </summary>
-    public CueTrack Track { get; init; }
+    //public CueTrack Track { get; init; }
 
-    internal CueIndex(CueIndexImpl iimpl)
-        : this(iimpl.Number, iimpl.Index, iimpl.File, iimpl.Track, iimpl.Time) { }
+    //internal CueIndex(CueIndexImpl iimpl)
+    //    : this(iimpl.Number, iimpl.Index, iimpl.File, iimpl.Track, iimpl.Time) { }
 
     public CueIndex(
         int number,
         int absoluteIndex,
-        CueDataFile file,
-        CueTrack track,
         int minutes,
         int seconds,
         int frames
     )
-        : this(number, absoluteIndex, file, track, new CueTime(minutes, seconds, frames)) { }
+        : this(number, absoluteIndex, new CueTime(minutes, seconds, frames)) { }
 
     public CueIndex(
         int number,
         int absoluteIndex,
-        CueDataFile file,
-        CueTrack track,
         CueTime cueTime
     )
-        : this(number, absoluteIndex, file, track, cueTime.TotalFrames) { }
+        : this(number, absoluteIndex, cueTime.TotalFrames) { }
 
     public CueIndex(
         int number,
         int absoluteIndex,
-        CueDataFile file,
-        CueTrack track,
         TimeSpan timeSpan
     )
-        : this(number, absoluteIndex, file, track, CueTime.FromTimeSpan(timeSpan)) { }
+        : this(number, absoluteIndex, CueTime.FromTimeSpan(timeSpan)) { }
 
     public CueIndex(
         int number,
         int absoluteIndex,
-        CueDataFile file,
-        CueTrack track,
         int totalFrames
     )
     {
         AbsoluteIndex = absoluteIndex;
-        File = file ?? throw new ArgumentNullException(nameof(file));
-        Track = track ?? throw new ArgumentNullException(nameof(track));
         _Number = number;
         Time = new(totalFrames);
     }
 
     public override string ToString() =>
-        $"INDEX {Number:d2} {Time} ({AbsoluteIndex:d2}, {Track.Title}, {File.SourceFile.Name})";
+        $"INDEX {Number:d2} {Time} ({AbsoluteIndex:d2})";
 }

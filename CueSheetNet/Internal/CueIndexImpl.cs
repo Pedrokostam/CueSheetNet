@@ -51,5 +51,5 @@ internal sealed class CueIndexImpl(CueTrack track, CueDataFile file) : CueItemBa
         );
     }
 
-    public static explicit operator CueIndex(CueIndexImpl cimpl) => new(cimpl);
+    //public static explicit operator CueIndex(CueIndexImpl cimpl) => new(cimpl);
 }

@@ -1,14 +1,23 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Runtime.InteropServices;
 
 namespace CueSheetNet.Collections;
 
-public class SheetFileCollection(CueSheet parent) : IFileCollection
+public class SheetFileCollection : IFileCollection
 {
 
     readonly ReferenceKeyedCollection<CueDataFile> _files=[];
     //readonly Dictionary<CueDataFile,int> _filePositions= new Dictionary<CueDataFile, int>(ReferenceEqualityComparer.Instance);
-    readonly CueSheet _parentSheet = parent;
+    readonly CueSheet _parentSheet;
+
+    internal SheetFileCollection(CueSheet parent)
+    {
+        _parentSheet = parent;
+    }
+
     public int Count => _files.Count;
 
     public CueDataFile this[int index] => _files[index];
@@ -34,7 +43,7 @@ public class SheetFileCollection(CueSheet parent) : IFileCollection
 
     internal CueDataFile? GetPreviousFile(CueDataFile file) => _files.GetPreviousItem(file);
     internal CueDataFile? GetNextFile(CueDataFile file) => _files.GetNextItem(file);
-    internal IEnumerable<CueDataFile> GetNextFiles(CueDataFile file)=>_files.GetNextItems(file);
+    internal IEnumerable<CueDataFile> GetNextFiles(CueDataFile file) => _files.GetNextItems(file);
 
     public CueDataFile AddFileWithEacGaps(string path, FileType fileType)
     {
@@ -43,18 +52,23 @@ public class SheetFileCollection(CueSheet parent) : IFileCollection
 
     public IEnumerator<CueDataFile> GetEnumerator() => _files.GetEnumerator();
 
-    public int IndexOf(string path, StringComparison stringComparison)
+    public int IndexOf(string path, IEqualityComparer<string>? comparer)
     {
+        comparer ??= StringComparer.Ordinal;
         int index=0;
         foreach (var item in _files)
         {
-            if (item.CheckPathEqual(path, stringComparison))
+            if (comparer.Equals(item.SourceFile.FullName, path))
             {
                 return index;
             }
             index++;
         }
         return -1;
+    }
+    public int IndexOf(string path, StringComparison stringComparison)
+    {
+        return IndexOf(path, StringHelper.GetComparer(stringComparison));
     }
 
     public int IndexOf(CueDataFile file) => _files.IndexOf(file);
@@ -75,4 +89,24 @@ public class SheetFileCollection(CueSheet parent) : IFileCollection
     {
         return $"{Count} files";
     }
+
+    //public bool SequenceEqual(SheetFileCollection? other)
+    //{
+    //    if(other is null)
+    //    {
+    //        return false;
+    //    }
+    //   if(other.Count != _files.Count)
+    //    {
+    //        return false;
+    //    }
+    //    foreach ((CueDataFile first, CueDataFile second) zip in _files.Zip(other, (first, second) => (first,second)))
+    //    {
+    //        if (!zip.first.Equals(zip.second))
+    //        {
+    //            return false;
+    //        }
+    //    }
+    //    return true;    
+    //}
 }

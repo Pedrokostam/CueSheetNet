@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using CueSheetNet.Collections;
+using CueSheetNet.Extensions;
 using CueSheetNet.FileHandling;
 using CueSheetNet.FormatReaders;
 using CueSheetNet.Internal;
@@ -11,7 +12,7 @@ namespace CueSheetNet;
 /// Provides properties and instance methods for a data file (including audio) that is specified in a cuesheet.
 /// The class monitors the file to detect any changes to it.
 /// </summary>
-public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
+public class CueDataFile : CueItemBase, ICueFile
 {
     /// <summary>
     /// File types, which contain audio data.
@@ -132,7 +133,8 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
     public void SetFile(string newPath, FileType? newType = null)
     {
         string absPath = Path.Combine(ParentSheet.SourceFile?.DirectoryName ?? ".", newPath);
-        if (string.Equals(absPath, _sourceFile?.FullName, StringComparison.OrdinalIgnoreCase))
+        // Filesystem may be case sensitive, better play it safe
+        if (absPath.OrdEquals(_sourceFile?.FullName))
         {
             Debug.WriteLine($"Skipped setting to the same file {_sourceFile}");
             _sourceFile ??= new FileInfo(absPath);
@@ -193,46 +195,8 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
         return PathHelper.GetRelativePath(NormalizedPath, ParentSheet.SourceFile);
     }
 
-    /// <inheritdoc/>
-    /// <remarks>
-    /// The compared features are:
-    /// <list type="bullet">
-    /// <item>Relative paths.</item>
-    /// <item><see cref="Type"/>.</item>
-    /// <item><see cref="Index"/>.</item>
-    /// </list>
-    /// </remarks>
-    /// <param name="other"></param>
-    public bool Equals(CueDataFile? other)
-    {
-        if (ReferenceEquals(this, other))
-            return true;
-        if (other is null)
-            return false;
-        string thisRelativePath = GetRelativePath();
-        string otherRelativePath = other.GetRelativePath();
-        if (!string.Equals(thisRelativePath, otherRelativePath, StringComparison.OrdinalIgnoreCase))
-            return false;
-        if (Type != other.Type)
-            return false;
-        if (Index != other.Index)
-            return false;
-        return true;
-    }
-
-    /// <inheritdoc cref="CueDataFile.Equals(CueDataFile?)"/>
-    public override bool Equals(object? obj)
-    {
-        return Equals(obj as CueDataFile);
-    }
 
     public static implicit operator FileInfo(CueDataFile file) => file.SourceFile;
-
-    /// <summary>
-    /// Calculates the hash of the file. Elements that affect the hash are <see cref="CueDataFile.NormalizedPath"/> and <see cref="CueDataFile.Index"/>.
-    /// </summary>
-    /// <inheritdoc/>
-    public override int GetHashCode() => HashCode.Combine(NormalizedPath, Index);
 
     /// <inheritdoc cref="FileInfo.Exists"/>
     public bool Exists => _sourceFile.Exists;
@@ -281,7 +245,8 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
     private void Watcher_Renamed(object sender, RenamedEventArgs e)
     {
         //If new name is different, treat it as deletion
-        if (!string.Equals(e.Name, SourceFile.Name, StringComparison.OrdinalIgnoreCase))
+        // Filesystem may be case sensitive, better play it safe
+        if (!e.Name.OrdEquals( SourceFile.Name))
         {
             NeedsRefresh = true;
             Debug.WriteLine($"{e.OldName} renamed to {e.Name}");

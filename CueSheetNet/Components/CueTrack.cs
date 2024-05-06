@@ -9,10 +9,7 @@ using CueSheetNet.Syntax;
 
 namespace CueSheetNet;
 
-public class CueTrack : CueItemBase,
-        IEquatable<CueTrack>,
-        IRemCommentable,
-    IIndexValidator
+public class CueTrack : CueItemBase, IRemCommentable, IIndexValidator
 {
     private CueDataFile _parentFile;
 
@@ -144,7 +141,6 @@ public class CueTrack : CueItemBase,
             }
             if (ParentSheet.Files.GetNextFile(ParentFile) is CueDataFile nextFile)
             {
-                var timeByTrack =nextFile.Tracks.FirstOrDefault()?.Indices.FirstOrDefault()?.Time;
                 return nextFile.Tracks.FirstOrDefault()?.Indices.FirstOrDefault()?.Time ?? ParentFile.Meta?.CueDuration;
             }
             return null;
@@ -183,56 +179,6 @@ public class CueTrack : CueItemBase,
         return newTrack;
     }
 
-    public bool Equals(CueTrack? other) => Equals(other, StringComparison.InvariantCulture);
-
-    public bool Equals(CueTrack? other, StringComparison stringComparison)
-    {
-        if (ReferenceEquals(this, other))
-            return true;
-        if (other == null)
-            return false;
-        if (Comments.Count != other.Comments.Count)
-            return false;
-        if (Remarks.Count != other.Remarks.Count)
-            return false;
-        if (
-            PostGap != other.PostGap
-            || PreGap != other.PreGap
-            || !string.Equals(Performer, other.Performer, stringComparison)
-            || !string.Equals(ISRC, other.ISRC, stringComparison)
-            || !string.Equals(Composer, other.Composer, stringComparison)
-            || !string.Equals(Title, other.Title, stringComparison)
-            || Flags != other.Flags)
-        {
-            return false;
-        }
-
-        bool commentsEqual = Comments.SequenceEqual(other.Comments,StringHelper.GetComparer(stringComparison));
-        bool remarksEqual = Remarks.SequenceEqual(other.Remarks,StringHelper.GetComparer(stringComparison));
-        if (!commentsEqual || !remarksEqual)
-        { return false; }
-
-        return true;
-    }
-
-    public override bool Equals(object? obj)
-    {
-        return Equals(obj as CueTrack, StringComparison.InvariantCulture);
-    }
-
-    public override int GetHashCode()
-    {
-        return HashCode.Combine(
-            Title.GetHashCode(StringComparison.OrdinalIgnoreCase),
-            Performer?.GetHashCode(StringComparison.OrdinalIgnoreCase),
-            ISRC?.GetHashCode(StringComparison.OrdinalIgnoreCase),
-            Composer?.GetHashCode(StringComparison.OrdinalIgnoreCase),
-            PostGap.GetHashCode(),
-            Comments.Count.GetHashCode(),
-            Remarks.Count.GetHashCode()
-        );
-    }
-
     public bool ValidateIndex(int index, CueTime time, int number, bool replacesItem)
     {
         Debug.Assert(index >= 0 && index <= Indices.Count);
@@ -247,7 +193,7 @@ public class CueTrack : CueItemBase,
         }
         virtualIndexes.Add((nextTrack?.Indices.FirstOrDefault(), false));
 
-        CueIndex?[] virtualCueIndex = [prevTrack?.Indices.LastOrDefault(), ..Indices, nextTrack?.Indices.FirstOrDefault()];
+        //CueIndex?[] virtualCueIndex = [prevTrack?.Indices.LastOrDefault(), ..Indices, nextTrack?.Indices.FirstOrDefault()];
         //The first index is from the previous track, so offset it by 1
         index += 1;
         int prevIndex= index-1;

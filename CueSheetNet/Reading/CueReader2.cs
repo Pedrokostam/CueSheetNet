@@ -21,6 +21,12 @@ public partial class CueReader2
     public const char DefaultQuotation = '"';
     public char Quotation { get; set; } = DefaultQuotation;
 
+    //public CueSheet Read(Stream stream)
+    //{    }
+
+    //public CueSheet Read(ReadOnlySpan<byte> bytes)
+    //{ }
+
     public CueSheet Read(string filePath)
     {
         var data = new CueSheet(filePath);
@@ -56,7 +62,7 @@ public partial class CueReader2
                     data.Title = ParseTitle(line);
                     break;
                 case Keywords.CDTEXTFILE:
-                    data.SetCdTextFile (ParseCdTextFile(line));
+                    data.SetCdTextFile(ParseCdTextFile(line));
                     break;
                 case Keywords.CATALOG:
                     data.Catalog = ParseCatalog(line);

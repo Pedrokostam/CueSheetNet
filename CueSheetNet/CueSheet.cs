@@ -1,11 +1,13 @@
 ﻿using System.Collections.ObjectModel;
 using CueSheetNet.Collections;
+using CueSheetNet.Extensions;
 using CueSheetNet.FileHandling;
 using CueSheetNet.Internal;
 
 namespace CueSheetNet;
 
-public class CueSheet : IEquatable<CueSheet>, IRemCommentable
+// TODO remove iequatable
+public class CueSheet : IRemCommentable
 {
     public RemarkCollection Remarks { get; } = [];
     public CommentCollection Comments { get; } = [];
@@ -76,7 +78,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
 
     #region Tracks
     public SheetTrackCollection Tracks { get; }
-    public CueTrack? LastTrack => Tracks.LastOrDefault();
+    public CueTrack? LastTrack => Tracks.Count > 0 ? Tracks[^1] : null;
 
     //public CueTrack AddTrack(int index, TrackType type, CueDataFile file)
     //{
@@ -99,7 +101,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
     //public CueDataFile AddFile(string path, FileType type) => Container.AddFile(path, type);
 
     public SheetFileCollection Files { get; }
-    public CueDataFile? LastFile => Files.LastOrDefault();
+    public CueDataFile? LastFile => Files.Count > 0 ? Files[^1] : null;
 
     private readonly List<ICueFile> _associatedFiles = [];
     public ReadOnlyCollection<ICueFile> AssociatedFiles => _associatedFiles.AsReadOnly();
@@ -108,40 +110,6 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
 
     #region Index
     public SheetIndexCollection Indexes { get; }
-    //internal ReadOnlyCollection<CueIndexImpl> IndexesImpl => Container.Indexes.AsReadOnly();
-
-    //internal CueIndexImpl? GetIndexImplOrDefault(int index) =>
-    //    Container.Indexes.Count > index ? Container.Indexes[index] : null;
-
-    //internal CueIndex GetCueIndexAt(int index) => new CueIndex(Container.Indexes[index]);
-
-    //internal CueIndex? GetCueIndexAt_Safe(int index)
-    //{
-    //    if (Container.Indexes.Count > index)
-    //    {
-    //        return GetCueIndexAt(index);
-    //    }
-    //
-    //    return null;
-    //}
-
-    //public CueIndex[] Indexes => Container.Indexes.Select(x => new CueIndex(x)).ToArray();
-
-    //public CueIndex AddIndex(CueTime time, CueDataFile file, CueTrack track)
-    //{
-    //    if (track.ParentFile != file)
-    //        throw new InvalidOperationException(
-    //            "Specified track does not belong to specified file"
-    //        );
-    //    if (file.ParentSheet != this)
-    //        throw new InvalidOperationException("Specified file does not belong to this cuesheet");
-    //    if (track.ParentSheet != this)
-    //        throw new InvalidOperationException("Specified track does not belong to this cuesheet");
-    //    return AddIndex(time, file.Index, track.Index);
-    //}
-    //
-    //public CueIndex AddIndex(CueTime time, int fileIndex = -1, int trackIndex = -1) =>
-    //    new(Container.AddIndex(time, fileIndex, trackIndex));
 
     #endregion
 
@@ -199,60 +167,6 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
 
     public static CueSheet Clone(CueSheet cueSheet) => cueSheet.Clone();
 
-    public bool Equals(CueSheet? other) => Equals(other, StringComparison.CurrentCulture);
-
-    public bool Equals(CueSheet? other, StringComparison stringComparison)
-    {
-        throw new NotImplementedException();
-        //if (other == null)
-            //return false;
-        //if (ReferenceEquals(this, other))
-            //return true;
-        //if (Container.Indexes.Count != other.Container.Indexes.Count)
-            //return false;
-        //if (Container.Tracks.Count != other.Container.Tracks.Count)
-            //return false;
-        //if (Container.Files.Count != other.Container.Files.Count)
-            //return false;
-        //for (int i = 0; i < Container.Indexes.Count; i++)
-        //{
-            //CueIndexImpl one = Container.Indexes[i];
-            //CueIndexImpl two = other.Container.Indexes[i];
-            //if (
-                //one.Number != two.Number
-                //|| one.Time != two.Time
-                //|| one.File.Index != two.File.Index
-            //)
-                //return false;
-        //}
-        //for (int i = 0; i < Container.Tracks.Count; i++)
-        //{
-            //CueTrack one = Container.Tracks[i];
-            //CueTrack two = other.Container.Tracks[i];
-            //if (!one.Equals(two, StringComparison.InvariantCulture))
-                //return false;
-        //}
-        //for (int i = 0; i < Container.Files.Count; i++)
-        //{
-            //CueDataFile one = Container.Files[i];
-            //CueDataFile two = other.Container.Files[i];
-            //if (!one.Equals(two))
-                //return false;
-        //}
-        //bool finalCheck =
-            //string.Equals(
-                //CdTextFile?.Name,
-                //other.CdTextFile?.Name,
-                //StringComparison.OrdinalIgnoreCase
-            //) //Paths are compared without caring for case
-            ////&& string.Equals(SourceFile?.Name, other.SourceFile?.Name, StringComparison.OrdinalIgnoreCase)
-            //&& string.Equals(Performer, other.Performer, stringComparison)
-            //&& string.Equals(Catalog, other.Catalog, StringComparison.Ordinal)
-            //&& string.Equals(Composer, other.Composer, stringComparison)
-            //&& string.Equals(Title, other.Title, stringComparison);
-        //return finalCheck;
-    }
-
     public void Refresh()
     {
         RefreshFiles();
@@ -266,7 +180,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
     {
         if (Performer is null)
         {
-            string? p = null;
+            string? newPerformer = null;
             foreach (CueTrack track in Tracks)
             {
                 if (!track.CommonFieldsSet.HasFlag(FieldsSet.Performer))
@@ -274,19 +188,19 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
                     // performer is not set, cannot set global
                     return;
                 }
-                if (p is null)
+                if (newPerformer is null)
                 {
                     // set performer to current track's
-                    p = track.Performer;
+                    newPerformer = track.Performer;
                 }
-                else if (!string.Equals(p, track.Performer, StringComparison.OrdinalIgnoreCase))
+                else if (!newPerformer.OrdEquals(track.Performer))
                 {
                     // tracks have different performers
                     // cannot set global
                     return;
                 }
             }
-            Performer = p;
+            Performer = newPerformer;
         }
     }
 
@@ -294,7 +208,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
     {
         if (Composer is null)
         {
-            string? p = null;
+            string? newComposer = null;
             foreach (CueTrack track in Tracks)
             {
                 if (!track.CommonFieldsSet.HasFlag(FieldsSet.Composer))
@@ -302,19 +216,19 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
                     // Composer is not set, cannot set global
                     return;
                 }
-                if (p is null)
+                if (newComposer is null)
                 {
                     // set performer to current track's
-                    p = track.Composer;
+                    newComposer = track.Composer;
                 }
-                else if (!string.Equals(p, track.Composer, StringComparison.OrdinalIgnoreCase))
+                else if (!newComposer.OrdEquals(track.Composer))
                 {
                     // tracks have different Composers
                     // cannot set global
                     return;
                 }
             }
-            Composer = p;
+            Composer = newComposer;
         }
     }
 
@@ -359,11 +273,11 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
         {
             type |= CueType.SimulatedGaps;
         }
-        if(Tracks.Any(x=>x.EacEndIndex is not null))
+        if (Tracks.Any(x => x.EacEndIndex is not null))
         {
             type |= CueType.InterfileGaps;
         }
-        
+
         SheetType = type;
     }
 
@@ -380,21 +294,6 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
         _associatedFiles.AddRange(CuePackage.GetAssociatedFiles(this));
     }
 
-    public static bool operator ==(CueSheet? left, CueSheet? right)
-    {
-        return (left, right) switch
-        {
-            (null, null) => true,
-            (not null, null) => false,
-            (null, not null) => false,
-            _ => left.Equals(right, StringComparison.InvariantCulture)
-        };
-    }
-
-    public static bool operator !=(CueSheet? left, CueSheet? right)
-    {
-        return !(left == right);
-    }
 
     /// <summary>
     /// Creates an independent deep copy of cuesheet contents.
@@ -431,24 +330,6 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
             Performer ?? "No performer",
             Title ?? "No title",
             SourceFile?.Name ?? "No file"
-        );
-    }
-
-    public override bool Equals(object? obj)
-    {
-        return obj is CueSheet sheet && Equals(sheet, StringComparison.InvariantCulture);
-    }
-
-    public override int GetHashCode()
-    {
-        return HashCode.Combine(
-            Performer,
-            Title,
-            Date,
-            Files.Count,
-            Tracks.Count,
-            Remarks.Count,
-            Comments.Count
         );
     }
 

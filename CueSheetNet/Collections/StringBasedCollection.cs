@@ -5,10 +5,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using CueSheetNet.Collections;
+using CueSheetNet.Extensions;
 
 namespace CueSheetNet.Collections;
 /// <summary>
 /// Base class for collection of items, which can utilize <see cref="string"/> <see cref="IEqualityComparer{T}"/> and <see cref="StringComparison"/> in their Equals method.
+/// <para>
+/// Default string comparer is <see cref="StringComparer.Ordinal"/>.</para>
 /// </summary>
 /// <typeparam name="T"></typeparam>
 public abstract class StringBasedCollection<T> : Collection<T>
@@ -25,7 +28,6 @@ public abstract class StringBasedCollection<T> : Collection<T>
             base.Add(item);
         }
     }
-
     /// <summary>
     /// Checks whether the given <paramref name="item"/> is in this collection using <paramref name="comparer"/> to test eqaulity of strings.
     /// </summary>
@@ -39,7 +41,7 @@ public abstract class StringBasedCollection<T> : Collection<T>
         }
         comparer ??= StringComparer.Ordinal;
         var found = this.FirstOrDefault(x => TestEqual(x,item,comparer));
-        return !Equals(found,default);
+        return !Equals(found, default);
     }
 
     /// <summary>
@@ -48,7 +50,9 @@ public abstract class StringBasedCollection<T> : Collection<T>
     /// <param name="comparisonType"><see cref="StringComparison"/> type to be used for string equality testing.</param>
     /// <inheritdoc cref="Collection{T}.Contains(T)"/>
     public virtual bool Contains(T item, StringComparison comparisonType)
-        => Contains(item, StringHelper.GetComparer(comparisonType));
+    {
+        return Contains(item, StringHelper.GetComparer(comparisonType));
+    }
 
     /// <summary>
     /// Searches for the specified object (using <paramref name="comparer"/> to test strings) and returns its zero-based index in this collection.
@@ -79,7 +83,9 @@ public abstract class StringBasedCollection<T> : Collection<T>
     /// <param name="comparisonType"><see cref="StringComparison"/> type to be used for string equality testing.</param>
     /// <inheritdoc cref="Collection{T}.IndexOf(T)"/>
     public virtual int IndexOf(T item, StringComparison comparisonType)
-        => IndexOf(item, StringHelper.GetComparer(comparisonType));
+    {
+        return IndexOf(item, StringHelper.GetComparer(comparisonType));
+    }
 
     /// <summary>
     /// Removes the first occurence of a specific object. Uses <paramref name="comparisonType"/> to test strings.
@@ -88,18 +94,7 @@ public abstract class StringBasedCollection<T> : Collection<T>
     /// <inheritdoc cref="Collection{T}.Remove(T)"/>
     public virtual void Remove(T item, StringComparison comparisonType)
     {
-        if (comparisonType == StringComparison.Ordinal)
-        {
-            base.Remove(item);
-        }
-        else
-        {
-            int index = IndexOf(item,comparisonType);
-            if (index != -1)
-            {
-                RemoveAt(index);
-            }
-        }
+        Remove(item, StringHelper.GetComparer(comparisonType));
     }
 
     /// <summary>
@@ -130,7 +125,7 @@ public abstract class StringBasedCollection<T> : Collection<T>
     /// </summary>
     /// <param name="one">The item to test.</param>
     /// <param name="other">The seconds item to test.</param>
-    /// <param name="comparer">String comparer used in comparison.</param>
+    /// <param name="comparer">String comparer used in comparison.<para/>The comparer is guaranteed to be not-null.</param>
     /// <returns>
     /// <see langword="true"/> if the objects are equal, otherwise <see langword="false"/>
     /// </returns>
@@ -145,7 +140,7 @@ public abstract class StringBasedCollection<T> : Collection<T>
     }
 
     /// <summary>
-    /// Test if this sequence has the same items (by value) in the same order as the <paramref name="other"/>  sequence./// <inheritdoc cref="Enumerable.SequenceEqual{TSource}(IEnumerable{TSource}, IEnumerable{TSource}, IEqualityComparer{TSource})"/>
+    /// Test if this sequence has the same items (by value) in the same order as the <paramref name="other"/>  sequence.
     /// </summary>
     /// <param name="other">The sequence to compare with.</param>
     /// <param name="comparer">String comparer used in comparison</param>
