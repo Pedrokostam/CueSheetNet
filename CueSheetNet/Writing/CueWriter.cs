@@ -71,16 +71,26 @@ public sealed class CueWriter
         return Settings.InnerQuotationReplacement.ReplaceQuotes(str);
     }
 
-    private bool AppendRemark(CueRemark rem, int depth)
+    /// <summary>
+    /// Appends <c>REM (field) (value)</c> with indenation equalt to <paramref name="depth"/>. Quoted as needed.
+    /// </summary>
+    /// <param name="rem"></param>
+    /// <param name="depth">Level of indentation</param>
+    private void AppendRemark(CueRemark rem, int depth)
     {
-        return AppendStringify("REM " + rem.Field, Replace(rem.Value), depth, quoteAllowed: true);
+        AppendStringify("REM " + rem.Field, Replace(rem.Value), depth, quoteAllowed: true);
     }
 
-    private bool AppendIndex(CueIndexImpl cim)
+    private void AppendIndex(CueIndex cim)
     {
-        return AppendStringify("INDEX " + cim.Number.Pad(2), cim.Time.ToString(), 2, quoteAllowed: false);
+        AppendStringify("INDEX " + cim.Number.Pad(2), cim.Time.ToString(), 2, quoteAllowed: false);
     }
 
+    /// <summary>
+    /// Puts quotes around the string.
+    /// </summary>
+    /// <param name="s"></param>
+    /// <returns><see langword="null"/> if <paramref name="s"/> is null; otherwise <paramref name="s"/> surrounded with quotes..</returns>
     [return: NotNullIfNotNull(nameof(s))]
     private static string? Enquote(string? s)
     {
@@ -183,6 +193,66 @@ public sealed class CueWriter
         return Builder.ToString();
     }
 
+    /// <summary>
+    /// Appends all lines realted to the track, except for its indices. Ensures quoting and indentation.
+    /// </summary>
+    /// <param name="track"></param>
+    private void AppendTrackData(CueTrack track)
+    {
+        AppendTrackHeader(track);
+        AppendOptionalField(track, FieldsSet.Title);
+        AppendOptionalField(track, FieldsSet.Performer);
+        AppendISRC(track);
+        AppendOptionalField(track, FieldsSet.Composer);
+        AppendFlags(track);
+        AppendTrackRems(track);
+        AppendTrackComments(track);
+        AppendPostgap(track);
+        AppendPregap(track);
+    }
+    /// <summary>
+    /// Appends all of the track's indices with proper indentation.
+    /// </summary>
+    /// <param name="track"></param>
+    private void AppendTrackIndices(CueTrack track)
+    {
+        foreach (var index in track.Indices)
+        {
+            AppendIndex(index);
+        }
+    }
+
+    /// <summary>
+    /// Appends all lines related to the file and its children. Handles EAC-style indices.
+    /// Appends |<c>\t\tPOSTGAP (time)</c>| to the stringbuilder.
+    /// </summary>
+    /// <param name="eacIndex">Optional EAC-style index. If it has value, the first track of this <paramref name="file"/> will be appended to the previous file with <paramref name="eacIndex"/> as its zeroth index. The rest of the indices will be in the <paramref name="file"/>.</param>
+    private void AppendDataFile(CueDataFile file, CueTime? eacIndex)
+    {
+        int trackSkip = 0;
+        if (eacIndex.HasValue)
+        {
+            if (file.Tracks.Count == 0)
+            {
+                throw new InvalidOperationException("Attempted to write a file with no tracks with after a hanging EAC index.");
+            }
+            trackSkip = 1;
+            AppendTrackData(file.Tracks[0]);
+            AppendIndex(new CueIndex(0, 0, eacIndex.Value));
+        }
+        AppendFileHeader(file);
+        if (trackSkip > 0)
+        {
+            AppendTrackIndices(file.Tracks[0]);
+        }
+        foreach (var track in file.Tracks.Skip(trackSkip))
+        {
+            AppendTrackData(track);
+            AppendTrackIndices(track);
+        }
+
+    }
+
     private void FillStringBuilder(CueSheet sheet)
     {
         //throw new NotImplementedException();
@@ -196,36 +266,11 @@ public sealed class CueWriter
         AppendStringify("PERFORMER", Replace(sheet.Performer), 0, quoteAllowed: true);
         AppendStringify("REM COMPOSER", Replace(sheet.Composer), 0, quoteAllowed: true);
         AppendStringify("TITLE", Replace(sheet.Title), 0, quoteAllowed: true);
-        CueTrack? track = null;
-        CueDataFile? file = null;
-
-        throw new NotImplementedException();
-        foreach (CueIndexImpl ind in sheet.IndexesImpl)
+        CueTime? eacIndexTime = null;
+        foreach (var file in sheet.Files)
         {
-            if (file != ind.File)
-            {
-                file = ind.File;
-                AppendFileHeader(file);
-            }
-            if (track != ind.Track)
-            {
-                AppendPostgap(track);
-
-                track = ind.Track;
-
-                AppendTrackHeader(track);
-
-                AppendOptionalField(track, FieldsSet.Title);
-                AppendOptionalField(track, FieldsSet.Performer);
-                AppendISRC(track);
-                AppendOptionalField(track, FieldsSet.Composer);
-                AppendFlags(track);
-                AppendTrackRems(track);
-                AppendTrackComments(track);
-                AppendPregap(track);
-            }
-            AppendIndex(ind);
-            var s = Builder.ToString();
+            AppendDataFile(file, eacIndexTime);
+            eacIndexTime = file.Tracks.LastOrDefault()?.EacEndIndex;
         }
         if (!Settings.NewLine.OrdEquals(Environment.NewLine))
         {
@@ -233,6 +278,10 @@ public sealed class CueWriter
         }
     }
 
+    /// <summary>
+    /// Appends |<c>FILE (filepath)\n</c>| to the stringbuilder. Quoted as needed.
+    /// </summary>
+    /// <param name="file"></param>
     private void AppendFileHeader(CueDataFile file)
     {
         Builder.Append("FILE ");
@@ -241,6 +290,9 @@ public sealed class CueWriter
         Builder.AppendLine(file.Type.ToString());
     }
 
+    /// <summary>
+    /// Appends |<c>(filepath)</c>| to the stringbuilder. Quoted as needed.
+    /// </summary>
     private void AppendFilepath(CueDataFile file)
     {
         string filename = file.GetRelativePath();
@@ -248,6 +300,9 @@ public sealed class CueWriter
         Builder.Append(path);
     }
 
+    /// <summary>
+    /// Appends |<c>\tTRACK (number) AUDIO</c>| to the stringbuilder.
+    /// </summary>
     private void AppendTrackHeader(CueTrack track)
     {
         AppendIndentation(1);
@@ -255,7 +310,9 @@ public sealed class CueWriter
         Builder.Append(track.Number.ToString("D2", CultureInfo.InvariantCulture));
         Builder.AppendLine(" AUDIO");
     }
-
+    /// <summary>
+    /// Appends |<c>\t\tPOSTGAP (time)</c>| to the stringbuilder.
+    /// </summary>
     private void AppendPostgap(CueTrack? track)
     {
         if (track != null && track.PostGap > CueTime.Zero)
@@ -263,12 +320,17 @@ public sealed class CueWriter
             AppendStringify("POSTGAP", track.PostGap, 2, quoteAllowed: false);
         }
     }
-
+    /// <summary>
+    /// Appends |<c>\t\tISRC (isrc)</c>| to the stringbuilder. Quoted as needed.
+    /// </summary>
     private void AppendISRC(CueTrack track)
     {
         AppendStringify("ISRC", track.ISRC, 2, quoteAllowed: true);
     }
 
+    /// <summary>
+    /// Appends |<c>\t\FLAGS (flags)</c>| to the stringbuilder. Quoted as needed.
+    /// </summary>
     private void AppendFlags(CueTrack track)
     {
         if (track.Flags != TrackFlags.None)
@@ -277,6 +339,9 @@ public sealed class CueWriter
         }
     }
 
+    /// <summary>
+    /// Appends |<c>\t\tPREGAP (time)</c>| to the stringbuilder.
+    /// </summary>
     private void AppendPregap(CueTrack track)
     {
         if (track.PreGap > CueTime.Zero)

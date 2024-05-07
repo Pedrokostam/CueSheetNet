@@ -18,8 +18,9 @@ void xd()
     Console.WriteLine(sw.ElapsedTicks);
     sw.Restart();
     var reader2 = new CueReader2();
-    reader2.Read(@"C:\Users\Pedro\Documents\Github\CueSheetNet\CueSheetNet.Prototyper\TestItems\MultiFile.cue");
+    var sheet = reader2.Read(@"C:\Users\Pedro\Documents\Github\CueSheetNet\CueSheetNet.Prototyper\TestItems\MultiFile.cue");
     sw.Stop();
     Console.WriteLine(sw.ElapsedTicks);
+    var s = new CueWriter().WriteToString(sheet);
 }
 
