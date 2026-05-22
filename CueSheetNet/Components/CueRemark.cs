@@ -7,15 +7,12 @@ namespace CueSheetNet
     /// </summary>
     public sealed record CueRemark : IEquatable<CueRemark>
     {
-        private string field;
-
         /// <summary>
         /// Name of the remark's field.
         /// </summary>
         public string Field
         {
-            get => field;
-            [MemberNotNull(nameof(field))]
+            get;
             set => field = value.ToUpperInvariant();
         }
 

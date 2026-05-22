@@ -135,8 +135,9 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
             return;
         }
         Debug.WriteLine($"Setting file to {absPath}");
-        CreateWatcher(absPath);
+        //CreateWatcher(absPath);
         _sourceFile = new FileInfo(absPath);
+        _normalizedPath = null;
         Type = newType ?? Type;
         NeedsRefresh = true;
         RefreshIfNeeded();
@@ -162,16 +163,16 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
         SetFile(absPath, Type);
     }
 
-    private string? normalizedPath;
+    private string? _normalizedPath;
     public string NormalizedPath
     {
         get
         {
-            if (string.IsNullOrWhiteSpace(normalizedPath))
+            if (string.IsNullOrWhiteSpace(_normalizedPath))
             {
-                normalizedPath = PathComparer.NormalizePath(_sourceFile);
+                _normalizedPath = PathComparer.NormalizePath(_sourceFile);
             }
-            return normalizedPath!;
+            return _normalizedPath!;
         }
     }
 
