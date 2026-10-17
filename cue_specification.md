@@ -43,11 +43,12 @@ A single audio/data track. It belongs to a single file (except for EAC-style) an
 - **PREGAP** and **POSTGAP** - weird field that contain information that is not necessary for playback and often not supported well. Explained below.
 - **FLAGS** - subcodes of up to 4 flags
   - *DCP* - Digital copy permitted
-  - *4CH* - four-channel audio
-  - *PRE* - pre-emphasis enabled
+  - *4CH* - Four-channel audio
+  - *PRE* - Pre-emphasis enabled
   - *SCMS* - Serial Copy Management System
 
 Track numbers are global. Changing the file does not reset the track number.
+Track numbers are always in an ascending order, but they do not have to be consecutive. For example, a sheet may contain tracks 1, 2, 3, 5, 6. Track 4 is missing. The justification for this is that the tracks 3 and 4 (or 4 and 5) are actually a single track, but were merged upon the owner's dicretion.
 
 Items marked with **I** can be inherited from the sheet. If a track has those fields, they take precedence over the sheet's fields.
 
@@ -148,3 +149,32 @@ The following fields can appear in **TRACKs** and the whole **Sheet**:
 - Some **REM** fields, like **DATE**
 
 Tracks can inherit values from the sheet (except **TITLE**). So if all the tracks are perfomed by the same artist, the performer should be marked once for the whole sheet, and not for each track.
+
+## Sheet-styles
+
+### Single file (standard)
+
+There is only one file, which contains all the tracks. This is the most common style.
+The sheet itself does not provide the information about the length of the files and, by extension, the length of the last track.
+
+### Multiple files
+
+Similar to the above, but the number of the files might be between 1 and the number of tracks. Each file contains one or more tracks, but no track is split across files.
+The same lack of information about the length of the files and the last track applies.
+There are three ways to handle gaps between tracks:
+ - Use `INDEX 0` just as you would in a single file style. Each file will contain the actual length of gap (usually silence) before the track, making the track begin with silence. Faithful to the CD layout, but uncommon due to wasted space and time in the file.
+ - Use **PREGAP** and **POSTGAP** fields to specify the length of the gap. This cuts of the gaps from the data stream but allows to recreate them when needed (i.e. burning to a CD). Only makes sense if the gaps were truly silent.
+ - Leave out the gaps altogether. Loses information so it is impossible to recreate the original CD layout.
+
+## EAC-style 
+
+A variation of the multiple files style. It aims to retains the actual gaps, but put them at the end of files instead of the beginning, making them less annoying.
+A side efect is that it indirectly gives the information about the length of all tracks, except the last one (like the single file style). This is because the last track of a file is always terminated by `INDEX 0` in the next file. The time of that index is the length of the track.
+The major downside of this style is that in the actual text file of the sheet, the tracks fields (like **TITLE**, **PERFOMER**, etc.) are written under the preceding file - only `INDEX 1` is written under the track's actual file.
+Makes it harder to read and REALLY ANNOYING TO PARSE.
+
+## Style conclusion
+
+Out of all the styles, only two are not able to always replicate the original CD layout: multiple files without gaps and multiple files with **PREGAP**/**POSTGAP**. The first one loses the gaps completely, the second one loses the actual audio data of the gaps.
+Single, EAC, and mutiple with `INDEX 0` are able to faithfully reproduce the original CD layout.
+

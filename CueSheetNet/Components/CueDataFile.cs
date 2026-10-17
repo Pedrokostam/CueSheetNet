@@ -13,16 +13,6 @@ namespace CueSheetNet;
 public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
 {
     /// <summary>
-    /// File types, which contain audio data.
-    /// </summary>
-    public const FileType AudioTypes = FileType.WAVE | FileType.AIFF | FileType.MP3;
-
-    /// <summary>
-    /// File types which contain binary data.
-    /// </summary>
-    public const FileType DataTypes = FileType.BINARY | FileType.MOTOROLA;
-
-    /// <summary>
     /// Detects file type from the file's extension. Unknown extension are assumed to be <see cref="FileType.WAVE"/>.
     /// </summary>
     /// <param name="path">File path with extension.</param>
@@ -107,7 +97,7 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
     /// Checks whether the file is an audio file.
     /// </summary>
     /// <returns><see langword="true"/> if file's Type is one of the audio type, otherwise <see langword="false"/></returns>
-    public bool IsAudio() => (AudioTypes & Type) != FileType.Unknown;
+    public bool IsAudio() => Type.IsAudio;
 
     private FileInfo _sourceFile;
 
