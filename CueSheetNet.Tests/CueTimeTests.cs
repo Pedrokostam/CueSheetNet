@@ -99,9 +99,7 @@ public class CueTimeTests
             (2137M,false),
             ("2137",false),
             (DateTime.Now,false),
-#if NET6_0_OR_GREATER
             (DateOnly.FromDayNumber(1),false),
-#endif
         ];
         CueTime One = new CueTime(1);
         OverflowingOperations = [

@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using CueSheetNet.Components;
 using CueSheetNet.FileHandling;
 using CueSheetNet.FormatReaders;
 using CueSheetNet.Internal;
@@ -10,8 +11,12 @@ namespace CueSheetNet;
 /// Provides properties and instance methods for a data file (including audio) that is specified in a cuesheet.
 /// The class monitors the file to detect any changes to it.
 /// </summary>
-public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
+public class CueDataFile : IEquatable<CueDataFile>
 {
+    private readonly Sheet _sheet;
+
+    private readonly ResettableSlice<CueTrack, Link> _tracks;
+
     /// <summary>
     /// Detects file type from the file's extension. Unknown extension are assumed to be <see cref="FileType.WAVE"/>.
     /// </summary>
@@ -36,23 +41,23 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
     /// </summary>
     public int Index { get; internal set; }
 
-    public CueDataFile(CueSheet parent, string filePath, FileType type)
-        : base(parent)
+    public CueDataFile(Sheet sheet, string filePath, FileType type)
     {
         SetFile(filePath, type);
+        _sheet = sheet;
+        _tracks = new(_sheet.Data,_sheet._tracks,x=>x.Track,x=>ReferenceEquals(x.File,this) && !x.Index.IsSplit);
     }
 
-    internal CueDataFile ClonePartial(CueSheet newOwner)
-    {
-        return new(newOwner, SourceFile.FullName, Type);
-    }
+    public int Position => _sheet._files.FindIndex(x => ReferenceEquals(x, this));
+
+    public IReadOnlyList<CueTrack> Tracks => _tracks;
 
     /// <summary>
     /// Type of the file's data.
     /// </summary>
     public FileType Type { get; internal set; }
 
-    private FileMetadata? meta;
+    private FileMetadata? _meta;
 
     /// <summary>
     /// Metadata of this file.
@@ -62,9 +67,9 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
         get
         {
             RefreshIfNeeded();
-            return meta;
+            return _meta;
         }
-        private set => meta = value;
+        private set => _meta = value;
     }
 
     /// <summary>
@@ -75,14 +80,15 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
 
     private void RefreshIfNeeded()
     {
-        if (!NeedsRefresh || ParentSheet.Files.Count <= Index)
+        if (!NeedsRefresh || _sheet.Files.Count <= Index)
             return;
         Debug.WriteLine($"Refreshing file meta: {_sourceFile}");
         if (_sourceFile.Exists)
         {
             FileMetadata? resMeta = FormatReader.ReadMetadata(
                 _sourceFile.FullName,
-                ParentSheet.GetTracksOfFile_IEnum(Index).Select(x => x.Type)
+                Tracks.Select(x=>x.Type)
+                
             );
             Meta = resMeta;
         }
@@ -106,6 +112,29 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
     /// </summary>
     public FileInfo SourceFile => _sourceFile;
 
+    public string Name => SourceFile.Name;
+
+    public CueDataFile? PreviousFile()
+    {
+        var prevIndex = Position - 1;
+        if (prevIndex < 0)
+        {
+            return null;
+        }
+        return _sheet.Files[prevIndex];
+    }
+
+    public CueDataFile? NextFile()
+    {
+        var nextIndex = Position + 1;
+        if (nextIndex >= _sheet.Data.Count)
+        {
+            return null;
+        }
+        return _sheet.Files[nextIndex];
+
+    }
+
     /// <summary>
     /// Sets the <see cref="SourceFile"/> to a new path, optionally detecting its type automatically.
     /// </summary>
@@ -117,7 +146,7 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
     [MemberNotNull(nameof(_sourceFile))]
     public void SetFile(string newPath, FileType? newType = null)
     {
-        string absPath = Path.Combine(ParentSheet.SourceFile?.DirectoryName ?? ".", newPath);
+        string absPath = Path.Combine(_sheet.SourceFile?.DirectoryName ?? ".", newPath);
         if (string.Equals(absPath, _sourceFile?.FullName, StringComparison.OrdinalIgnoreCase))
         {
             Debug.WriteLine($"Skipped setting to the same file {_sourceFile}");
@@ -136,7 +165,7 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
     /// <summary>
     /// Gets all CUE indices of this file.
     /// </summary>
-    public CueIndex[] CueIndexes => ParentSheet.GetIndexesOfFile(Index);
+    public IEnumerable<CueIndex> GetAllIndices() => _sheet.Data.Where(x => ReferenceEquals(x.File, this)).Select(x => x.Index);
 
     public override string ToString()
     {
@@ -149,7 +178,7 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
     public void RefreshFileInfo()
     {
         string name = SourceFile.Name;
-        string absPath = Path.Combine(ParentSheet.SourceFile?.DirectoryName ?? ".", name);
+        string absPath = Path.Combine(_sheet.SourceFile?.DirectoryName ?? ".", name);
         SetFile(absPath, Type);
     }
 
@@ -172,7 +201,7 @@ public class CueDataFile : CueItemBase, ICueFile, IEquatable<CueDataFile>
     /// <returns>Relative path from the parent sheet's directory.</returns>
     public string GetRelativePath()
     {
-        return PathHelper.GetRelativePath(NormalizedPath, ParentSheet.SourceFile);
+        return PathHelper.GetRelativePath(NormalizedPath, _sheet.SourceFile);
     }
 
     /// <inheritdoc/>

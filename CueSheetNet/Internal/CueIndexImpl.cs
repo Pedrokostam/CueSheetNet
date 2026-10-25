@@ -2,7 +2,7 @@
 
 namespace CueSheetNet.Internal;
 
-[DebuggerDisplay("CIImpl- Num: {Number}, Abs: {Index} - File {File.Index}, Track {Track.Index}")]
+[DebuggerDisplay("CIImpl- Num: {Number}, Abs: {Position} - File {File.Position}, InnerCueTrack {InnerCueTrack.Position}")]
 internal sealed class CueIndexImpl(CueTrack track, CueDataFile file) : CueItemBase(file.ParentSheet)
 {
     public CueDataFile File { get; } = file;
@@ -20,7 +20,7 @@ internal sealed class CueIndexImpl(CueTrack track, CueDataFile file) : CueItemBa
         };
     }
 
-    /// <inheritdoc cref="CueIndex.AbsoluteIndex"/>
+    /// <inheritdoc cref="CueIndex.AbsolutePosition"/>
     public int Index { get; internal set; }
 
     /// <inheritdoc cref="CueIndex.Number"/>

@@ -60,7 +60,6 @@ public sealed class FfprobeFormatReader : IAudioFileFormatReader
     }
     private static readonly char[] Separators = ['\r', '\n'];
 
-#if NET7_0_OR_GREATER // IParsable introduced in NET7
     private static T GetValue<T>(Dictionary<string, string> dict, string key, T default_val) where T : IParsable<T>
     {
         if (dict.TryGetValue(key, out var value))
@@ -74,24 +73,7 @@ public sealed class FfprobeFormatReader : IAudioFileFormatReader
         }
         return default_val;
     }
-#else
-    private static T GetValue<T>(Dictionary<string, string> dict, string key, T default_val)
-    {
-        if (dict.TryGetValue(key, out var value))
-        {
-            try
-            {
-                return (T)Convert.ChangeType(value, typeof(T), CultureInfo.InvariantCulture);
-            }
-            catch (Exception e) when (e is FormatException || e is InvalidCastException || e is OverflowException || e is ArgumentNullException)
-            {
-                return default_val;
-            }
-        }
 
-        return default_val;
-    }
-#endif
 
     public void ParseFfprobeOutput(StreamReader sreader, out FileMetadata data)
     {

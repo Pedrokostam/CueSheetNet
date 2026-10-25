@@ -46,9 +46,15 @@ It is not checked so everything is permitted
 ### Adding an index to a track
 
 The adding method should just add an index with value one higher than the last index. Their time is subject to the same restrictions as changing the time of an index.
+Inserting an index between others will promote the following indices in number.
 As such, it is impossible to have two indices with the same value.
 Adding index 0 only via a dedicated method.
-Adding index 1 is impossible, as no track can exist without it.
+
+### Adding a file
+
+Adding a file at the end is straightforward, no checks need to be done
+
+Adding an empty file before another, existing file does not do anything initially.
 
 ### Adding a track
 
@@ -56,8 +62,10 @@ Adding a track requires the index 1 time, optional index 0 time, optional more i
 If multiple indices are given, they cannot split an existing track (they must be contained between the last index of the previous track and the first index of the next track). If they do, an error should be thrown.
 Index-time and file-time collision done as always.
 
-Adding the track should increase the number of the following tracks by 1, unless there is a gap in the numbering. (tracks 1,2,4,5 - adding track before 2 - track 1,2,3,4,5, where 2 became 3)
+Adding the track should increase the number of the following tracks by 1, unless there is a gap in the numbering. (example: tracks 1,2,4,5 - adding track before 2 - track 1,2,3,4,5, where 2 became 3)
 If the track number is specified, it should be used. If it conflicts with an existing track, an error should be thrown. Renumbering of the following tracks should be done as above.
+
+Adding a track to a non-last file in the sheet is special case - gaps in the following tracks are preserved (i.e. adding 2 tracks to the previous example -> 1,2,3,4,6,7).
 
 #### Splitting a track
 

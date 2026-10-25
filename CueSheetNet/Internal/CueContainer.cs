@@ -2,7 +2,7 @@
 
 namespace CueSheetNet.Internal;
 
-[DebuggerDisplay("Files: {Files.Count}, Track: {Tracks.Count}, Indexes: {Indexes.Count}")]
+[DebuggerDisplay("Files: {Files.Count}, InnerCueTrack: {Tracks.Count}, Indexes: {Indexes.Count}")]
 internal sealed class CueContainer(CueSheet cueSheet)
 {
     public bool ParsingMode { get; set; }
@@ -116,7 +116,7 @@ internal sealed class CueContainer(CueSheet cueSheet)
         for (int i = Start; i < End; i++)
         {
             CueIndexImpl curr = Indexes[i];
-            if (curr.Time == time && !ParsingMode) throw new ArgumentException("Index with specified time already exists in the file");
+            if (curr.Time == time && !ParsingMode) throw new ArgumentException("Position with specified time already exists in the file");
             if (curr.Time > time)
             {
                 CueIndexImpl inserted = new(track, file) { Time = time };
@@ -145,7 +145,7 @@ internal sealed class CueContainer(CueSheet cueSheet)
             return insertedNoPrev;
         }
         //there are multiple indices for the track in the previous file
-        if (length > 1) throw new InvalidOperationException("Track cannot be split due to having more than one index in the previous file");
+        if (length > 1) throw new InvalidOperationException("InnerCueTrack cannot be split due to having more than one index in the previous file");
         // track has 1 index in previous time, time to split
         lastTrack.ParentFile = file;
         lastTrack.HasZerothIndex = true;

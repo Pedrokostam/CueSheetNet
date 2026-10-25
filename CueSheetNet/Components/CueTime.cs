@@ -10,7 +10,6 @@ public readonly record struct CueTime
     : IComparable<CueTime>
     , IComparable
     , IFormattable
-#if NET7_0_OR_GREATER // static interface members introduces in NET7
     , IParsable<CueTime>
     , ISpanParsable<CueTime>
     , IDecrementOperators<CueTime>
@@ -30,7 +29,6 @@ public readonly record struct CueTime
     , IModulusOperators<CueTime, CueTime, CueTime>
     , IEqualityOperators<CueTime, CueTime, bool>
     , IComparisonOperators<CueTime, CueTime, bool>
-#endif
 {
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="TotalFrames"]'/>
     public int TotalFrames { get; }  // Int is sufficient - it can describe up to 331 days of continuous playback (or about 4.5 TB of WAVE)
@@ -662,7 +660,6 @@ public readonly record struct CueTime
 
     #region Explicit Interfaces
 
-#if NET7_0_OR_GREATER // static interface members introduced in NET7
 
     static CueTime IParsable<CueTime>.Parse(string s, IFormatProvider? provider)
     {
@@ -674,7 +671,7 @@ public readonly record struct CueTime
         IFormatProvider? provider,
         [MaybeNullWhen(false)] out CueTime result)
     {
-        return TryParse(s, formatProvider: null, out result);
+        return TryParse(s, formatProvider: provider, out result);
     }
 
     static CueTime ISpanParsable<CueTime>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
@@ -692,7 +689,6 @@ public readonly record struct CueTime
 
     static CueTime IAdditiveIdentity<CueTime, CueTime>.AdditiveIdentity => CueTime.Zero;
 
-#endif
 
     #endregion
 
@@ -786,25 +782,11 @@ public readonly record struct CueTime
         };
     }
 
-    /// <summary>
-    /// Helper function that return either string or input sliced to given range, depending on target framework.
-    /// </summary>
-    /// <param name="span">Span to slice.</param>
-    /// <param name="start">Inclusive start of slice.</param>
-    /// <param name="end">Exclusive end of slice.</param>
-    /// <returns>String for NetStandard2.0, ReadOnlySpan elsewhere</returns>
-#if !NETSTANDARD2_0 // int.Parse cannot use Spans only in NETSTANDARD2.0
-    public static ReadOnlySpan<char> Slice(ReadOnlySpan<char> span, int start, int end)
-    {
-        return span[start..end];
-    }
 
-#else
     // While System.Memory adds range slices, we still need to a return string, because int.TryParse requires it.
     private static string Slice(ReadOnlySpan<char> span, int start, int end)
     {
         return span[start..end].ToString();
     }
-#endif
     #endregion // Helper Methods
 }

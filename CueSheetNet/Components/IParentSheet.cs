@@ -5,5 +5,5 @@
 /// </summary>
 public interface IParentSheet
 {
-    CueSheet ParentSheet { get; }
+    Sheet ParentSheet { get; }
 }

@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace CueSheetNet;
 
@@ -40,7 +41,8 @@ namespace CueSheetNet;
 //}
 
 /// File types mentioned in the CUE sheet specification.
-public readonly record struct FileType { 
+public readonly record struct FileType
+{
     public string Name { get; }
     private FileType(string name)
     {
@@ -61,4 +63,17 @@ public readonly record struct FileType {
     /// Not detected yet, or out-of-specification.
     public static FileType Unknown(string value) => new FileType(value.ToUpperInvariant());
     public override string ToString() => Name;
+
+    public static FileType FromString(ReadOnlySpan<char> s)
+    {
+        return s switch
+        {
+            "MP3" => FileType.MP3,
+            "AIFF" => FileType.AIFF,
+            "WAVE" => FileType.WAVE,
+            "BINARY" => FileType.BINARY,
+            "MOTOROLA" => FileType.MOTOROLA,
+            _ => FileType.WAVE
+        };
+    }
 }

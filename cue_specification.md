@@ -29,7 +29,7 @@ File type can be one of the following:
 
 Software audio players usually do not really pay attention to the type. As long as it is an audio type (first 3) they will recognize the actual type of the file. In some cases they may recognize other types - Foobar200 recognizes **FLAC** as an audio file.
 
-Files should not have any fields other that **TRACK**. No **REMs**.
+Files should not have any fields other that **TRACK**. No **REMs**!
 
 ## Track
 
@@ -69,6 +69,7 @@ FILE "01 - Laisse Tomber les Filles.wav" WAVE
 
 FILE "02 - Deux Garçons Pour Une Fille.wav" WAVE
   TRACK 02 AUDIO
+    INDEX 01 00:00:00
 ...
 ```
 
@@ -88,7 +89,8 @@ FILE "April March - Chick Habit.flac" WAVE
     INDEX 01 02:06:25
 ```
 
-Thirty frames of silence were added, **PREGAP** was swapped for `INDEX 0`. Note that the original file did not contain that silence - the sound really did start at frame 0.
+Thirty frames of silence were added, **PREGAP** was swapped for `INDEX 0`. Note that the original file did not contain that silence - the sound really did start at frame 0. 
+Each following track now starts 30 frames later compared to the sheet where the pregap was ignored.
 
 However, some pieces of software ignore those fields, have strict requiremenets (pregap only at the beginning of file), or may treat them as invalid (CueTools do not recognize postgap).
 
@@ -105,7 +107,7 @@ An example of `INDEX 0`  being used is when you have a recording of a live perfo
 
 `INDEX 2` and greater are used for the data track, they do not have any meaning for audio tracks.
 
-The timecode used in indices does not use milliseconds - those are CDDA frames. There are 75 frames in a second.
+The timecode used in indices does not use milliseconds - those are CDDA frames. There are *75 frames* in a second.
 
 ### HTOA - Hidden Track One Audio
 
@@ -122,12 +124,12 @@ While the REM types are arbitrary there are some types that are commonly used an
 - **GENRE**
 - **DATE**
 - **DISCID**- usually the CDDB disc id
-- **UPC** - when people foget CATALOG is for that.
-- **COMMENT** - for values that are trully arbitrary, often contains the ripping software's designation.
+- **UPC** - when people forget **CATALOG** is for that.
+- **COMMENT** - for values that are truly arbitrary, often contains the ripping software's designation.
 - **COMPOSER**
-- **REPLAYGAIN_TRACK_GAIN**- Track gain in decibels
+- **REPLAYGAIN_TRACK_GAIN** - Track gain in decibels
 - **REPLAYGAIN_TRACK_PEAK**
-- **REPLAYGAIN_ALBUM_GAIN**- Album gain in decibels
+- **REPLAYGAIN_ALBUM_GAIN** - Album gain in decibels
 - **REPLAYGAIN_ALBUM_PEAK**
 
 Remarks do not have to be unique, especially Comments.
@@ -155,26 +157,34 @@ Tracks can inherit values from the sheet (except **TITLE**). So if all the track
 ### Single file (standard)
 
 There is only one file, which contains all the tracks. This is the most common style.
+
 The sheet itself does not provide the information about the length of the files and, by extension, the length of the last track.
 
 ### Multiple files
 
 Similar to the above, but the number of the files might be between 1 and the number of tracks. Each file contains one or more tracks, but no track is split across files.
+
 The same lack of information about the length of the files and the last track applies.
+
 There are three ways to handle gaps between tracks:
  - Use `INDEX 0` just as you would in a single file style. Each file will contain the actual length of gap (usually silence) before the track, making the track begin with silence. Faithful to the CD layout, but uncommon due to wasted space and time in the file.
  - Use **PREGAP** and **POSTGAP** fields to specify the length of the gap. This cuts of the gaps from the data stream but allows to recreate them when needed (i.e. burning to a CD). Only makes sense if the gaps were truly silent.
  - Leave out the gaps altogether. Loses information so it is impossible to recreate the original CD layout.
 
-## EAC-style 
+### EAC-style 
 
 A variation of the multiple files style. It aims to retains the actual gaps, but put them at the end of files instead of the beginning, making them less annoying.
+
 A side efect is that it indirectly gives the information about the length of all tracks, except the last one (like the single file style). This is because the last track of a file is always terminated by `INDEX 0` in the next file. The time of that index is the length of the track.
+
 The major downside of this style is that in the actual text file of the sheet, the tracks fields (like **TITLE**, **PERFOMER**, etc.) are written under the preceding file - only `INDEX 1` is written under the track's actual file.
 Makes it harder to read and REALLY ANNOYING TO PARSE.
 
-## Style conclusion
+### Style conclusion
 
-Out of all the styles, only two are not able to always replicate the original CD layout: multiple files without gaps and multiple files with **PREGAP**/**POSTGAP**. The first one loses the gaps completely, the second one loses the actual audio data of the gaps.
+Out of all the styles, only two are not able to always replicate the original CD layout: multiple files without gaps and multiple files with **PREGAP**/**POSTGAP**.
+
+The first one loses the gaps completely, the second one loses the actual audio data of the gaps.
+
 Single, EAC, and mutiple with `INDEX 0` are able to faithfully reproduce the original CD layout.
 

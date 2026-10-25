@@ -12,11 +12,7 @@ internal static class Extensions
     /// <returns></returns>
     public static bool Contains(this string input, char value, StringComparison comparison)
     {
-#if NETCOREAPP2_1_OR_GREATER
         return input.Contains(value, comparison);
-#else
-        return input.IndexOf(value.ToString(), comparison) != -1;
-#endif
     }
 
     /// <summary>
@@ -30,13 +26,7 @@ internal static class Extensions
     /// <returns></returns>
     public static bool Contains(this string input, string value, StringComparison comparison)
     {
-#if NETCOREAPP2_1_OR_GREATER
         return input.Contains(value, comparison);
-#else
-        return input.IndexOf(value, comparison) != -1;
-#endif
-
-
     }
 
     public static T[] Prepend<T>(this IEnumerable<T> collection, T toPrepend)

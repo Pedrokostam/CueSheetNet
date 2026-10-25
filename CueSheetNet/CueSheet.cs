@@ -384,7 +384,7 @@ public class CueSheet : IEquatable<CueSheet>, IRemCommentable
         int count = End - Start;
         //0
         if (count == 0)
-            throw new InvalidOperationException("Track has no indices");
+            throw new InvalidOperationException("InnerCueTrack has no indices");
         //1
         if (count == 1)
         {

@@ -37,7 +37,7 @@ public record TrackType
         AlternateIdentifiers = alternates;
         SectorSize = sectorSize;
     }
-    internal static TrackType FromString(string s)
+    internal static TrackType FromString(ReadOnlySpan<char> s)
     {
         return s switch
         {

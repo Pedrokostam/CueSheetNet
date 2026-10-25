@@ -10,22 +10,12 @@ internal sealed partial class PathComparer
         IComparer<ICueFile>,
         IEqualityComparer<ICueFile>
 {
-#if NET7_0_OR_GREATER // GeneratedRegex introduces in NET7
     [GeneratedRegex(@"[\\/]", RegexOptions.Compiled, 500)]
     private static partial Regex Morpher();
 
     [GeneratedRegex(@"[\\/]+$", RegexOptions.Compiled, 500)]
     private static partial Regex Trimmer();
-#else
-    private static readonly Regex MorpherImpl =
-        new(@"[\\/]", RegexOptions.Compiled, TimeSpan.FromMilliseconds(500));
-    private static readonly Regex TrimmerImpl =
-        new(@"[\\/]+$", RegexOptions.Compiled, TimeSpan.FromMilliseconds(500));
 
-    private static Regex Morpher() => MorpherImpl;
-
-    private static Regex Trimmer() => TrimmerImpl;
-#endif
 
     private static readonly string _separator = Path.DirectorySeparatorChar.ToString();
     public static readonly PathComparer Instance = new();

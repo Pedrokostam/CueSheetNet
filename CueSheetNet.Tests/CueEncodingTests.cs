@@ -11,13 +11,9 @@ public partial class CueEncodingTests
         System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
     }
     readonly CueReader _reader = new();
-#if NET7_0_OR_GREATER
     [GeneratedRegex(@"UTF-(?<BIT>\d+)")]
     public static partial Regex UtfBitFinder();
-#else
-    private static readonly Regex UtfBitFinderImpl = new(@"UTF-(?<BIT>\d+)");
-    public static Regex UtfBitFinder() => UtfBitFinderImpl;
-#endif
+
     private static bool IsBigEndian(string input) => input.Contains(" BE");
     private static bool HasBom(string input) => input.Contains(" BOM");
     private static Encoding ParseEncodingFromName(string name)

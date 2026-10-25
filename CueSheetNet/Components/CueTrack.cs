@@ -1,316 +1,326 @@
-﻿using System.Collections.ObjectModel;
-using CueSheetNet.Internal;
+﻿using CueSheetNet.Extensions;
+using CueSheetNet.FormatReaders;
 using CueSheetNet.Syntax;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Net.Security;
+using System.Net.WebSockets;
+#pragma warning disable MA0008 // Add StructLayoutAttribute
 
-namespace CueSheetNet;
+namespace CueSheetNet.Components;
 
-public class CueTrack(CueDataFile parentFile, TrackType type)
-    : CueItemBase(parentFile.ParentSheet),
-        IEquatable<CueTrack>,
-        IRemCommentable
+public record CueTrack : IRemarkable
 {
-    private CueDataFile _parentFile = parentFile;
+    private readonly Remcom RemarksComments = new();
+    private readonly Sheet _sheet;
+    private readonly ResettableSlice<CueIndex, Link> _indices;
+    private string? _title;
+    private string? _performer;
+    private string? _songwriter;
 
-    public FieldsSet CommonFieldsSet { get; private set; }
-
-    /// <summary>
-    /// Absolute index for the whole CueSheet.
-    /// </summary>
-    public int Index { get; internal set; }
-    public int Offset { get; internal set; }
-    public TrackType Type { get; internal set; } = type;
-    public CueTime PostGap { get; set; }
-    public CueTime PreGap { get; set; }
-
-
-    /// <summary>
-    /// File in which Index 01 (or 00 if there is not 01) of Track appeared
-    /// </summary>
-    public CueDataFile ParentFile
+    internal int? DesiredPosition
     {
-        get
-        {
-            CheckOrphaned();
-            return _parentFile;
-        }
-        set { _parentFile = value; }
-    }
-
-    /// <summary>
-    /// Number of track.
-    /// </summary>
-    public int Number => Index + Offset;
-
-    private string? _Title;
-    public string Title
-    {
-        get => _Title ?? Path.ChangeExtension(ParentFile.SourceFile.Name, extension: null);
+        get;
         set
         {
-            if (string.IsNullOrEmpty(value))
+            if (value > 0 || value is null)
             {
-                _Title = null;
-                CommonFieldsSet &= ~FieldsSet.Title;
+                field = value;
             }
             else
             {
-                _Title = value;
-                CommonFieldsSet |= FieldsSet.Title;
+                throw new ArgumentOutOfRangeException(nameof(DesiredPosition), "Track position must be greater than zero");
             }
         }
     }
+    /// <summary>
+    /// It is not zero-based, it starts at 1
+    /// </summary>
+    internal int AbsolutePosition => _sheet.Tracks.IndexOfRef(this) + 1;
+    public int Position => DesiredPosition ?? AbsolutePosition;
 
-    private string? _Performer;
-    public string? Performer
-    {
-        get => _Performer ?? ParentSheet.Performer;
-        set
-        {
-            if (string.IsNullOrEmpty(value))
-            {
-                _Performer = null;
-                CommonFieldsSet &= ~FieldsSet.Performer;
-            }
-            else
-            {
-                _Performer = value;
-                CommonFieldsSet |= FieldsSet.Performer;
-            }
-        }
-    }
+    // Track metadata (Performer and Songwriter can be inherited from the parent sheet)
+    public string? Performer { get => _performer ?? _sheet.Performer; set => _performer = value; }
+    public string? Songwriter { get => _songwriter ?? _sheet.Songwriter; set => _songwriter = value; }
 
-    private string? _Composer;
     public string? Composer
     {
-        get => _Composer ?? ParentSheet.Composer;
+        get => RemarksComments.GetRemarkValue("COMPOSER");
         set
         {
-            if (string.IsNullOrEmpty(value))
+            if (!string.IsNullOrWhiteSpace(value))
             {
-                _Composer = null;
-                CommonFieldsSet &= ~FieldsSet.Composer;
-            }
-            else
-            {
-                _Composer = value;
-                CommonFieldsSet |= FieldsSet.Composer;
+                RemarksComments.AddRemark("COMPOSER", value);
             }
         }
     }
-    public TrackFlags Flags { get; set; } = TrackFlags.None;
-
-    public string? ISRC { get; set; }
-
-    public bool HasZerothIndex { get; internal set; }
-
-    public CueIndex[] Indexes => ParentSheet.GetIndexesOfTrack(Index);
-
-    public CueIndex AudioStartIndex
+    public string? Upc
+    {
+        get => RemarksComments.GetRemarkValue("UPC");
+        set
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                RemarksComments.AddRemark("UPC", value);
+            }
+        }
+    }
+    public string? Genre
+    {
+        get => RemarksComments.GetRemarkValue("GENRE");
+        set
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                RemarksComments.AddRemark("GENRE", value);
+            }
+        }
+    }
+    public int? Date
     {
         get
         {
-            (int Start, int End) = ParentSheet.GetIndexesOfTrack_Range(Index);
-            // non-dangling because audio cannot start on previous file
-            if (End - Start == 1) // Only one index for track - only 00 or only 01 - just take it
+            if (RemarksComments.GetRemarkValue("DATE") is string d && int.TryParse(d, CultureInfo.InvariantCulture, out int date))
             {
-                return ParentSheet.GetCueIndexAt(Start);
+                return date;
             }
+            return null;
+        }
 
-            if (ParentSheet.IndexesImpl[Start].Number == 0)
-            {
-                // first index is 00, so audio starts at 01 - next
-                return ParentSheet.GetCueIndexAt(Start + 1);
-            }
-
-            // first index is 01, this is audio start
-            return ParentSheet.GetCueIndexAt(Start);
+        set
+        {
+            if (value is null)
+                RemarksComments.RemoveRemark("DATE");
+            else
+                RemarksComments.AddRemark("DATE", value.ToString());
         }
     }
+    public double? ReplayGainTrackGain
+    {
+        get
+        {
+            if (RemarksComments.GetRemarkValue("REPLAYGAIN_TRACK_GAIN") is string d && double.TryParse(d, CultureInfo.InvariantCulture, out var date))
+            {
+                return date;
+            }
+            return null;
+        }
+
+        set
+        {
+            if (value is null)
+                RemarksComments.RemoveRemark("REPLAYGAIN_TRACK_GAIN");
+            else
+                RemarksComments.AddRemark("REPLAYGAIN_TRACK_GAIN", value.ToString());
+        }
+    }
+    public double? ReplayGainTrackPeak
+    {
+        get
+        {
+            if (RemarksComments.GetRemarkValue("REPLAYGAIN_TRACK_PEAK") is string d && double.TryParse(d, CultureInfo.InvariantCulture, out var date))
+            {
+                return date;
+            }
+            return null;
+        }
+
+        set
+        {
+            if (value is null)
+                RemarksComments.RemoveRemark("REPLAYGAIN_TRACK_PEAK");
+            else
+                RemarksComments.AddRemark("REPLAYGAIN_TRACK_PEAK", value.ToString());
+        }
+    }
+    public double? ReplayGainAlbumGain
+    {
+        get
+        {
+            if (RemarksComments.GetRemarkValue("REPLAYGAIN_ALBUM_GAIN") is string d && double.TryParse(d, CultureInfo.InvariantCulture, out var date))
+            {
+                return date;
+            }
+            return null;
+        }
+
+        set
+        {
+            if (value is null)
+                RemarksComments.RemoveRemark("REPLAYGAIN_ALBUM_GAIN");
+            else
+                RemarksComments.AddRemark("REPLAYGAIN_ALBUM_GAIN", value.ToString());
+        }
+    }
+    public double? ReplayGainAlbumPeak
+    {
+        get
+        {
+            if (RemarksComments.GetRemarkValue("REPLAYGAIN_ALBUM_GAIN") is string d && double.TryParse(d, CultureInfo.InvariantCulture, out var date))
+            {
+                return date;
+            }
+            return null;
+        }
+
+        set
+        {
+            if (value is null)
+                RemarksComments.RemoveRemark("REPLAYGAIN_ALBUM_GAIN");
+            else
+                RemarksComments.AddRemark("REPLAYGAIN_ALBUM_GAIN", value.ToString());
+        }
+    }
+    public string? Isrc { get; set; }
+
+    // Title is not inherited from the sheet and must be present on the track if needed
+    [AllowNull]
+    public string Title { get => _title ?? GetDefaultTitle(); set => _title = value?.NonEmpty(); }
+
+    // Pregap/Postgap values (optional)
+    public CueTime? Pregap { get; set; }
+    public CueTime? Postgap { get; set; }
+
+    public TrackType Type { get; internal set; }
+
+    // Arbitrary flags (DCP, 4CH, PRE, SCMS, etc.)
+    public TrackFlags Flags { get; internal set; }
+
+    internal int ConsecutivePosition => _sheet._tracks.IndexOf(this);
+    public CueDataFile File => _sheet.Data.First(x => ReferenceEquals(x.Track, this) && !x.Index.IsSplit)!.File;
+
+    public IReadOnlyList<CueIndex> Indices => _indices;
+
+    internal CueTrack(TrackType type, Sheet sheet)
+    {
+        Type = type;
+        _sheet = sheet;
+        _indices = new(_sheet.Data, _sheet._indices, x => x.Index, x => ReferenceEquals(x.Track, this) && ReferenceEquals(x.File, this.File));
+    }
+    internal CueTrack(string type, Sheet sheet) : this(TrackType.FromString(type), sheet) { }
+    internal static CueTrack FromInsertionParams(TrackInsertParameters? insertParameters, Sheet sheet)
+    {
+        return new(insertParameters?.Type ?? TrackType.AUDIO, sheet)
+        {
+            Title = insertParameters?.Title,
+            Performer = insertParameters?.Performer,
+            Songwriter = insertParameters?.Songwriter,
+            Isrc = insertParameters?.Isrc,
+            Flags = insertParameters?.Flags ?? default,
+        };
+    }
+
+    public CueTime Start => Indices[0].StartsContent ? Indices[0].Time : Indices[1].Time;
+
     public CueTime? Duration
     {
         get
         {
-            var (_, indexOfNextTrack) = ParentSheet.GetIndexesOfTrack_Range(Index);
-            CueIndexImpl? nextTrackImplIndex = ParentSheet.GetIndexImplOrDefault(indexOfNextTrack);
-            // it's the last track of cuesheet
-            bool isLastTrackInCue = nextTrackImplIndex is null;
-            // it's the last track of its file
-            bool isLastTrackInFile = nextTrackImplIndex?.File != ParentFile;
-            if (isLastTrackInCue || isLastTrackInFile)
-            {
-                // Only way to get track's duration is to subtract its start from the file duration
-                CueTime? fileDur = ParentFile.Meta?.CueDuration;
-                if (fileDur.HasValue)
-                {
-                    return fileDur.Value - AudioStartIndex.Time;
-                }
+            Debug.Assert(File.IsAudio());
+            var conInd = this.ConsecutivePosition;
+            var lastIndexIndex = Indices[-1].AbsolutePosition;
 
-                // File meta is unknown / no file
-                return null;
+            if (_sheet.Data.Count > lastIndexIndex + 1)
+            {
+                // there are indices (tracks) after this
+                var nextLink = _sheet.Data[lastIndexIndex + 1];
+                if (ReferenceEquals(nextLink.File, this.File))
+                {
+                    // Next index is in the same file, ergo next track
+                    // may be eac or not, does not matter
+                    return nextLink.Index.Time;
+                }
+                // different file, so need to refer to file
             }
 
-            return nextTrackImplIndex!.Time - AudioStartIndex.Time;
-        }
-    }
-
-    public override string ToString()
-    {
-        return "Track " + Number.ToString("D2") + ": " + Title;
-    }
-
-    #region Rem
-    private readonly List<CueRemark> RawRems = [];
-    public ReadOnlyCollection<CueRemark> Remarks => RawRems.AsReadOnly();
-
-    public void ClearRemarks() => RawRems.Clear();
-
-    public void AddRemark(string type, string value) => AddRemark(new CueRemark(type, value));
-
-    public void AddRemark(CueRemark entry) => RawRems.Add(entry);
-
-    public void AddRemark(IEnumerable<CueRemark> entries)
-    {
-        foreach (CueRemark remark in entries)
-        {
-            AddRemark(remark);
-        }
-    }
-
-    public void RemoveRemark(int index)
-    {
-        if (index >= 0 || index < RawRems.Count)
-            RawRems.RemoveAt(index);
-    }
-
-    internal CueTrack ClonePartial(CueDataFile newOwner)
-    {
-        CueTrack newTrack =
-            new(newOwner, Type)
+            if (File.Meta is FileMetadata meta)
             {
-                CommonFieldsSet = CommonFieldsSet,
-                Composer = Composer,
-                Flags = Flags,
-                Title = Title,
-                PostGap = PostGap,
-                PreGap = PreGap,
-                Performer = Performer,
-                ISRC = ISRC,
-                HasZerothIndex = HasZerothIndex,
-                Index = Index,
-                Offset = Offset,
-                Orphaned = Orphaned,
-            };
-        newTrack.AddRemark(RawRems.Select(x => x with { }));
-        newTrack.AddComment(RawComments);
-        return newTrack;
-    }
-
-    public void RemoveRemark(
-        string field,
-        string value,
-        StringComparison comparisonType = StringComparison.OrdinalIgnoreCase
-    ) => RemoveRemark(new CueRemark(field, value), comparisonType);
-
-    public void RemoveRemark(
-        CueRemark entry,
-        StringComparison comparisonType = StringComparison.OrdinalIgnoreCase
-    )
-    {
-        int ind = RawRems.FindIndex(x => x.Equals(entry, comparisonType));
-        if (ind >= 0)
-            RawRems.RemoveAt(ind);
-    }
-    #endregion
-
-    #region Comments
-
-    private readonly List<string> RawComments = [];
-    public ReadOnlyCollection<string> Comments => RawComments.AsReadOnly();
-
-    public void AddComment(IEnumerable<string> comments)
-    {
-        foreach (string comment in comments)
-        {
-            AddComment(comment);
+                return meta.CueDuration - Start;
+            }
+            return null;
         }
     }
 
-    public void AddComment(string comment) => RawComments.Add(comment);
-
-    public void RemoveComment(
-        string comment,
-        StringComparison comparisonType = StringComparison.OrdinalIgnoreCase
-    )
+    public CueTrack? PreviousTrackInFile()
     {
-        int ind = RawComments.FindIndex(x => x.Equals(comment, comparisonType));
-        if (ind >= 0)
-            RawComments.RemoveAt(ind);
-    }
-
-    public void RemoveComment(int index)
-    {
-        if (index >= 0 && index < RawComments.Count)
-            RawComments.RemoveAt(index);
-    }
-
-    public void ClearComments() => RawComments.Clear();
-
-    #endregion
-
-    public bool Equals(CueTrack? other) => Equals(other, StringComparison.InvariantCulture);
-
-    public bool Equals(CueTrack? other, StringComparison stringComparison)
-    {
-        if (ReferenceEquals(this, other))
-            return true;
-        if (other == null)
-            return false;
-        if (RawComments.Count != other.RawComments.Count)
-            return false;
-        if (RawRems.Count != other.RawRems.Count)
-            return false;
-        if (
-            PostGap != other.PostGap
-            || PreGap != other.PreGap
-            || !string.Equals(Performer, other.Performer, stringComparison)
-            || !string.Equals(ISRC, other.ISRC, stringComparison)
-            || !string.Equals(Composer, other.Composer, stringComparison)
-            || !string.Equals(Title, other.Title, stringComparison)
-            || Flags != other.Flags)
+        var prevIndex = Position - 1;
+        if (prevIndex < 0)
         {
-            return false;
+            return null;
         }
-
-        for (int i = 0; i < RawComments.Count; i++)
+        var prev = _sheet.Data[prevIndex];
+        if (ReferenceEquals(prev.File, this.File))
         {
-            if (!string.Equals(RawComments[i], other.RawComments[i], stringComparison))
-                return false;
+            return prev.Track;
         }
+        return null;
+    }
 
-        for (int i = 0; i < RawRems.Count; i++)
+    public CueTrack? NextTrackInFile()
+    {
+        var nextIndex = Position + 1;
+        if (nextIndex >= _sheet.Data.Count)
         {
-            if (!RawRems[i].Equals(other.RawRems[i], stringComparison))
-                return false;
+            return null;
         }
-
-        return true;
+        var next = _sheet.Data[nextIndex];
+        if (ReferenceEquals(next.File, this.File))
+        {
+            return next.Track;
+        }
+        return null;
     }
 
-    public override bool Equals(object? obj)
+    public bool IsEacStyle => _indices[0].IsSplit;
+
+    public bool HasZerothIndex => _indices[0].Position == 0;
+
+    private string GetDefaultTitle() => $"{Performer} {_sheet.Title} {Position:D2}";
+
+    #region IRemarkable
+    public IReadOnlyList<string> Comments => ((IRemarkable)RemarksComments).Comments;
+
+    public IReadOnlyList<CueRemark> Remarks => ((IRemarkable)RemarksComments).Remarks;
+
+    public CueTime? PreGap { get; internal set; }
+    public CueTime? PostGap { get; internal set; }
+
+    public void AddComment(string comment)
     {
-        return Equals(obj as CueTrack, StringComparison.InvariantCulture);
+        ((IRemarkable)RemarksComments).AddComment(comment);
     }
 
-    public override int GetHashCode()
+    public void AddRemark(string type, string value)
     {
-        return HashCode.Combine(
-            Title.GetHashCode(StringComparison.OrdinalIgnoreCase),
-            Performer?.GetHashCode(StringComparison.OrdinalIgnoreCase),
-            ISRC?.GetHashCode(StringComparison.OrdinalIgnoreCase),
-            Composer?.GetHashCode(StringComparison.OrdinalIgnoreCase),
-            PostGap.GetHashCode(),
-            RawComments.Count.GetHashCode(),
-            RawRems.Count.GetHashCode()
-        );
+        ((IRemarkable)RemarksComments).AddRemark(type, value);
     }
+
+    public void ClearComments()
+    {
+        ((IRemarkable)RemarksComments).ClearComments();
+    }
+
+    public void ClearRemarks()
+    {
+        ((IRemarkable)RemarksComments).ClearRemarks();
+    }
+
+    public void RemoveComment(string comment)
+    {
+        ((IRemarkable)RemarksComments).RemoveComment(comment);
+    }
+
+    public void RemoveRemark(CueRemark remark)
+    {
+        ((IRemarkable)RemarksComments).RemoveRemark(remark);
+    }
+
+    public void RemoveRemark(string type, string value)
+    {
+        ((IRemarkable)RemarksComments).RemoveRemark(type, value);
+    }
+    #endregion // IRemarkable
 }
+
+#pragma warning restore MA0008 // Add StructLayoutAttribute
