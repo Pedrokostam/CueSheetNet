@@ -5,19 +5,49 @@ using CueSheetNet.Extensions;
 using System.Data;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Timers;
 
 namespace CueSheetNet.Components;
 
-public record CueSettings {
-    public static readonly CueSettings Default = new CueSettings();
+public interface ICueConformance
+{
+    /// <summary>
+    /// Gets a value indicating whether verification is performed against the file duration.
+    /// </summary>
+    bool VerifyAgainstFileDuration { get; }
+    /// <summary>
+    /// If True, PREGAP and POSTGAP can only be placed once per file, at the first and last track, respectively.
+    /// <br/>
+    /// If False, all tracks may have one or both.
+    /// </summary>
+    bool LimitPrePostGapPositions { get; }
+
+    char IndentationCharacter { get; }
+    char Quotation { get; }
+}
+public sealed record PredefinedConformance : ICueConformance
+{
+    private PredefinedConformance()
+    {
+
+    }
+    public static readonly PredefinedConformance Strict = new PredefinedConformance();
+    public static readonly PredefinedConformance Corrective = new PredefinedConformance();
+    public static readonly PredefinedConformance None = new PredefinedConformance();
+
+}
+public record CueSettings
+{
     public bool VerifyAgainstFileDuration { get; set; } = false;
 }
 
 public class Sheet : IRemarkable
 {
+    
+    private bool _useQualifiedPaths = false;
     public CueSettings Settings { get; set => field = value ?? CueSettings.Default; } = CueSettings.Default;
-    private readonly Remcom RemarksComments = new();
+    public Remarks Remarks { get; }
     internal void Invalidate()
     {
         _tracks.Invalidate();
@@ -26,8 +56,8 @@ public class Sheet : IRemarkable
     }
     internal List<Link> Data { get; } = [];
 
-    public Sheet():this((FileInfo?)null) { }
-    public Sheet(string? filepath):this(string.IsNullOrWhiteSpace(filepath)? null : new FileInfo(filepath)) { }
+    public Sheet() : this((FileInfo?)null) { }
+    public Sheet(string? filepath) : this(string.IsNullOrWhiteSpace(filepath) ? null : new FileInfo(filepath)) { }
     public Sheet(FileInfo? sourceFile)
     {
         SourceFile = sourceFile;
@@ -39,29 +69,87 @@ public class Sheet : IRemarkable
     internal readonly ResettableCollection<CueTrack, Link> _tracks;
     internal readonly ResettableCollection<CueDataFile, Link> _files;
     internal readonly ResettableCollection<CueIndex, Link> _indices;
+    private readonly List<CueExtraFile> _additionalFiles = [];
+
     private string? _title;
 
     public IReadOnlyList<CueTrack> Tracks => _tracks;
     public IReadOnlyList<CueDataFile> Files => _files;
     public IReadOnlyList<CueIndex> Indices => _indices;
-    public IEnumerable<CueExtraFile> GetAdditionalFiles()
+    public IReadOnlyList<CueExtraFile> AdditionalFiles => _additionalFiles;
+    private void RefreshAdditionalFiles()
     {
-        throw new NotImplementedException();
+        _additionalFiles.Clear();
+        var extras =AdditionalFileHelper.FindExtraFiles(this, keepQualified:_useQualifiedPaths);
+        _additionalFiles.AddRange(extras);
     }
-    public FileInfo? SourceFile { get; internal set; }
+    public FileInfo? SourceFile
+    {
+        get; internal set
+        {
+            if (!FileSystemInfoComparer.Default.Equals(value, field))
+            {
+                field = value;
+                RefreshAdditionalFiles();
+            }
+
+        }
+    }
     public string? Catalog { get; set; }
-    public FileInfo? CdTextFile { get; private set; }
-    public string? Composer { get; set; }
+    public CueExtraFile? CdTextFile { get; set; }
     // General sheet-level metadata that can be inherited by tracks
     public string? Performer { get; set; }
     public string? Songwriter { get; set; }
     [AllowNull]
     public string Title { get => _title ?? GetDefaultTitle(); set => _title = value?.NonEmpty(); }
 
+    private FileInfo? GetRelativeFilePath(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return null;
+        }
+        if (this.SourceFile is null)
+        {
+
+        }
+        return new FileInfo(PathHelper.GetRelativePath(path, SourceFile));
+    }
 
     private string GetDefaultTitle()
     {
-        return Files[0].SourceFile.Name;
+        string? n = null;
+        if (SourceFile is not null)
+        {
+            n = Path.ChangeExtension(SourceFile?.Name, null);
+        }
+        else if (_files.Count > 0)
+        {
+            n = _files[0].Name;
+        }
+        return n ?? "Unnamed";
+    }
+
+    /// <summary>
+    /// Modifies all applicable filepaths related to this sheet depending on <paramref name="keepPathQualified"/>:
+    /// <list type="bullet">
+    /// <item>True -  Relative paths will become qualified, unless <see cref="SourceFile"/> is null; already qualified paths will remain as such.</item>
+    /// <item>False -  Qualified paths will be turned relative, unless <see cref="SourceFile"/> is null, or the two do not share common root.</item> 
+    /// </list>
+    /// </summary>
+    /// <param name="keepPathQualified"></param>
+    public void ChangeFilePathsType(bool keepPathQualified)
+    {
+        _useQualifiedPaths = keepPathQualified;
+        foreach (var item in AdditionalFiles)
+        {
+            item.ChangeFilePathType(keepPathQualified);
+        }
+        foreach (var item in Files)
+        {
+            item.ChangeFilePathType(keepPathQualified);
+        }
+        CdTextFile?.ChangeFilePathType(keepPathQualified);
     }
     /// <summary>
     /// Inserts a new index at the specified time in the given file and track.
@@ -86,8 +174,8 @@ public class Sheet : IRemarkable
         int dataInsertionIndex;
         if (insertionIndex < 0) // no time in the given file is greater than the given time
         {
-            expectedTrack = file.Tracks[-1]; // the index is being added to the last track
-            dataInsertionIndex = Data.FindIndex(x => ReferenceEquals(x.Index, expectedTrack.Indices[-1])) + 1;
+            expectedTrack = file.Tracks[^1]; // the index is being added to the last track
+            dataInsertionIndex = Data.FindIndex(x => ReferenceEquals(x.Index, expectedTrack.Indices[^1])) + 1;
         }
         else
         {
@@ -153,14 +241,6 @@ public class Sheet : IRemarkable
                 }
             }
         }
-        if (trackParams.DesiredPosition.HasValue && dataInsertionIndex > 0)
-        {
-            var prevTrack = Data[dataInsertionIndex - 1].Track;
-            if (prevTrack.Position >= trackParams.DesiredPosition)
-            {
-                throw new InvalidTrackPlacementException(trackParams.DesiredPosition.Value);
-            }
-        }
         var link = new Link(file,
                             CueTrack.FromInsertionParams(trackParams, this),
                             new CueIndex(1, firstIndex, this));
@@ -170,27 +250,44 @@ public class Sheet : IRemarkable
         {
             Data[dataInsertionIndex - 1] = Data[dataInsertionIndex - 1] with { Track = link.Track };
         }
-        NormalizeTrackPositions(link.Track);
+        NormalizeGaps(-1, link.Track.AbsolutePosition);
     }
 
-    private void NormalizeTrackPositions(CueTrack? startTrack = null)
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="from">Not inclusive</param>
+    /// <param name="change"></param>
+    private void NormalizeGaps(int change, int inclusiveStartIndex = 0)
     {
-        var count = _tracks.Count;
-        var start = startTrack?.AbsolutePosition - 1 ?? 0;
-        for (int i = start; i < count; i++)
+        if (_tracks.Count == 0 || _tracks.Count < inclusiveStartIndex)
+        {
+            return;
+        }
+        int gap = 0;
+        for (int i = 0; i < _tracks.Count; i++)
         {
             var track = _tracks[i];
-            if (track.DesiredPosition <= (i + 1))
+            if (gap == 0)
             {
-                track.DesiredPosition = null;
+                gap = track.Gap;
+            }
+            if (i < inclusiveStartIndex)
+            {
+                track.Gap = gap;
+            }
+            else
+            {
+                track.Gap = gap + change;
             }
         }
     }
 
-    public void InsertFile(int insertionIndex, string filepath, string type, TrackInsertParameters? trackInsertParameters = null, CueTime? firstIndex = null) => InsertFile(insertionIndex, filepath, FileType.FromString(type), trackInsertParameters, firstIndex);
-    public void InsertFile(int? index, string filepath, FileType type, TrackInsertParameters? trackInsertParameters = null, CueTime? firstIndexTime = null)
+
+    public void InsertFile(int insertionIndex, string filepath, string type, TrackInsertParameters? trackInsertParameters = null ) => InsertFile(insertionIndex, filepath, FileType.FromString(type), trackInsertParameters);
+    public void InsertFile(int? index, string filepath, FileType type, TrackInsertParameters? trackInsertParameters = null)
     {
-        CueTime time = firstIndexTime ?? CueTime.Zero;
+        CueTime time = CueTime.Zero; // first index in a file MUST be 00:00:00
         var fileToAdd = new CueDataFile(this, filepath, type);
         ThrowIfOutsideOfFile(time, fileToAdd);
         NegativeIndexTimeException.ThrowIfNegative(time);
@@ -221,7 +318,7 @@ public class Sheet : IRemarkable
         {
             Data[dataInsertionIndex - 1] = Data[dataInsertionIndex - 1] with { Track = link.Track };
         }
-        NormalizeTrackPositions(prevFile?.Tracks[-1]);
+        NormalizeGaps(-1, link.Track.AbsolutePosition);
     }
 
 
@@ -233,7 +330,7 @@ public class Sheet : IRemarkable
             AddFirstIndex(index, track!, file!);
             return;
         }
-        var lastData = Data[-1];
+        var lastData = Data[^1];
         file ??= lastData.File;
         track ??= lastData.Track;
         ThrowIfOutsideOfFile(index, file);
@@ -260,12 +357,6 @@ public class Sheet : IRemarkable
         {
             if (index.Position is < 0 or > 1)
                 throw new InvalidIndexPositionException(index);
-
-            if (lastData.Track.AbsolutePosition == track.DesiredPosition + 1)
-            {
-                // desired position is the same as the absolute
-                track.DesiredPosition = null;
-            }
         }
 
         if (ReferenceEquals(lastData.File, file))
@@ -326,7 +417,8 @@ public class Sheet : IRemarkable
     /// <param name="time">The cue time to validate against the file duration.</param>
     /// <param name="file">The cue data file containing metadata for validation.</param>
     /// <exception cref="IndexOutsideOfFileException">Thrown when the specified time is outside the bounds of the file duration.</exception>
-    private void ThrowIfOutsideOfFile(CueTime time, CueDataFile? file) {
+    private void ThrowIfOutsideOfFile(CueTime time, CueDataFile? file)
+    {
         if (!Settings.VerifyAgainstFileDuration || file?.Meta is null)
         {
             return;
@@ -336,58 +428,95 @@ public class Sheet : IRemarkable
             throw new IndexOutsideOfFileException(file.Name, time);
         }
     }
-
-    #region IRemarkable
-    public IReadOnlyList<string> Comments => ((IRemarkable)RemarksComments).Comments;
-
-    public IReadOnlyList<CueRemark> Remarks => ((IRemarkable)RemarksComments).Remarks;
-
-    /// <summary>
-    /// What encoding was the original source content of the sheet. If null it means the sheet was not parsed, but constructed.
-    /// </summary>
-    public Encoding? SourceEncoding { get; internal set; }
-
-    public void AddComment(string comment)
+    public string? Composer
     {
-        ((IRemarkable)RemarksComments).AddComment(comment);
+        get => Remarks.GetField("COMPOSER");
+        set
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                Remarks.AddUnique("COMPOSER", value);
+            }
+        }
     }
-
-    public void AddRemark(string type, string value)
+    public string? Upc
     {
-        ((IRemarkable)RemarksComments).AddRemark(type, value);
+        get => Remarks.GetField("UPC");
+        set
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                Remarks.AddUnique("UPC", value);
+            }
+        }
     }
-
-    public void ClearComments()
+    public string? Genre
     {
-        ((IRemarkable)RemarksComments).ClearComments();
+        get => Remarks.GetField("GENRE");
+        set
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                Remarks.AddUnique("GENRE", value);
+            }
+        }
     }
-
-    public void ClearRemarks()
+    public int? Date
     {
-        ((IRemarkable)RemarksComments).ClearRemarks();
-    }
+        get
+        {
+            if (Remarks.GetField("DATE") is string d && int.TryParse(d, CultureInfo.InvariantCulture, out int result))
+            {
+                return result;
+            }
+            return null;
+        }
 
-    public void RemoveComment(string comment)
+        set
+        {
+            if (value is null)
+                Remarks.RemoveField("DATE");
+            else
+                Remarks.AddUnique("DATE", value.ToString());
+        }
+    }
+    public double? ReplayGainAlbumGain
     {
-        ((IRemarkable)RemarksComments).RemoveComment(comment);
-    }
+        get
+        {
+            if (Remarks.GetField("REPLAYGAIN_ALBUM_GAIN") is string d && double.TryParse(d, CultureInfo.InvariantCulture, out var result))
+            {
+                return result;
+            }
+            return null;
+        }
 
-    public void RemoveRemark(CueRemark remark)
+        set
+        {
+            if (value is null)
+                Remarks.RemoveField("REPLAYGAIN_ALBUM_GAIN");
+            else
+                Remarks.AddUnique("REPLAYGAIN_ALBUM_GAIN", value.ToString());
+        }
+    }
+    public double? ReplayGainAlbumPeak
     {
-        ((IRemarkable)RemarksComments).RemoveRemark(remark);
-    }
+        get
+        {
+            if (Remarks.GetField("REPLAYGAIN_ALBUM_PEAK") is string d && double.TryParse(d, CultureInfo.InvariantCulture, out var result))
+            {
+                return result;
+            }
+            return null;
+        }
 
-    public void RemoveRemark(string type)
-    {
-        ((IRemarkable)RemarksComments).RemoveRemark(type);
+        set
+        {
+            if (value is null)
+                Remarks.RemoveField("REPLAYGAIN_ALBUM_PEAK");
+            else
+                Remarks.AddUnique("REPLAYGAIN_ALBUM_PEAK", value.ToString());
+        }
     }
-
-    internal void SetCdTextFile(string cdt)
-    {
-        throw new NotImplementedException();
-    }
-
-    #endregion // IRemarkable
 }
 
-#pragma warning restore MA0008 // Add StructLayoutAttribute

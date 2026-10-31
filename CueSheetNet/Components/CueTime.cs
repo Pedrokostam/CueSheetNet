@@ -615,7 +615,7 @@ public readonly record struct CueTime
     {
         switch (format)
         {
-            case null or "" or "G" or "g":
+            case null or "" or "Commons" or "g":
                 return ToString();
             default:
                 break;

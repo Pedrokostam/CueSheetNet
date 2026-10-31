@@ -70,7 +70,7 @@ public record TrackType
             mode: Modes.CDG,
             audio: false,
             cdspec: true,
-            description: "Karaoke CD+G (sector size: 2448)");
+            description: "Karaoke CD+Commons (sector size: 2448)");
 
 
     public static readonly TrackType MODE1_2048 =

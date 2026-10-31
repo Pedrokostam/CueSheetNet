@@ -1,5 +1,4 @@
 ﻿namespace CueSheetNet.Helpers;
-
 public static class PathHelper
 {
     private static string GetPathWithSeparator(DirectoryInfo directory)

@@ -50,6 +50,9 @@ A single audio/data track. It belongs to a single file (except for EAC-style) an
 Track numbers are global. Changing the file does not reset the track number.
 Track numbers are always in an ascending order, but they do not have to be consecutive. For example, a sheet may contain tracks 1, 2, 3, 5, 6. Track 4 is missing. The justification for this is that the tracks 3 and 4 (or 4 and 5) are actually a single track, but were merged upon the owner's dicretion.
 
+CDRWIN: First track can be an arbitrary number, but the following ones must be consecutive
+ - But most players can handle gaps in tracks
+
 Items marked with **I** can be inherited from the sheet. If a track has those fields, they take precedence over the sheet's fields.
 
 ### Pregap and Postgap
@@ -96,6 +99,8 @@ However, some pieces of software ignore those fields, have strict requiremenets 
 
 It's best to assume that pregap and postgap do not refer to actual physical structure of the file the sheet refers to. They are for processing the files and not for playback. They should be read, but ignored for the sake of duration calculation
 
+CDRWIN: PREGAP must occur before any indices; POSTGAP must occur after all indices
+
 ## INDEX
 
 The Index field describes the placement of of something in the disc/file. There can be a 100 indices, from 0 to 99.
@@ -108,6 +113,9 @@ An example of `INDEX 0`  being used is when you have a recording of a live perfo
 `INDEX 2` and greater are used for the data track, they do not have any meaning for audio tracks.
 
 The timecode used in indices does not use milliseconds - those are CDDA frames. There are *75 frames* in a second.
+
+The first index of a track must be 00:00:00 (either 0 or 1)
+
 
 ### HTOA - Hidden Track One Audio
 

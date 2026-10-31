@@ -49,7 +49,7 @@ public partial class CueReader
     /// <summary>
     /// Currently parsed file OR the last file added to the sheet
     /// </summary>
-    private CueDataFile? LastFile => _currentFile ?? (Sheet.Data.Count > 0 ? Sheet.Data[-1].File : null);
+    private CueDataFile? LastFile => _currentFile ?? (Sheet.Data.Count > 0 ? Sheet.Data[^1].File : null);
     /// <summary>
     /// Currently parsed track
     /// </summary>
@@ -57,7 +57,7 @@ public partial class CueReader
     /// <summary>
     /// Currently parsed track OR the last track added to the sheet
     /// </summary>
-    private CueTrack? LastTrack => _currentTrack ?? (Sheet.Data.Count > 0 ? Sheet.Data[-1].Track : null);
+    private CueTrack? LastTrack => _currentTrack ?? (Sheet.Data.Count > 0 ? Sheet.Data[^1].Track : null);
 
 
     public CueReader() { }
@@ -267,6 +267,20 @@ public partial class CueReader
         }
         _currentFile = new CueDataFile(Sheet, path, typeEnum);
     }
+    private int CountTracks()
+    {
+        int i = 0;
+        CueTrack? last = null;
+        foreach (var t in Sheet.Data)
+        {
+            if(!ReferenceEquals(t.Track, last))
+            {
+                i++;
+                last = t.Track;
+            }
+        }
+        return i;
+    }
 
     private void ParseTrack(string line)
     {
@@ -275,7 +289,7 @@ public partial class CueReader
         if (!int.TryParse(num, NumberStyles.Integer, CultureInfo.InvariantCulture, out int number))
         {
             Logger.LogWarning(
-                "Invalid TRACK number at line {Line number}: \\\"{Line}\\\"\". Assigning consecutive value",
+                "Invalid TRACK number at line {Line number}: \\\"{Line}\\\"\". Assigning consecutive rest",
                 CurrentLineIndex,
                 CurrentLine,
                 number
@@ -286,7 +300,13 @@ public partial class CueReader
             desired = number;
         }
         string type = GetKeyword(line, 6 + 1 + num.Length);
-        _currentTrack = new CueTrack(type, Sheet) { DesiredPosition = desired };
+        int absPos = CountTracks()+1;
+        int gap = desired switch
+        {
+            not null when desired.Value > absPos => desired.Value - absPos,
+            _ => 0,
+        };
+        _currentTrack = new CueTrack(type, Sheet) { Gap = gap };
     }
 
     private void ParsePerformer(string line)
@@ -324,7 +344,7 @@ public partial class CueReader
             );
             return;
         }
-        Sheet!.SetCdTextFile(cdt);
+        Sheet.CdTextFile=new CueExtraFile(Sheet,cdt);
     }
 
     private void ParseFlags(string line)
@@ -410,7 +430,7 @@ public partial class CueReader
                 $"Incorrect Position number format at line {CurrentLineIndex}: {line}"
             );
         }
-        if (!CueTime.TryParse(line.AsSpan(6 + number.Length + 1),CultureInfo.InvariantCulture, out CueTime cueTime))
+        if (!CueTime.TryParse(line.AsSpan(6 + number.Length + 1), CultureInfo.InvariantCulture, out CueTime cueTime))
         {
             //Logger.LogError("Incorrect Index format at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
             throw new FormatException($"Incorrect Position format at line {CurrentLineIndex}: {line}");
@@ -444,7 +464,7 @@ public partial class CueReader
         }
 
         string type = GetKeyword(line, 0);
-        if (!CueTime.TryParse(line.AsSpan(6 + type.Length + 1),CultureInfo.InvariantCulture, out CueTime cueTime))
+        if (!CueTime.TryParse(line.AsSpan(6 + type.Length + 1), CultureInfo.InvariantCulture, out CueTime cueTime))
         {
             //Logger.LogError("Incorrect Gap format at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
             throw new FormatException($"Incorrect Gap format at line {CurrentLineIndex}: {line}");
@@ -458,19 +478,19 @@ public partial class CueReader
 
     private void ParseREM(string line)
     {
-        string field = GetKeyword(line, 4).ToUpperInvariant();
-        int valueStart = 4 + field.Length + 1;
-        string? value = GetValue(line, valueStart);
-        if (value == null)
-            return;
-        if (_currentTrack is null && Sheet.Data.Count == 0)
+        string firstWord = GetKeyword(line, 4).ToUpperInvariant();
+        int valueStart = 4 + firstWord.Length + 1;
+        string? rest = GetValue(line, valueStart);
+        IRemarkable remmy = _currentTrack is null && Sheet.Data.Count == 0 ? Sheet : _currentTrack ?? Sheet.Data[^1].Track;
+        if (rest is null)
         {
-            Sheet.AddRemark(field, value);
+            // we only have one word and maybe some spaces - it cant be any common rem field
+            // add it as legacy - add the whole line after REM
+            remmy.Remarks.Add(line[4..]);
         }
         else
         {
-            var track = _currentTrack ?? Sheet.Data[-1].Track;
-            track.AddRemark(field, value);
+            remmy.Remarks.Add(firstWord, rest);
         }
     }
 
@@ -522,16 +542,30 @@ public partial class CueReader
     /// <param name="start">Index from which the search will be started</param>
     /// <param name="end">How many characters are skipped at the end</param>
     /// <returns>String if there was text, enclosed in quotations or not; <see cref="null"/> if there was no non-whitespace text, or there were quutations with nothing inside</returns>
-    private string? GetValue(string s, int start, int end = 0)
+    private string? GetValue(string s, int start, int end = 0) => GetValue(s, start, out _, end);
+    /// <inheritdoc cref="GetValue(string, int, int)"/>
+    /// <param name="wasQuoted">Whether the return string was surrouned by quotation marks</param>
+    private string? GetValue(string s, int start, out bool wasQuoted, int end = 0)
     {
         ReadOnlySpan<char> spanny = s.AsSpan(start, s.Length - start - end).Trim();
         if (spanny.Length == 0)
+        {
+            wasQuoted = false;
             return null;
-        if (spanny.Length == 2 && spanny[0] == spanny[1] && spanny[0] == Quotation)
-            return null;
-        if (spanny[^1] == Quotation && spanny[0] == Quotation)
-            return spanny[1..^1].ToString();
+        }
 
+        if (spanny.Length == 2 && spanny[0] == spanny[1] && spanny[0] == Quotation)
+        {
+            wasQuoted = true;
+            return null;
+        }
+
+        if (spanny.Length > 2 && spanny[^1] == Quotation && spanny[0] == Quotation)
+        {
+            wasQuoted = true;
+            return spanny[1..^1].ToString();
+        }
+        wasQuoted = false;
         return spanny.ToString();
     }
 
@@ -542,7 +576,7 @@ public partial class CueReader
     /// <param name="startIndex">INdex from which the word will be sought</param>
     /// <param name="maxSearchLength">Maximum search length. If exceeded, empty string is returned</param>
     /// <returns>String of characters from <paramref name="startIndex"/> to first whitespace, or empty string if no whitespace has been detected in the first <paramref name="maxSearchLength"/> characters</returns>
-    private static string GetKeyword(string s, int startIndex = 0, int maxSearchLength = -1)
+    internal static string GetKeyword(string s, int startIndex = 0, int maxSearchLength = -1)
     {
         if (maxSearchLength <= 0)
             maxSearchLength = s.Length;
