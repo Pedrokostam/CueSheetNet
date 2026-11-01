@@ -21,11 +21,21 @@ public partial class LogEntry
 
     List<string> Identifiers { get; }
 
+    private static string LogLevelToString(LogLevel level)
+    {
+        return level switch
+        {
+            LogLevel.Debug => "DBG",
+            LogLevel.Information => "INF",
+            LogLevel.Warning => "WRN",
+            _ => throw new ArgumentOutOfRangeException(nameof(level), level, null)
+        };
+    }   
 
     public LogEntry(LogLevel level, string messageTemplate, object?[] args)
     {
         Level = level;
-        Timestamp = DateTime.Now;
+        Timestamp = DateTime.UtcNow;
         MessageTemplate = messageTemplate;
         Identifiers = [];
         if (args.Length == 0 && !messageTemplate.Contains('{', StringComparison.Ordinal))
@@ -122,6 +132,10 @@ public partial class LogEntry
         }
 
         return i;
+    }
+    public override string ToString()
+    {
+        return $"[{LogLevelToString(Level)}] {Timestamp:HH:mm:ss.fff} - {Message}";
     }
     [GeneratedRegex(@"\(.*\)", RegexOptions.Compiled, 500)]
     private static partial Regex ParenthesisRegex();

@@ -1,15 +1,35 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
-using CueSheetNet.Internal;
+﻿using CueSheetNet.Components;
 using CueSheetNet.Logging;
 using CueSheetNet.NameParsing;
 using CueSheetNet.Syntax;
 using CueSheetNet.TextParser;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Reflection;
+using System.Reflection.PortableExecutable;
 
 namespace CueSheetNet;
 
+internal static class FieldInfoLookup
+{
+    public static readonly FieldInfo TrackTitle;
+    public static readonly FieldInfo TrackPerformer;
+    public static readonly FieldInfo TrackSongwriter;
+    static FieldInfoLookup()
+    {
+        TrackTitle = typeof(CueTrack).GetField("_title",
+                                               BindingFlags.Instance | BindingFlags.NonPublic)!;
+        TrackPerformer = typeof(CueTrack).GetField("_performer",
+                                                   BindingFlags.Instance | BindingFlags.NonPublic)!;
+        TrackSongwriter = typeof(CueTrack).GetField("_songwriter",
+                                                    BindingFlags.Instance | BindingFlags.NonPublic)!;
+
+    }
+}
 public sealed class CueWriter
 {
+    private static readonly CultureInfo InvCul = CultureInfo.InvariantCulture;
     /// <summary>
     /// Based on personal collection, where most of the sheets were well under 2000 characters long, with the longest being ~7500
     /// </summary>
@@ -57,11 +77,24 @@ public sealed class CueWriter
     [return: NotNullIfNotNull(nameof(str))]
     private string? Replace(string? str) => Settings.InnerQuotationReplacement.ReplaceQuotes(str);
 
-    private bool AppendRemark(CueRemark rem, int depth) =>
-        AppendStringify("REM " + rem.Field, Replace(rem.Value), depth, quoteAllowed: true);
+    private bool AppendRemark(Remark rem, int depth)
+    {
+        switch (rem)
+        {
+            case FieldRemark field:
+                return AppendStringify("REM " + field.Field, Replace(field.Value), depth, quoteAllowed: true);
+            case TextRemark text:
+                AppendIndentation(depth);
+                Builder.AppendLine(text.Text);
+                return true;
+            default:
+                throw new NotSupportedException($"Remark type {rem.GetType().Name} is not supported");
+        }
 
-    private bool AppendIndex(CueIndexImpl cim) =>
-        AppendStringify("INDEX " + cim.Number.Pad(2), cim.Time.ToString(), 2, quoteAllowed: false);
+    }
+
+    private bool AppendIndex(CueIndex cim) =>
+        AppendStringify("INDEX " + cim.Position.Pad(2), cim.Time.ToString(), 2, quoteAllowed: false);
 
     [return: NotNullIfNotNull(nameof(s))]
     private static string? Enquote(string? s)
@@ -82,15 +115,13 @@ public sealed class CueWriter
         return Header + " " + value;
     }
 
-    private void AppendTrackRems(CueTrack track) => AppendRems(track.Remarks, 2);
 
-    private void AppendRems(IEnumerable<CueRemark> rems, int depth = 0)
+    private void AppendRems(IEnumerable<Remark> rems, int depth = 0)
     {
         foreach (var item in rems)
             AppendRemark(item, depth);
     }
 
-    private void AppendTrackComments(CueTrack track) => AppendComments(track.Comments, 2);
 
     private void AppendComments(IEnumerable<string> comms, int depth = 0)
     {
@@ -103,45 +134,17 @@ public sealed class CueWriter
         if (level > 0)
             Builder.Append(' ', level * Settings.IndentationDepth);
     }
-
-    private void AppendOptionalField(CueTrack track, FieldsSet key)
+    private void AppendOptional(CueTrack track, FieldInfo fieldInfo)
     {
-        string keyName = key.ToString();
-        bool isSet = track.CommonFieldsSet.HasFlag(key);
-        // If it is not set we can only write with AlwaysWrite
-        if (
-            !isSet
-            && Settings.RedundantFieldsBehavior
-                != CueWriterSettings.RedundantFieldBehaviors.AlwaysWrite
-        )
+        var s = fieldInfo.GetValue(track) as string;
+        if (!string.IsNullOrWhiteSpace(s))
         {
-            return;
+            var name = fieldInfo.Name.TrimStart('_').ToUpperInvariant();
+            AppendStringify(name, Replace(s), 2, quoteAllowed: true);
         }
-        (string? trackValue, string? sheetValue) = key switch
-        {
-            FieldsSet.Title => (track.Title, null),
-            FieldsSet.Performer => (track.Performer, track.ParentSheet.Performer),
-            FieldsSet.Composer => (track.Composer, track.ParentSheet.Composer),
-            _ => throw new NotSupportedException($"{key} is not supported."),
-        };
-        bool write = Settings.RedundantFieldsBehavior switch
-        {
-            // if it was set, write it down
-            CueWriterSettings.RedundantFieldBehaviors.KeepAsIs
-                => isSet,
-            // if both values are the same (no matter, if track is not set) don't write it
-            CueWriterSettings.RedundantFieldBehaviors.RemoveRedundant
-                => !string.Equals(trackValue, sheetValue, StringComparison.OrdinalIgnoreCase),
-            // does not matter, if its not set, take sheet value instead
-            CueWriterSettings.RedundantFieldBehaviors.AlwaysWrite
-                => true,
-            _ => throw new NotSupportedException(),
-        };
-        if (write) //if both track and sheet value are null, next method will skip it
-            AppendStringify(keyName.ToUpperInvariant(), Replace(trackValue), 2, quoteAllowed: true);
     }
 
-    internal char[] WriteToCharArray(CueSheet sheet)
+    internal char[] WriteToCharArray(Sheet sheet)
     {
         FillStringBuilder(sheet);
         char[] tablicaCzarów = new char[Builder.Length];
@@ -149,57 +152,81 @@ public sealed class CueWriter
         return tablicaCzarów;
     }
 
-    public string WriteToString(CueSheet sheet)
+    public string WriteToString(Sheet sheet)
     {
         FillStringBuilder(sheet);
         return Builder.ToString();
     }
 
-    private void FillStringBuilder(CueSheet sheet)
+    private void FillStringBuilder(Sheet sheet)
     {
+        Logger.LogDebug("Began sheet serialization");
+        var st = Stopwatch.StartNew();
         Builder.Clear();
-        AppendRems(sheet.Remarks, 0);
-        AppendComments(sheet.Comments, 0);
-        AppendStringify("REM DATE", sheet.Date, 0, quoteAllowed: true);
-        AppendStringify("REM DISCID", sheet.DiscID, 0, quoteAllowed: true);
-        AppendStringify("CDTEXTFILE", sheet.CdTextFile?.Name, 0, quoteAllowed: true);
-        AppendStringify("CATALOG", sheet.Catalog, 0, quoteAllowed: true);
-        AppendStringify("PERFORMER", Replace(sheet.Performer), 0, quoteAllowed: true);
-        AppendStringify("REM COMPOSER", Replace(sheet.Composer), 0, quoteAllowed: true);
         AppendStringify("TITLE", Replace(sheet.Title), 0, quoteAllowed: true);
-        CueTrack? track = null;
-        CueDataFile? file = null;
-        foreach (CueIndexImpl ind in sheet.IndexesImpl)
+        AppendStringify("PERFORMER", Replace(sheet.Performer), 0, quoteAllowed: true);
+        AppendStringify("CATALOG", sheet.Catalog, 0, quoteAllowed: true);
+        AppendStringify("CDTEXTFILE", sheet.CdTextFile?.Path, 0, quoteAllowed: true);
+        AppendRems(sheet.Remarks, 0);
+        CueTrack? lastIteratedTrack = null;
+        CueDataFile? lastIteratedFile = null;
+
+        foreach (var link in sheet.Data)
         {
-            if (file != ind.File)
+            if (!ReferenceEquals(link.File, lastIteratedFile))
             {
-                file = ind.File;
-                AppendFileHeader(file);
+                lastIteratedFile = link.File;
+                AppendFileHeader(link.File);
             }
-            if (track != ind.Track)
+            if (!ReferenceEquals(link.Track, lastIteratedTrack))
             {
-                AppendPostgap(track);
-
-                track = ind.Track;
-
-                AppendTrackHeader(track);
-
-                AppendOptionalField(track, FieldsSet.Title);
-                AppendOptionalField(track, FieldsSet.Performer);
-                AppendISRC(track);
-                AppendOptionalField(track, FieldsSet.Composer);
-                AppendFlags(track);
-                AppendTrackRems(track);
-                AppendTrackComments(track);
-                AppendPregap(track);
+                lastIteratedTrack = link.Track;
+                AppendTrackHeader(link.Track);
+                AppendPregap(link.Track);
+                AppendOptional(link.Track, FieldInfoLookup.TrackTitle);
+                AppendOptional(link.Track, FieldInfoLookup.TrackPerformer);
+                AppendOptional(link.Track, FieldInfoLookup.TrackSongwriter);
+                AppendFlags(link.Track);
+                AppendRems(link.Track.Remarks, depth: 2);
             }
-            AppendIndex(ind);
-            var s = Builder.ToString();
+            AppendIndex(link.Index);
+            if (ReferenceEquals(link.Index, lastIteratedTrack.Indices[^1]))
+            {
+                // last index in track, so append postgap if any
+                AppendPostgap(link.Track);
+            }
+
         }
+
+        //foreach (CueIndexImpl ind in sheet.IndexesImpl)
+        //{
+        //    if (file != ind.File)
+        //    {
+        //        file = ind.File;
+        //        AppendFileHeader(file);
+        //    }
+        //    if (track != ind.Track)
+        //    {
+        //        track = ind.Track;
+
+        //        AppendTrackHeader(track);
+        //        AppendPregap(track);
+        //        AppendOptional(track, FieldInfoLookup.TrackTitle);
+        //        AppendOptional(track, FieldInfoLookup.TrackPerformer);
+        //        AppendOptional(track, FieldInfoLookup.TrackComposer);
+        //        AppendFlags(track);
+        //        AppendRems(track.Remarks,depth:2);
+        //        AppendPostgap(track);
+        //    }
+        //    AppendIndex(ind);
+        //    var s = Builder.ToString();
+        //}
         if (!string.Equals(Settings.NewLine, Environment.NewLine, StringComparison.Ordinal))
         {
             Builder.Replace(Environment.NewLine, Settings.NewLine);
         }
+        st.Stop();
+        Logger.LogInformation("Sheet {} serialized in {}ms", sheet.Title, st.ElapsedMilliseconds);
     }
 
     private void AppendFileHeader(CueDataFile file)
@@ -212,7 +239,7 @@ public sealed class CueWriter
 
     private void AppendFilepath(CueDataFile file)
     {
-        string filename = file.GetRelativePath();
+        string filename = file.Path;
         string path = HasWhitespace(filename) ? Enquote(filename) : filename;
         Builder.Append(path);
     }
@@ -221,7 +248,7 @@ public sealed class CueWriter
     {
         AppendIndentation(1);
         Builder.Append("TRACK ");
-        Builder.Append(track.Number.ToString("D2", CultureInfo.InvariantCulture));
+        Builder.Append(track.Position.ToString("D2", InvCul));
         Builder.AppendLine(" AUDIO");
     }
 
@@ -232,7 +259,7 @@ public sealed class CueWriter
     }
 
     private void AppendISRC(CueTrack track) =>
-        AppendStringify("ISRC", track.ISRC, 2, quoteAllowed: true);
+        AppendStringify("ISRC", track.Isrc, 2, quoteAllowed: true);
 
     private void AppendFlags(CueTrack track)
     {
@@ -259,7 +286,7 @@ public sealed class CueWriter
     /// </summary>
     /// <param name="sheet">Sheet which may containt source <see cref="Encoding"/></param>
     /// <returns></returns>
-    private Encoding GetProperEncoding(CueSheet? sheet)
+    private Encoding GetProperEncoding(Sheet? sheet)
     {
         Encoding encodingBaza =
             Settings.Encoding ?? sheet?.SourceEncoding ?? CueWriterSettings.DefaultEncoding;
@@ -282,7 +309,7 @@ public sealed class CueWriter
         return encodingBaza;
     }
 
-    public void SaveCueSheet(CueSheet sheet)
+    public void SaveCueSheet(Sheet sheet)
     {
         ExceptionHelper.ThrowIfNull(sheet.SourceFile);
         string textData = WriteToString(sheet);
@@ -314,13 +341,13 @@ public sealed class CueWriter
         sheet.SourceEncoding = encoding;
     }
 
-    public void SaveCueSheet(CueSheet sheet, string newDestination)
+    public void SaveCueSheet(Sheet sheet, string newDestination)
     {
-        sheet.SetCuePath(newDestination);
+        sheet.SourceFile = new FileInfo(newDestination);
         SaveCueSheet(sheet);
     }
 
-    public void SaveCueSheet(CueSheet sheet, string destination, string? pattern)
+    public void SaveCueSheet(Sheet sheet, string destination, string? pattern)
     {
         string patternParsed = CueTreeFormatter.ParseFormatPattern(sheet, pattern);
         string destinationWithPattern = Path.Combine(destination, patternParsed);

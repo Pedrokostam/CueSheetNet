@@ -26,17 +26,7 @@ public interface ICueConformance
     char IndentationCharacter { get; }
     char Quotation { get; }
 }
-public sealed record PredefinedConformance : ICueConformance
-{
-    private PredefinedConformance()
-    {
 
-    }
-    public static readonly PredefinedConformance Strict = new PredefinedConformance();
-    public static readonly PredefinedConformance Corrective = new PredefinedConformance();
-    public static readonly PredefinedConformance None = new PredefinedConformance();
-
-}
 public record CueSettings
 {
     public bool VerifyAgainstFileDuration { get; set; } = false;
@@ -45,9 +35,9 @@ public record CueSettings
 public class Sheet : IRemarkable
 {
     
-    private bool _useQualifiedPaths = false;
-    public CueSettings Settings { get; set => field = value ?? CueSettings.Default; } = CueSettings.Default;
-    public Remarks Remarks { get; }
+    internal bool UseQualifiedPaths { get; private set; }
+    public CueSettings Settings { get; set => field = value; } = new();
+    public Remarks Remarks { get; } = [];
     internal void Invalidate()
     {
         _tracks.Invalidate();
@@ -60,36 +50,37 @@ public class Sheet : IRemarkable
     public Sheet(string? filepath) : this(string.IsNullOrWhiteSpace(filepath) ? null : new FileInfo(filepath)) { }
     public Sheet(FileInfo? sourceFile)
     {
-        SourceFile = sourceFile;
+        _sourceFile = sourceFile;
         _tracks = new(x => x.Select(y => y.Track).Distinct(), Data);
         _files = new(x => x.Select(y => y.File).Distinct(), Data);
         _indices = new(x => x.Select(y => y.Index).Distinct(), Data);
+        _additionalFiles = new ResettableCollection<CueExtraFile>(() => AdditionalFileHelper.FindExtraFiles(this));
     }
 
-    internal readonly ResettableCollection<CueTrack, Link> _tracks;
-    internal readonly ResettableCollection<CueDataFile, Link> _files;
-    internal readonly ResettableCollection<CueIndex, Link> _indices;
-    private readonly List<CueExtraFile> _additionalFiles = [];
+    internal readonly ResettableDependentCollection<CueTrack, Link> _tracks;
+    internal readonly ResettableDependentCollection<CueDataFile, Link> _files;
+    internal readonly ResettableDependentCollection<CueIndex, Link> _indices;
+    private readonly ResettableCollection<CueExtraFile> _additionalFiles;
 
     private string? _title;
+    private FileInfo? _sourceFile;
 
     public IReadOnlyList<CueTrack> Tracks => _tracks;
     public IReadOnlyList<CueDataFile> Files => _files;
     public IReadOnlyList<CueIndex> Indices => _indices;
     public IReadOnlyList<CueExtraFile> AdditionalFiles => _additionalFiles;
-    private void RefreshAdditionalFiles()
+
+    public void RefreshAdditionalFiles()
     {
-        _additionalFiles.Clear();
-        var extras =AdditionalFileHelper.FindExtraFiles(this, keepQualified:_useQualifiedPaths);
-        _additionalFiles.AddRange(extras);
+        _additionalFiles.Revalidate();
     }
     public FileInfo? SourceFile
     {
-        get; internal set
+        get => _sourceFile; internal set
         {
-            if (!FileSystemInfoComparer.Default.Equals(value, field))
+            if (!FileSystemInfoComparer.Default.Equals(value, _sourceFile))
             {
-                field = value;
+                _sourceFile = value;
                 RefreshAdditionalFiles();
             }
 
@@ -116,7 +107,7 @@ public class Sheet : IRemarkable
         return new FileInfo(PathHelper.GetRelativePath(path, SourceFile));
     }
 
-    private string GetDefaultTitle()
+    internal string GetDefaultTitle()
     {
         string? n = null;
         if (SourceFile is not null)
@@ -140,7 +131,7 @@ public class Sheet : IRemarkable
     /// <param name="keepPathQualified"></param>
     public void ChangeFilePathsType(bool keepPathQualified)
     {
-        _useQualifiedPaths = keepPathQualified;
+        UseQualifiedPaths = keepPathQualified;
         foreach (var item in AdditionalFiles)
         {
             item.ChangeFilePathType(keepPathQualified);
@@ -288,7 +279,7 @@ public class Sheet : IRemarkable
     public void InsertFile(int? index, string filepath, FileType type, TrackInsertParameters? trackInsertParameters = null)
     {
         CueTime time = CueTime.Zero; // first index in a file MUST be 00:00:00
-        var fileToAdd = new CueDataFile(this, filepath, type);
+        var fileToAdd = new CueDataFile(filepath, this, type);
         ThrowIfOutsideOfFile(time, fileToAdd);
         NegativeIndexTimeException.ThrowIfNegative(time);
         int fileInsertionIndex = index ?? _files.Count;
@@ -518,5 +509,7 @@ public class Sheet : IRemarkable
                 Remarks.AddUnique("REPLAYGAIN_ALBUM_PEAK", value.ToString());
         }
     }
+
+    public Encoding? SourceEncoding { get; internal set; }
 }
 

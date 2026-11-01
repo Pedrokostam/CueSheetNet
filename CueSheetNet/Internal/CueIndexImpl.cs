@@ -1,55 +1,55 @@
-﻿using System.Diagnostics;
+﻿//using System.Diagnostics;
 
-namespace CueSheetNet.Internal;
+//namespace CueSheetNet.Internal;
 
-[DebuggerDisplay("CIImpl- Num: {Number}, Abs: {Position} - File {File.Position}, InnerCueTrack {InnerCueTrack.Position}")]
-internal sealed class CueIndexImpl(CueTrack track, CueDataFile file) : CueItemBase(file.ParentSheet)
-{
-    public CueDataFile File { get; } = file;
+//[DebuggerDisplay("CIImpl- Num: {Number}, Abs: {Position} - File {File.Position}, InnerCueTrack {InnerCueTrack.Position}")]
+//internal sealed class CueIndexImpl(CueTrack track, CueDataFile file) : CueItemBase(file.ParentSheet)
+//{
+//    public CueDataFile File { get; } = file;
 
-    public CueTrack Track { get; } = track;
+//    public CueTrack Track { get; } = track;
 
-    internal CueIndexImpl ClonePartial(CueTrack newOwnerTrack, CueDataFile newOwnerFile)
-    {
-        return new(newOwnerTrack, newOwnerFile)
-        {
-            Index = Index,
-            Time = Time,
-            Orphaned = Orphaned,
-            Number = Number,
-        };
-    }
+//    internal CueIndexImpl ClonePartial(CueTrack newOwnerTrack, CueDataFile newOwnerFile)
+//    {
+//        return new(newOwnerTrack, newOwnerFile)
+//        {
+//            Index = Index,
+//            Time = Time,
+//            Orphaned = Orphaned,
+//            Number = Number,
+//        };
+//    }
 
-    /// <inheritdoc cref="CueIndex.AbsolutePosition"/>
-    public int Index { get; internal set; }
+//    /// <inheritdoc cref="CueIndex.AbsolutePosition"/>
+//    public int Index { get; internal set; }
 
-    /// <inheritdoc cref="CueIndex.Number"/>
-    public int Number { get; internal set; }
+//    /// <inheritdoc cref="CueIndex.Number"/>
+//    public int Number { get; internal set; }
 
-    /// <inheritdoc cref="CueIndex.Time"/>
-    public CueTime Time { get; set; }
+//    /// <inheritdoc cref="CueIndex.Time"/>
+//    public CueTime Time { get; set; }
 
-    public override string ToString()
-    {
-        return "CueIndexImpl "
-            + Index.ToString("D2")
-            + ", "
-            + Number.ToString("D2")
-            + ", "
-            + File.Index.ToString("D2")
-            + ", "
-            + Track.Index.ToString("D2");
-    }
+//    public override string ToString()
+//    {
+//        return "CueIndexImpl "
+//            + Index.ToString("D2")
+//            + ", "
+//            + Number.ToString("D2")
+//            + ", "
+//            + File.Index.ToString("D2")
+//            + ", "
+//            + Track.Index.ToString("D2");
+//    }
 
-    public override int GetHashCode()
-    {
-        return HashCode.Combine(
-            File.GetHashCode(),
-            Track.GetHashCode(),
-            Time.GetHashCode(),
-            Number.GetHashCode()
-        );
-    }
+//    public override int GetHashCode()
+//    {
+//        return HashCode.Combine(
+//            File.GetHashCode(),
+//            Track.GetHashCode(),
+//            Time.GetHashCode(),
+//            Number.GetHashCode()
+//        );
+//    }
 
-    public static explicit operator CueIndex(CueIndexImpl cimpl) => new(cimpl);
-}
+//    public static explicit operator CueIndex(CueIndexImpl cimpl) => new(cimpl);
+//}

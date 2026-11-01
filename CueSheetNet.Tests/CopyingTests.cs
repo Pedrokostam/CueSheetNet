@@ -1,4 +1,5 @@
-﻿using CueSheetNet.FileHandling;
+﻿using CueSheetNet.Components;
+using CueSheetNet.FileHandling;
 using System.Security.Cryptography;
 
 namespace CueSheetNet.Tests;
@@ -22,11 +23,11 @@ public class CopyingTests
             using FileStream fs = File.OpenRead(file);
             hashes.Add(Path.GetFileName(file), md5.ComputeHash(fs));
         }
-        CueSheet sheet = CueSheet.Read(Utils.GetFile("CopyingTests", "Spandau Ballet - True.cue"));
+        Sheet sheet = Sheet.Read(Utils.GetFile("CopyingTests", "Spandau Ballet - True.cue"));
         string output = CreateTempDirectory("CueCopying");
 
         sheet.CopyPackage(output, null);
-        CueSheet copied = CueSheet.Read(Path.Combine(Path.GetTempPath(), "CueCopying", sheet.SourceFile!.Name));
+        Sheet copied = Sheet.Read(Path.Combine(Path.GetTempPath(), "CueCopying", sheet.SourceFile!.Name));
         Assert.AreEqual(copied, sheet);
         foreach (var file in Directory.EnumerateFiles(output))
         {
@@ -40,7 +41,7 @@ public class CopyingTests
         }
         string outputMove = CreateTempDirectory("CueCopying", "Moving");
         copied.MovePackage(outputMove, null);
-        CueSheet moved = CueSheet.Read(Path.Combine(Path.GetTempPath(), "CueCopying", "Moving", sheet.SourceFile.Name));
+        Sheet moved = Sheet.Read(Path.Combine(Path.GetTempPath(), "CueCopying", "Moving", sheet.SourceFile.Name));
         Assert.AreEqual(copied, moved);
         foreach (var file in Directory.EnumerateFiles(outputMove))
         {
@@ -71,7 +72,7 @@ public class CopyingTests
     [TestMethod("Converts package using RecipeConverter and checks converted.txt")]
     public void ConvertTest()
     {
-        CueSheet sheet = CueSheet.Read(Utils.GetFile("CopyingTests", "Spandau Ballet - True.cue"));
+        Sheet sheet = Sheet.Read(Utils.GetFile("CopyingTests", "Spandau Ballet - True.cue"));
         string output = CreateTempDirectory("ConversionTest");
         CuePackage.Convert(sheet, output, null, ".Wav");
         string converted = File.ReadAllText(Utils.GetFile("CopyingTests", "converted.txt"));

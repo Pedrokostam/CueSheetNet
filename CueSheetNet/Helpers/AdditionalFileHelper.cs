@@ -9,7 +9,11 @@ namespace CueSheetNet.Helpers;
 
 internal static class AdditionalFileHelper
 {
-    public static IEnumerable<CueExtraFile> FindExtraFiles(Sheet sheet, bool keepQualified = false)
+    // Static HashSet for constant file names to avoid repeated allocation
+    private static readonly System.Collections.Generic.HashSet<string> ConstantTargetNames = 
+        new(StringComparer.OrdinalIgnoreCase) { "album", "cover", "art" };
+
+    public static IEnumerable<CueExtraFile> FindExtraFiles(Sheet sheet)
     {
         if (sheet.SourceFile is null)
         {
@@ -31,31 +35,45 @@ internal static class AdditionalFileHelper
             .Distinct(FileSystemInfoComparer.Default)
             .Cast<DirectoryInfo>()
             .SelectMany(x => SeekRelated(x, baseName, skipFiles))
-            .Select(x => new CueExtraFile(sheet, x.FullName, keepQualified));
+            .Select(x => new CueExtraFile(x.FullName, sheet, sheet.UseQualifiedPaths));
     }
+    private static bool MatchesBaseName(string nameNoExt, string baseName)
+    {
+        if(OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
+        {
+            return nameNoExt.Equals(baseName, StringComparison.OrdinalIgnoreCase) ||
+                   ConstantTargetNames.Contains(nameNoExt);
+        }
+
+        return nameNoExt.Equals(baseName, StringComparison.Ordinal) ||
+               ConstantTargetNames.Contains(nameNoExt);
+    }   
 
     private static IEnumerable<FileInfo> SeekRelated(DirectoryInfo dir, string baseName, HashSet<FileSystemInfo> skipFiles, bool keepQualified = false)
     {
-        foreach (var file in dir.EnumerateFiles())
+        IEnumerable<FileInfo> files;
+        try
+        {
+            files = dir.EnumerateFiles();
+        }
+        catch (System.IO.DirectoryNotFoundException)
+        {
+            yield break;
+        }
+        catch (System.UnauthorizedAccessException)
+        {
+            yield break;
+        }
+
+        foreach (var file in files)
         {
             if (skipFiles.Contains(file))
             {
                 continue;
             }
             var noExtName = Path.ChangeExtension(file.Name, null);
-            if (noExtName.Equals(baseName, StringComparison.OrdinalIgnoreCase))
-            {
-                yield return file;
-            }
-            if (noExtName.Equals("album", StringComparison.OrdinalIgnoreCase))
-            {
-                yield return file;
-            }
-            if (noExtName.Equals("cover", StringComparison.OrdinalIgnoreCase))
-            {
-                yield return file;
-            }
-            if (noExtName.Equals("art", StringComparison.OrdinalIgnoreCase))
+            // Check if filename matches baseName or one of the constant target names
+            if (ConstantTargetNames.Contains(noExtName) || MatchesBaseName(noExtName, baseName))
             {
                 yield return file;
             }

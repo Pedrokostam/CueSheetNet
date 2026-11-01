@@ -1,6 +1,7 @@
 ﻿using CueSheetNet.Extensions;
 using CueSheetNet.FormatReaders;
 using CueSheetNet.Syntax;
+using CueSheetNet.Writing;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -8,18 +9,22 @@ using System.Net.Security;
 using System.Net.WebSockets;
 namespace CueSheetNet.Components;
 
+
 public record CueTrack : IRemarkable
 {
-    public Remarks Remarks { get; }
+    public Remarks Remarks { get; } = [];
 
     private readonly Sheet _sheet;
-    private readonly ResettableSlice<CueIndex, Link> _indices;
+    readonly ResettableSlice<CueIndex, Link> _indices;
     private string? _title;
     private string? _performer;
     private string? _songwriter;
     internal int Gap { get => field; set => field = value < 0 ? 0 : value; }
 
     internal int AbsolutePosition => _sheet.Tracks.IndexOfRef(this);
+    /// <summary>
+    /// Track's position, calculated dynamically by its index in <see cref="Sheet.Tracks"/> (+1) and optionally shifted by <see cref="Gap"/>.
+    /// </summary>
     public int Position => AbsolutePosition + Gap + 1;
 
     // Track metadata (Performer and Songwriter can be inherited from the parent sheet)

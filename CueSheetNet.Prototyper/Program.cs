@@ -7,22 +7,25 @@ using CueSheetNet.Test;
 xd();
 void xd()
 {
-    DebugLogger hybridLogger = new DebugLogger(LogLevel.None);
+    DebugLogger hybridLogger = new DebugLogger(LogLevel.All);
     CueSheetNet.Logging.Logger.Register(hybridLogger);
-    var reader = new CueReader();
-    var c = reader.ParseCueSheet(@"./TestItems/Spandau Ballet - True.cue"); 
-    var s = new string[]
+    var dir = new DirectoryInfo(@"./TestItems/");
+    var files = dir.EnumerateFiles("*.cue").ToList();
+    List<string> outp = [];
+    for (int i = 0; i < 10000; i++)
     {
-        @"E:\Nowy folder\audiobook220805\iluzjo030_Iluzjonista.mp3",
-        @"E:\Torrent\vmware\Various Artists - Cyberpunk 2077 Radio, Vol. 2 (Original Soundtrack) (2020)\01. Ponpon Shit.flac",
-        @"E:\JAWALE\_Soundtracks\Scrapland (EMU).zophar\epic.ogg",
-        @"E:\RIPPER COMPARISON\EAC\KAT - Bastard.wav",
-        @"C:\Program Files\Microsoft Office\root\Office16\Media\DefaultHold.wma",
-    };
-    foreach (var item in s)
+
+        foreach (var item in files)
+        {
+            var reader = new CueReader();
+            var c = reader.ParseCueSheet(item.FullName);
+            outp.Append(new CueWriter().WriteToString(c));
+        }
+    }
+
+    foreach (var entry in hybridLogger.LogEntries)
     {
-       Console.WriteLine(Path.GetFileName(item));
-       Console.WriteLine();
+        Console.WriteLine(entry);
     }
 }
 

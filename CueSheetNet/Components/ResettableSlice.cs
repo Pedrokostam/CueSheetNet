@@ -6,7 +6,7 @@ internal class ResettableSlice<TSource, TData> : IReadOnlyList<TSource>
     where TData : notnull
     where TSource : notnull
 {
-    private readonly ResettableCollection<TSource, TData> _source;
+    private readonly ResettableDependentCollection<TSource, TData> _source;
     private readonly IEnumerable<TData> _date;
     private readonly Func<TData, bool> _sourcePredicate;
     private readonly Func<TData, TSource> _getterDataSource;
@@ -22,7 +22,7 @@ internal class ResettableSlice<TSource, TData> : IReadOnlyList<TSource>
         }
     }
 
-    private int InvalidationCounter { get; set; }
+    private int InvalidationCounter { get; set; } = -1;
 
     public TSource this[int index]
     {
@@ -30,11 +30,12 @@ internal class ResettableSlice<TSource, TData> : IReadOnlyList<TSource>
         {
             Validate();
             ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, _count);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
             return _source[index + Start];
         }
     }
 
-    public ResettableSlice(IEnumerable<TData> data, ResettableCollection<TSource, TData> source, Func<TData, TSource> getterDataSource, Func<TData, bool> sourcePredicate)
+    public ResettableSlice(IEnumerable<TData> data, ResettableDependentCollection<TSource, TData> source, Func<TData, TSource> getterDataSource, Func<TData, bool> sourcePredicate)
     {
         _date = data;
         _source = source;

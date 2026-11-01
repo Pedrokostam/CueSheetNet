@@ -73,7 +73,7 @@ public readonly record struct FileType
             "WAVE" => FileType.WAVE,
             "BINARY" => FileType.BINARY,
             "MOTOROLA" => FileType.MOTOROLA,
-            _ => FileType.WAVE
+            _ => Unknown(s.ToString())
         };
     }
 }

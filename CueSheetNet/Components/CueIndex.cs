@@ -1,7 +1,6 @@
 ﻿using CueSheetNet.Components;
 using CueSheetNet.Exceptions;
 using CueSheetNet.Extensions;
-using CueSheetNet.Internal;
 
 namespace CueSheetNet;
 
@@ -28,6 +27,9 @@ public class CueIndex
     /// </summary>
     public const int MaxNumber = 99;
 
+    /// <summary>
+    /// Index's position in the track.
+    /// </summary>
     public int Position
     {
         get;

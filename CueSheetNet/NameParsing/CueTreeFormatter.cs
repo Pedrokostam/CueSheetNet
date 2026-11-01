@@ -1,4 +1,5 @@
 ﻿using System.Text.RegularExpressions;
+using CueSheetNet.Components;
 using CueSheetNet.FileHandling;
 using CueSheetNet.Logging;
 
@@ -25,12 +26,12 @@ public static partial class CueTreeFormatter
     /// <para/>If parameter is null, the original filename will be used
     /// <para/>If parameter is null and the sheet has not filename yet, the following pattern will be used: "{Performer} - {Title}"
     /// </param>
-    public static string ParseFormatPattern(CueSheet sheet, string? treeFormat)
+    public static string ParseFormatPattern(Sheet sheet, string? treeFormat)
     {
         if (string.IsNullOrWhiteSpace(treeFormat))
         {
             return Path.GetFileNameWithoutExtension(sheet.SourceFile?.Name)
-                ?? sheet.DefaultFilename;
+                ?? sheet.GetDefaultTitle();
         }
         Regex formatter = PropertyParser();
         MatchCollection matches = formatter.Matches(treeFormat);
@@ -69,7 +70,7 @@ public static partial class CueTreeFormatter
         )
         {
             string old =
-                Path.GetFileNameWithoutExtension(sheet.SourceFile?.Name) ?? sheet.DefaultFilename;
+                Path.GetFileNameWithoutExtension(sheet.SourceFile?.Name) ?? sheet.GetDefaultTitle();
             Logger.LogWarning(
                 "Name parsing for pattern {Pattern} resulted in empty string - replacing with old name {OldName}",
                 treeFormat,

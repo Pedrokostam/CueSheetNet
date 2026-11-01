@@ -46,7 +46,7 @@ public sealed record CueWriterSettings
     }
     public CueWriterSettings()
     {
-        ForceQuoting = true;
+        ForceQuoting = false;
         IndentationDepth = 2;
         IndentationCharacter = ' ';
         NewLine = Environment.NewLine;

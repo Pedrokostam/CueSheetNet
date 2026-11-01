@@ -2,7 +2,6 @@
 using CueSheetNet.Components;
 using CueSheetNet.FileHandling;
 using CueSheetNet.FormatReaders;
-using CueSheetNet.Internal;
 
 namespace CueSheetNet;
 /// <summary>
@@ -36,11 +35,15 @@ public class CueDataFile : FilePath
     }
 
 
-    public CueDataFile(Sheet sheet, string filePath, FileType type,bool keepQualified=false) : base(filePath, sheet,keepQualified)
+    internal CueDataFile(string filePath, Sheet sheet, FileType type, bool keepQualified) : base(filePath, sheet,keepQualified)
     {
         Type = type;
         _tracks = new(_sheet.Data, _sheet._tracks, x => x.Track, x => ReferenceEquals(x.File, this) && !x.Index.IsSplit);
     }
+    public CueDataFile(string filePath, Sheet sheet, FileType type) : this(filePath, sheet,type, false)
+    {
+    }
+
 
     public int Position => _sheet._files.FindIndex(x => ReferenceEquals(x, this));
 
