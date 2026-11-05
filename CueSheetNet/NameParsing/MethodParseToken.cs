@@ -1,18 +1,16 @@
-﻿using CueSheetNet.Components;
-
-namespace CueSheetNet.NameParsing;
+﻿namespace CueSheetNet.NameParsing;
 
 internal record MethodParseToken : ParseToken
 {
-    public Func<Sheet, string> Method { get; }
+    public Func<CueSheet, string> Method { get; }
     public MethodParseToken(string name,
-                            Func<Sheet, string> method,
+                            Func<CueSheet, string> method,
                             string description,
                             params string[] alternatives) : base(name, description, alternatives)
     {
         Method = method;
     }
-    public override string GetValue(Sheet sheet)
+    public override string GetValue(CueSheet sheet)
     {
         return Method.Invoke(sheet);
     }

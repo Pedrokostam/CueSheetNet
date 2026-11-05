@@ -7,21 +7,23 @@ using CueSheetNet.Logging;
 using CueSheetNet.Reading;
 using CueSheetNet.Syntax;
 using CueSheetNet.TextParser;
+using Microsoft.Extensions.Logging;
 
 namespace CueSheetNet;
 
 public sealed partial class CueReader
 {
+    internal ILogger Loggerio => Loggingq.ParsingLogger;
     private static readonly CultureInfo InvCul = CultureInfo.InvariantCulture;
     public const char DefaultQuotation = '"';
     public int CurrentLineIndex { get; private set; } = -1;
 
-    public CueSource Source { get; private set; }
+    internal CueSource Source { get; private set; }
 
     public string? CurrentLine { get; private set; } = "No line read yet";
 
     [AllowNull]
-    Sheet Sheet { get; set; }
+    CueSheet Sheet { get; set; }
     [MemberNotNullWhen(returnValue: true, nameof(LastTrack))]
     private bool SheetHasTracks => Sheet.Data.Count > 0;
     [MemberNotNullWhen(returnValue: true, nameof(LastFile))]
@@ -65,35 +67,6 @@ public sealed partial class CueReader
 
     public CueReader() { }
 
-    /// <remarks></remarks>
-    /// <inheritdoc cref="ParseCueSheet(string, Encoding?)"/>
-    public Sheet ParseCueSheet(string cuePath) => ParseCueSheet(cuePath, encoding: null);
-
-    /// <summary>
-    /// Loads specified text file and parses it as CueSheet.
-    /// </summary>
-    /// <remarks>Can detect encoding if not specified.</remarks>
-    /// <param name="cuePath">Filepath to be loaded and parsed</param>
-    /// <param name="encoding">Encoding to be used when decoding bytes to text. If null, encoding detection will be perfomed/></param>
-    /// <returns>Parsed <see cref="CueSheet"/></returns>
-    public Sheet ParseCueSheet(string cuePath, Encoding? encoding)
-    {
-        Reset(encoding);
-        try
-        {
-
-            Source = new CueSource(cuePath);
-            byte[] cueFileBytes = File.ReadAllBytes(cuePath);
-            LogParseSource();
-            using MemoryStream fs = new(cueFileBytes, writable: false);
-            Sheet cue = ParseCueSheet_Impl(fs, cuePath);
-            return cue;
-        }
-        catch (FileNotFoundException fnfe)
-        {
-            throw new FileNotFoundException($"{cuePath} does not exist", fnfe);
-        }
-    }
 
     /// <summary>Parsing CueSheet from: {Source}</summary>
     private void LogParseSource() => Logger.LogInformation("Parsing CueSheet from: {Source}", Source);
@@ -101,56 +74,7 @@ public sealed partial class CueReader
     /// <summary>Parsing started</summary>
     private static void LogParseStart() => Logger.LogDebug("Parsing started");
 
-    /// <remarks></remarks>
-    /// <inheritdoc cref="ParseCueSheet(byte[], Encoding?)"/>
-    public Sheet ParseCueSheet(byte[] cueFileBytes) =>
-        ParseCueSheet(cueFileBytes, encoding: null);
-
-    /// <summary>
-    /// Parses byte array as CueSheet.
-    /// </summary>
-    /// <remarks>Can detect encoding if not specified.</remarks>
-    /// <param name="cueFileBytes">Byte source to be decoded to text and parsed</param>
-    /// <param name="encoding">Encoding to be used when decoding bytes to text. If null, encoding detection will be perfomed/></param>
-    /// <returns>Parsed <see cref="CueSheet"/></returns>
-    public Sheet ParseCueSheet(byte[] cueFileBytes, Encoding? encoding)
-    {
-        Reset(encoding);
-        Source = new CueSource(cueFileBytes);
-        LogParseSource();
-        using MemoryStream fs = new(cueFileBytes, writable: false);
-        return ParseCueSheet_Impl(fs, path: null);
-    }
-
-    /// <summary>
-    /// Parses string as CueSheet.
-    /// </summary>
-    /// <param name="cueContent">String to be parsed</param>
-    /// <returns>Parsed <see cref="CueSheet"/></returns>
-    public Sheet ParseCueSheetFromStringContent(string cueContent)
-    {
-        Reset();
-        Source = CueSource.FromStringContent(cueContent);
-        LogParseSource();
-        LogParseStart();
-        using TextReader txt = new StringReader(cueContent);
-        Sheet = new();
-        return ReadImpl(txt);
-    }
-
-    /// <summary>
-    /// Parses char span as CueSheet.
-    /// </summary>
-    /// <param name="cueContentChars">Span to be converted into string and parsed</param>
-    /// <returns>Parsed <see cref="CueSheet"/></returns>
-    public Sheet ParseCueSheet(ReadOnlySpan<char> cueContentChars)
-    {
-        // ToString is overriden for T = char and results in concatenation of all elements
-        string spanString = cueContentChars.ToString();
-        return ParseCueSheetFromStringContent(spanString);
-    }
-
-    private Sheet ParseCueSheet_Impl(Stream fs, string? path)
+    private CueSheet ParseAll_impl(Stream fs, string? path)
     {
         LogParseStart();
         Sheet = new(path);
@@ -174,8 +98,8 @@ public sealed partial class CueReader
         );
         return ReadImpl(strr);
     }
-
-    private Sheet ReadImpl(TextReader txtRead)
+    [TraceExecutionTime("Read")]
+    private CueSheet ReadImpl(TextReader txtRead)
     {
         Stopwatch st = Stopwatch.StartNew();
         while (txtRead.ReadLine()?.Trim() is string line)
@@ -480,7 +404,7 @@ public sealed partial class CueReader
         else
             track.PostGap = cueTime;
     }
-
+    [TraceExecutionTime]
     private void ParseREM(string line)
     {
         string firstWord = GetKeyword(line, 4).ToUpperInvariant();

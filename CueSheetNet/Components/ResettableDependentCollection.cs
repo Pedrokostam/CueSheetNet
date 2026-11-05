@@ -25,7 +25,6 @@ internal class ResettableCollection<T> : IReadOnlyList<T>
     }
     public void Invalidate()
     {
-        _data.Clear();
         InvalidationCounter++;
     }
     public void Revalidate()

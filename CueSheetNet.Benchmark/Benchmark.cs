@@ -6,44 +6,19 @@ namespace CueSheetNet.Benchmark;
 [MemoryDiagnoser(true)]
 public class Benchmark
 {
-    [Params(10,1000,1000000)]
-    public int Size { get; set; }
-    public IEnumerable<decimal> A { get; set; }= [];
-    public IEnumerable<decimal> B()
-    {
-        for (int i = 0; i < Size; i++)
-        {
-            yield return (decimal)i;
-        }
-    }
+    public string Path { get; set; } = @"C:\Users\Pedro\Repos\Sony - PlayStation - Cuesheets (10914) (2026-06-15 11-55-46)\Sabrina l'Apprentie Sorciere et l'Horloge Cosmique (France).cue";
 
-    [GlobalSetup]
-  public  void Setup()
+    CueReader2 Reader { get; set; } = CueReader2.CreateFromString("");
+
+
+    [Benchmark(Baseline = true)]
+    public void Streamable()
     {
-        A = B();
+        var c = Reader.FromFile(Path).Parse();
     }
-    private List<decimal> ListImpl()
-    {
-        return A.ToList();
-    }
-    private decimal[] ArrayImpl()
-    {
-        return A.ToArray();
-    }
-    private ImmutableArray<decimal> ImmutableArrayImpl()
-    {
-        return A.ToImmutableArray();
-    }
-    private ImmutableList<decimal> ImmutableListImpl()
-    {
-        return A.ToImmutableList();
-    }
-    [Benchmark(Baseline =true)]
-    public int List() => ListImpl().Count;
     [Benchmark]
-    public int Array() => ArrayImpl().Length;
-    [Benchmark]
-    public int ImmutableArray() => ImmutableArrayImpl().Length;
-    [Benchmark]
-    public int ImmutableList() => ImmutableListImpl().Count;
+    public void Spannable()
+    {
+        var c = Reader.FromFile(Path).Parse();
+    }
 }

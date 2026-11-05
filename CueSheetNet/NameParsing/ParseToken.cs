@@ -1,13 +1,11 @@
-﻿using CueSheetNet.Components;
-
-namespace CueSheetNet.NameParsing;
+﻿namespace CueSheetNet.NameParsing;
 
 internal abstract record ParseToken
 {
     public string Name { get; }
     public string Description { get; }
     public string[] Alternatives { get; }
-    public abstract string GetValue(Sheet sheet);
+    public abstract string GetValue(CueSheet sheet);
     protected ParseToken(string name,
                       string description,
                       params string[] alternatives)

@@ -14,16 +14,29 @@ public record CueTrack : IRemarkable
 {
     public Remarks Remarks { get; } = [];
 
-    private readonly Sheet _sheet;
+    internal readonly CueSheet _sheet;
     readonly ResettableSlice<CueIndex, Link> _indices;
     private string? _title;
     private string? _performer;
     private string? _songwriter;
-    internal int Gap { get => field; set => field = value < 0 ? 0 : value; }
-
+    internal int Gap { get; set => field = value < 0 ? 0 : value; }
+    internal FieldsSet ExplicitFields
+    {
+        get
+        {
+            FieldsSet fields = FieldsSet.None;
+            if (_title is not null)
+                fields |= FieldsSet.Title;
+            if (_performer is not null)
+                fields |= FieldsSet.Performer;
+            if (_songwriter is not null)
+                fields |= FieldsSet.Songwriter;
+            return fields;
+        }
+    }
     internal int AbsolutePosition => _sheet.Tracks.IndexOfRef(this);
     /// <summary>
-    /// Track's position, calculated dynamically by its index in <see cref="Sheet.Tracks"/> (+1) and optionally shifted by <see cref="Gap"/>.
+    /// Track's position, calculated dynamically by its index in <see cref="CueSheet.Tracks"/> (+1) and optionally shifted by <see cref="Gap"/>.
     /// </summary>
     public int Position => AbsolutePosition + Gap + 1;
 
@@ -31,136 +44,7 @@ public record CueTrack : IRemarkable
     public string? Performer { get => _performer ?? _sheet.Performer; set => _performer = value; }
     public string? Songwriter { get => _songwriter ?? _sheet.Songwriter; set => _songwriter = value; }
 
-    public string? Composer
-    {
-        get => Remarks.GetField("COMPOSER") ?? _sheet.Composer;
-        set
-        {
-            if (!string.IsNullOrWhiteSpace(value))
-            {
-                Remarks.AddUnique("COMPOSER", value);
-            }
-        }
-    }
-    public string? Upc
-    {
-        get => Remarks.GetField("UPC") ?? _sheet.Upc;
-        set
-        {
-            if (!string.IsNullOrWhiteSpace(value))
-            {
-                Remarks.AddUnique("UPC", value);
-            }
-        }
-    }
-    public string? Genre
-    {
-        get => Remarks.GetField("GENRE") ?? _sheet.Genre;
-        set
-        {
-            if (!string.IsNullOrWhiteSpace(value))
-            {
-                Remarks.AddUnique("GENRE", value);
-            }
-        }
-    }
-    public int? Date
-    {
-        get
-        {
-            if (Remarks.GetField("DATE") is string d && int.TryParse(d, CultureInfo.InvariantCulture, out int result))
-            {
-                return result;
-            }
-            return _sheet.Date;
-        }
 
-        set
-        {
-            if (value is null)
-                Remarks.RemoveField("DATE");
-            else
-                Remarks.AddUnique("DATE", value.ToString());
-        }
-    }
-    public double? ReplayGainTrackGain
-    {
-        get
-        {
-            if (Remarks.GetField("REPLAYGAIN_TRACK_GAIN") is string d && double.TryParse(d, CultureInfo.InvariantCulture, out var result))
-            {
-                return result;
-            }
-            return null;
-        }
-
-        set
-        {
-            if (value is null)
-                Remarks.RemoveField("REPLAYGAIN_TRACK_GAIN");
-            else
-                Remarks.AddUnique("REPLAYGAIN_TRACK_GAIN", value.ToString());
-        }
-    }
-    public double? ReplayGainTrackPeak
-    {
-        get
-        {
-            if (Remarks.GetField("REPLAYGAIN_TRACK_PEAK") is string d && double.TryParse(d, CultureInfo.InvariantCulture, out var result))
-            {
-                return result;
-            }
-            return null;
-        }
-
-        set
-        {
-            if (value is null)
-                Remarks.RemoveField("REPLAYGAIN_TRACK_PEAK");
-            else
-                Remarks.AddUnique("REPLAYGAIN_TRACK_PEAK", value.ToString());
-        }
-    }
-    public double? ReplayGainAlbumGain
-    {
-        get
-        {
-            if (Remarks.GetField("REPLAYGAIN_ALBUM_GAIN") is string d && double.TryParse(d, CultureInfo.InvariantCulture, out var result))
-            {
-                return result;
-            }
-           
-            return _sheet.ReplayGainAlbumGain;
-        }
-
-        set
-        {
-            if (value is null)
-                Remarks.RemoveField("REPLAYGAIN_ALBUM_GAIN");
-            else
-                Remarks.AddUnique("REPLAYGAIN_ALBUM_GAIN", value.ToString());
-        }
-    }
-    public double? ReplayGainAlbumPeak
-    {
-        get
-        {
-            if (Remarks.GetField("REPLAYGAIN_ALBUM_PEAK") is string d && double.TryParse(d, CultureInfo.InvariantCulture, out var result))
-            {
-                return result;
-            }
-            
-            return _sheet.ReplayGainAlbumPeak;
-        }
-
-        set
-        {
-            if (value is null)
-                Remarks.RemoveField("REPLAYGAIN_ALBUM_PEAK");
-            else
-                Remarks.AddUnique("REPLAYGAIN_ALBUM_PEAK", value.ToString());
-        }
-    }
     public string? Isrc { get; set; }
 
     // Title is not inherited from the sheet and must be present on the track if needed
@@ -181,14 +65,14 @@ public record CueTrack : IRemarkable
 
     public IReadOnlyList<CueIndex> Indices => _indices;
 
-    internal CueTrack(TrackType type, Sheet sheet)
+    internal CueTrack(TrackType type, CueSheet sheet)
     {
         Type = type;
         _sheet = sheet;
         _indices = new(_sheet.Data, _sheet._indices, x => x.Index, x => ReferenceEquals(x.Track, this) && ReferenceEquals(x.File, this.File));
     }
-    internal CueTrack(string type, Sheet sheet) : this(TrackType.FromString(type), sheet) { }
-    internal static CueTrack FromInsertionParams(TrackInsertParameters? insertParameters, Sheet sheet)
+    internal CueTrack(string type, CueSheet sheet) : this(TrackType.FromString(type), sheet) { }
+    internal static CueTrack FromInsertionParams(TrackInsertParameters? insertParameters, CueSheet sheet)
     {
         return new(insertParameters?.Type ?? TrackType.AUDIO, sheet)
         {
@@ -243,11 +127,11 @@ public record CueTrack : IRemarkable
     {
         var inTrackIndex = _sheet.Tracks.IndexOfRef(this);
         var diff = forward ? 1 : -1;
-        if(inTrackIndex + diff >= _sheet.Tracks.Count || inTrackIndex<0)
+        if (inTrackIndex + diff >= _sheet.Tracks.Count || inTrackIndex < 0)
         {
             return null;
         }
-        var chain = _sheet.Tracks[inTrackIndex+diff];
+        var chain = _sheet.Tracks[inTrackIndex + diff];
         if (file)
         {
             if (!ReferenceEquals(chain.File, this.File))

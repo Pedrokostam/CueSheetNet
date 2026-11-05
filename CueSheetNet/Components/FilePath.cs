@@ -1,12 +1,11 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using CueSheetNet.Components;
 using IoPath = System.IO.Path;
 
 namespace CueSheetNet;
 
 public abstract class FilePath
 {
-    protected readonly Sheet _sheet;
+    protected readonly CueSheet _sheet;
     protected readonly IList<string> _parts = [];
     /// <summary>
     /// The path as it was written in the cue sheet.
@@ -42,7 +41,7 @@ public abstract class FilePath
     /// If the sheet has no source file a qualified path will always remain qualified.
     /// </br></param>
     /// <exception cref="ArgumentException"></exception>
-    protected FilePath(string path, Sheet sheet, bool keepQualified = false)
+    protected FilePath(string path, CueSheet sheet, bool keepQualified = false)
     {
         _sheet = sheet;
         Update(path, keepQualified);

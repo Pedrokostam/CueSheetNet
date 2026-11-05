@@ -1,5 +1,4 @@
-﻿using CueSheetNet.Components;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -13,7 +12,7 @@ internal static class AdditionalFileHelper
     private static readonly System.Collections.Generic.HashSet<string> ConstantTargetNames = 
         new(StringComparer.OrdinalIgnoreCase) { "album", "cover", "art" };
 
-    public static IEnumerable<CueExtraFile> FindExtraFiles(Sheet sheet)
+    public static IEnumerable<CueExtraFile> FindExtraFiles(CueSheet sheet)
     {
         if (sheet.SourceFile is null)
         {

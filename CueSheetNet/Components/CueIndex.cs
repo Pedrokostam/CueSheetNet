@@ -10,13 +10,13 @@ namespace CueSheetNet;
 public class CueIndex
 {
 
-    private readonly Sheet _sheet;
+    private readonly CueSheet _sheet;
 
     public bool IsSplit { get; internal set; } = false;
 
     internal bool StartsContent => Position == 1;
 
-    internal CueIndex(int position, CueTime time, Sheet sheet)
+    internal CueIndex(int position, CueTime time, CueSheet sheet)
     {
         _sheet = sheet;
         Time = time;

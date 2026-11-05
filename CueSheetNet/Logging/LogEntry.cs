@@ -1,9 +1,11 @@
 ﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 
 namespace CueSheetNet.Logging;
+
 [DebuggerDisplay("{Level}: {Message} - {Timestamp}")]
 public partial class LogEntry
 {
@@ -11,7 +13,18 @@ public partial class LogEntry
 
     public LogLevel Level { get; init; }
 
-    public string Message { get; }
+    public string Message
+    {
+        get
+        {
+            if (_message is null)
+            {
+                _message = string.Format(CultureInfo.InvariantCulture, FormattingTemplate, Elements.Select(x => x.Get()).ToArray());
+            }
+            return _message;
+        }
+    }
+    private string? _message;
 
     public string MessageTemplate { get; }
 
@@ -30,7 +43,7 @@ public partial class LogEntry
             LogLevel.Warning => "WRN",
             _ => throw new ArgumentOutOfRangeException(nameof(level), level, null)
         };
-    }   
+    }
 
     public LogEntry(LogLevel level, string messageTemplate, object?[] args)
     {
@@ -41,7 +54,7 @@ public partial class LogEntry
         if (args.Length == 0 && !messageTemplate.Contains('{', StringComparison.Ordinal))
         {
             //No objects, no curly brackets - no identifiers -- no need to check
-            Message = messageTemplate;
+            _message = messageTemplate;
             FormattingTemplate = string.Empty;
             Elements = new([]);
             return;
@@ -71,7 +84,6 @@ public partial class LogEntry
             }
         }
         Elements = temp.AsReadOnly();
-        Message = string.Format(CultureInfo.InvariantCulture, FormattingTemplate, Elements.Select(x => x.Get()).ToArray());
     }
 
     private string Tokenize()

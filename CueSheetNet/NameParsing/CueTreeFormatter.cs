@@ -1,5 +1,4 @@
 ﻿using System.Text.RegularExpressions;
-using CueSheetNet.Components;
 using CueSheetNet.FileHandling;
 using CueSheetNet.Logging;
 
@@ -26,7 +25,7 @@ public static partial class CueTreeFormatter
     /// <para/>If parameter is null, the original filename will be used
     /// <para/>If parameter is null and the sheet has not filename yet, the following pattern will be used: "{Performer} - {Title}"
     /// </param>
-    public static string ParseFormatPattern(Sheet sheet, string? treeFormat)
+    public static string ParseFormatPattern(CueSheet sheet, string? treeFormat)
     {
         if (string.IsNullOrWhiteSpace(treeFormat))
         {
@@ -104,7 +103,7 @@ public static partial class CueTreeFormatter
                 "AlbumArtist"
             ),
             new PropertyParseToken("Date", "Release data of the album", "Year"),
-            new PropertyParseToken("Composer", "Name of the composer"),
+            new PropertyParseToken("Songwriter", "Name of the composer"),
             new PropertyParseToken("Catalog", "Catalog number of the CD"),
             new PropertyParseToken("DiscID", "ID of the CD"),
             new MethodParseToken(

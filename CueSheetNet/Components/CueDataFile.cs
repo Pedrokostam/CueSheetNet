@@ -35,12 +35,12 @@ public class CueDataFile : FilePath
     }
 
 
-    internal CueDataFile(string filePath, Sheet sheet, FileType type, bool keepQualified) : base(filePath, sheet,keepQualified)
+    internal CueDataFile(string filePath, CueSheet sheet, FileType type, bool keepQualified) : base(filePath, sheet,keepQualified)
     {
         Type = type;
         _tracks = new(_sheet.Data, _sheet._tracks, x => x.Track, x => ReferenceEquals(x.File, this) && !x.Index.IsSplit);
     }
-    public CueDataFile(string filePath, Sheet sheet, FileType type) : this(filePath, sheet,type, false)
+    public CueDataFile(string filePath, CueSheet sheet, FileType type) : this(filePath, sheet,type, false)
     {
     }
 
@@ -77,7 +77,7 @@ public class CueDataFile : FilePath
 
     public void RefreshMeta()
     {
-        Debug.WriteLine($"Refreshing file meta: {Path}");
+        Debug.WriteLineIf(Debugger.IsAttached,$"Refreshing file meta: {Path}");
         if (this.Exists)
         {
             FileMetadata? resMeta = FormatReader.ReadMetadata(

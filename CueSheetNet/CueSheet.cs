@@ -1,666 +1,392 @@
-﻿//using System.Collections.ObjectModel;
-//using CueSheetNet.FileHandling;
-//using CueSheetNet.Internal;
+﻿#pragma warning disable MA0008 // Add StructLayoutAttribute
+
+using CueSheetNet.Components;
+using CueSheetNet.Exceptions;
+using CueSheetNet.Extensions;
+using CueSheetNet.Internal;
+using System.Data;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Timers;
+
+namespace CueSheetNet;
+
+public interface ICueConformance
+{
+    /// <summary>
+    /// Gets a value indicating whether verification is performed against the file duration.
+    /// </summary>
+    bool VerifyAgainstFileDuration { get; }
+    /// <summary>
+    /// If True, PREGAP and POSTGAP can only be placed once per file, at the first and last track, respectively.
+    /// <br/>
+    /// If False, all tracks may have one or both.
+    /// </summary>
+    bool LimitPrePostGapPositions { get; }
+
+    char IndentationCharacter { get; }
+    char Quotation { get; }
+}
+
+public record CueSettings
+{
+    public bool VerifyAgainstFileDuration { get; set; } = false;
+}
+
+public class CueSheet : IRemarkable
+{
+
+    internal bool UseQualifiedPaths { get; private set; }
+    public CueSettings Settings { get; set; } = new();
+    public Remarks Remarks { get; } = [];
+    internal void Invalidate()
+    {
+        _tracks.Invalidate();
+        _files.Invalidate();
+        _indices.Invalidate();
+    }
+    internal List<Link> Data { get; } = [];
+
+    public CueSheet() : this((FileInfo?)null) { }
+    public CueSheet(string? filepath) : this(string.IsNullOrWhiteSpace(filepath) ? null : new FileInfo(filepath)) { }
+    public CueSheet(FileInfo? sourceFile)
+    {
+        _tracks = new(x => x.Select(y => y.Track).Distinct(), Data);
+        _files = new(x => x.Select(y => y.File).Distinct(), Data);
+        _indices = new(x => x.Select(y => y.Index).Distinct(), Data);
+        _additionalFiles = new ResettableCollection<CueExtraFile>(() => AdditionalFileHelper.FindExtraFiles(this));
+        SourceFile = sourceFile;
+    }
+
+    internal readonly ResettableDependentCollection<CueTrack, Link> _tracks;
+    internal readonly ResettableDependentCollection<CueDataFile, Link> _files;
+    internal readonly ResettableDependentCollection<CueIndex, Link> _indices;
+    private readonly ResettableCollection<CueExtraFile> _additionalFiles;
+
+    private string? _title;
+    private FileInfo? _sourceFile;
+
+    public Encoding? SourceEncoding { get; internal set; }
+    public IReadOnlyList<CueTrack> Tracks => _tracks;
+    public IReadOnlyList<CueDataFile> Files => _files;
+    public IReadOnlyList<CueIndex> Indices => _indices;
+    public IReadOnlyList<CueExtraFile> AdditionalFiles => _additionalFiles;
+
+    public void RefreshAdditionalFiles()
+    {
+        SourceFile?.Refresh();
+        _additionalFiles.Invalidate();
+    }
+    public FileInfo? SourceFile
+    {
+        get => _sourceFile; internal set
+        {
+            if (!FileSystemInfoComparer.Default.Equals(value, _sourceFile))
+            {
+                _sourceFile = value;
+                RefreshAdditionalFiles();
+            }
+
+        }
+    }
+    public string? Catalog { get; set; }
+    public CueExtraFile? CdTextFile { get; set; }
+    // General sheet-level metadata that can be inherited by tracks
+    public string? Performer { get; set; }
+    public string? Songwriter { get; set; }
+    [AllowNull]
+    public string Title { get => _title ?? GetDefaultTitle(); set => _title = value?.NonEmpty(); }
+
+    internal string GetDefaultTitle()
+    {
+        string? n = null;
+        if (SourceFile is not null)
+        {
+            n = Path.ChangeExtension(SourceFile?.Name, null);
+        }
+        else if (_files.Count > 0)
+        {
+            n = _files[0].Name;
+        }
+        return n ?? "Unnamed";
+    }
+
+    /// <summary>
+    /// Modifies all applicable filepaths related to this sheet depending on <paramref name="keepPathQualified"/>:
+    /// <list type="bullet">
+    /// <item>True -  Relative paths will become qualified, unless <see cref="SourceFile"/> is null; already qualified paths will remain as such.</item>
+    /// <item>False -  Qualified paths will be turned relative, unless <see cref="SourceFile"/> is null, or the two do not share common root.</item> 
+    /// </list>
+    /// </summary>
+    /// <param name="keepPathQualified"></param>
+    public void ChangeFilePathsType(bool keepPathQualified)
+    {
+        UseQualifiedPaths = keepPathQualified;
+        foreach (var item in AdditionalFiles)
+        {
+            item.ChangeFilePathType(keepPathQualified);
+        }
+        foreach (var item in Files)
+        {
+            item.ChangeFilePathType(keepPathQualified);
+        }
+        CdTextFile?.ChangeFilePathType(keepPathQualified);
+    }
+    /// <summary>
+    /// Inserts a new index at the specified time in the given file and track.
+    /// </summary>
+    /// <param name="file">The file to insert the index into.</param>
+    /// <param name="time">The time position for the new index.</param>
+    /// <param name="track">The track to insert the index into. Ultimately, the track will depened on the time position. If this parameter is not null, it must match the time position in the file.</param>
+    /// <exception cref="ArgumentException">Thrown when the specified track does not belong to the given file.</exception>
+    /// <exception cref="DuplicateTimeException">Thrown when an index with the specified time already exists in the file.</exception>
+    /// <exception cref="IndexOutsideOfTrackException">Thrown when the index is inserted outside the bounds of the specified track.</exception>
+    public void InsertIndex(CueDataFile file, CueTime time, CueTrack? track = null)
+    {
+        NegativeIndexTimeException.ThrowIfNegative(time);
+        ThrowIfOutsideOfFile(time, file);
+        if (track is not null && !ReferenceEquals(track.File, file))
+            throw new ArgumentException($"Track {track} does not belong to {file}");
+        var allFileIndices = file.GetAllIndices().ToList();
+        if (allFileIndices.Exists(x => x.Time == time))
+            throw new DuplicateTimeException(time, file);
+        int insertionIndex = allFileIndices.FindIndex(x => x.Time > time);
+        CueTrack expectedTrack;
+        int dataInsertionIndex;
+        if (insertionIndex < 0) // no time in the given file is greater than the given time
+        {
+            expectedTrack = file.Tracks[^1]; // the index is being added to the last track
+            dataInsertionIndex = Data.FindIndex(x => ReferenceEquals(x.Index, expectedTrack.Indices[^1])) + 1;
+        }
+        else
+        {
+            CueIndex cueIndexToBeMovedForward = allFileIndices[insertionIndex]; // the cueindex at the insertion point will be pushed by one position
+            dataInsertionIndex = Data.FindIndex(x => ReferenceEquals(x.Index, cueIndexToBeMovedForward));
+            expectedTrack = Data[dataInsertionIndex].Track;
+        }
+        track ??= expectedTrack;
+        if (!ReferenceEquals(track, expectedTrack))
+            throw new IndexOutsideOfTrackException(track, time);
+        var precedingCueIndexPosition = dataInsertionIndex switch
+        {
+            0 => 0,
+            _ when ReferenceEquals(Data[dataInsertionIndex - 1].Track, track) => Data[dataInsertionIndex - 1].Index.Position,
+            _ => 0,
+        };
+        var link = new Link(file, track, new CueIndex(precedingCueIndexPosition + 1, time, this));
+        Data.Insert(dataInsertionIndex, link);
+        Invalidate();
+        for (int i = dataInsertionIndex + 1; i < Data.Count; i++)
+        {
+            if (!ReferenceEquals(Data[i].Track, track))
+            {
+                break;
+            }
+            Data[i].Index.Position++;
+        }
+    }
+
+    public void InsertTrack(CueDataFile file, TrackInsertParameters trackParams, CueTime firstIndex) //null -> last
+    {
+        NegativeIndexTimeException.ThrowIfNegative(firstIndex);
+        ThrowIfOutsideOfFile(firstIndex, file);
+        var allFileIndices = file.GetAllIndices().ToList();
+        if (allFileIndices.Exists(x => x.Time == firstIndex))
+            throw new DuplicateTimeException(firstIndex, file);
+        int insertionIndex = allFileIndices.FindIndex(x => x.Time > firstIndex);
+        int dataInsertionIndex;
+        if (insertionIndex < 0) // the track is put at the end of the file
+        {
+            var nextFile = file.NextFile();
+            dataInsertionIndex = nextFile switch
+            {
+                null => Data.Count, // its last file append at the very end of data
+                _ => Data.FindIndex(x => ReferenceEquals(x.File, nextFile)), // take the first index of the next file as insertion
+            };
+        }
+        else // its between existing indices - and we can only insert a track after the last index of another track
+        {
+            CueIndex cueIndexToBeMovedForward = allFileIndices[insertionIndex];
+            dataInsertionIndex = Data.FindIndex(x => ReferenceEquals(x.Index, cueIndexToBeMovedForward));
+            if (dataInsertionIndex > 0)
+            {
+                if (ReferenceEquals(Data[dataInsertionIndex - 1].Track, cueIndexToBeMovedForward.Track))
+                {
+                    // the indices that will be separated belong to the same track (it's a no-no)
+                    // unless the prior index is split
+                    if (!Data[dataInsertionIndex - 1].Index.IsSplit)
+                    {
+                        // if not split - invalid operation
+                        throw new InvalidTrackPlacementException(firstIndex);
+                    }
+                }
+            }
+        }
+        var link = new Link(file,
+                            CueTrack.FromInsertionParams(trackParams, this),
+                            new CueIndex(1, firstIndex, this));
+        Data.Insert(dataInsertionIndex, link);
+        Invalidate();
+        if (dataInsertionIndex > 0 && Data[dataInsertionIndex - 1].Index.IsSplit)
+        {
+            Data[dataInsertionIndex - 1] = Data[dataInsertionIndex - 1] with { Track = link.Track };
+        }
+        NormalizeGaps(-1, link.Track.AbsolutePosition);
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="from">Not inclusive</param>
+    /// <param name="change"></param>
+    private void NormalizeGaps(int change, int inclusiveStartIndex = 0)
+    {
+        if (_tracks.Count == 0 || _tracks.Count < inclusiveStartIndex)
+        {
+            return;
+        }
+        int gap = 0;
+        for (int i = 0; i < _tracks.Count; i++)
+        {
+            var track = _tracks[i];
+            if (gap == 0)
+            {
+                gap = track.Gap;
+            }
+            if (i < inclusiveStartIndex)
+            {
+                track.Gap = gap;
+            }
+            else
+            {
+                track.Gap = gap + change;
+            }
+        }
+    }
+
+
+    public void InsertFile(int insertionIndex, string filepath, string type, TrackInsertParameters? trackInsertParameters = null ) => InsertFile(insertionIndex, filepath, FileType.FromString(type), trackInsertParameters);
+    public void InsertFile(int? index, string filepath, FileType type, TrackInsertParameters? trackInsertParameters = null)
+    {
+        CueTime time = CueTime.Zero; // first index in a file MUST be 00:00:00
+        var fileToAdd = new CueDataFile(filepath, this, type);
+        ThrowIfOutsideOfFile(time, fileToAdd);
+        NegativeIndexTimeException.ThrowIfNegative(time);
+        int fileInsertionIndex = index ?? _files.Count;
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(fileInsertionIndex, _files.Count, nameof(index));
+        ArgumentOutOfRangeException.ThrowIfNegative(fileInsertionIndex, nameof(index));
+        CueDataFile? prevFile = fileInsertionIndex switch
+        {
+            0 => null,
+            _ => _files[fileInsertionIndex - 1]
+        };
+        CueDataFile? nextFile = fileInsertionIndex switch
+        {
+            int x when x < _files.Count => _files[fileInsertionIndex],
+            _ => null,
+        };
+        int dataInsertionIndex = nextFile switch
+        {
+            null => Data.Count, // no next file - put the new file at the end
+            _ => Data.FindIndex(x => ReferenceEquals(x.File, nextFile)), // next file with be pushed
+        };
+        var link = new Link(fileToAdd,
+                            CueTrack.FromInsertionParams(trackInsertParameters, this),
+                            new CueIndex(1, time, this));
+        Data.Insert(dataInsertionIndex, link);
+        Invalidate();
+        if (dataInsertionIndex > 0 && Data[dataInsertionIndex - 1].Index.IsSplit)
+        {
+            Data[dataInsertionIndex - 1] = Data[dataInsertionIndex - 1] with { Track = link.Track };
+        }
+        NormalizeGaps(-1, link.Track.AbsolutePosition);
+    }
+
+
+    internal void AddIndex(CueIndex index, CueTrack track, CueDataFile file)
+    {
+        NegativeIndexTimeException.ThrowIfNegative(index);
+        if (Data.Count == 0)
+        {
+            AddFirstIndex(index, track!, file!);
+            return;
+        }
+        var lastData = Data[^1];
+        file ??= lastData.File;
+        track ??= lastData.Track;
+        ThrowIfOutsideOfFile(index, file);
+        bool sameTrack = ReferenceEquals(lastData.Track, track);
+        bool markPrevAsSplit = false;
+
+        if (sameTrack)
+        {
+            if (lastData.Index.Position != index.Position - 1)
+                throw new InvalidIndexPositionException(lastData.Index, index);
+
+            if (!ReferenceEquals(lastData.File, file))
+            {
+                if (lastData.Index.Position != 0)
+                {
+                    // indices of one track split across files (and not in an eac compatible way)
+                    throw new TrackSplitAcrossFileException(track);
+                }
+                // EAC - new index belongs to the same track, but different file
+                markPrevAsSplit = true;
+            }
+        }
+        else
+        {
+            if (index.Position is < 0 or > 1)
+                throw new InvalidIndexPositionException(index);
+        }
+
+        if (ReferenceEquals(lastData.File, file))
+        {
+            if (lastData.Index.Time >= index.Time)
+                throw new InvalidIndexTimeException(lastData.Index, index);
+        }
+        if (markPrevAsSplit)
+            lastData.Index.IsSplit = true;
+        Data.Add(new(file, track, index));
+    }
+
+    private void AddFirstIndex(CueIndex index, CueTrack track, CueDataFile file)
+    {
+        if (track is null || file is null)
+        {
+            throw new UnexpectedIndexException();
+        }
+        if (index.Position is < 0 or > 1)
+        {
+            throw new InvalidIndexPositionException(index);
+        }
+        ThrowIfOutsideOfFile(index, file);
+        Data.Add(new(file, track, index));
+    }
+
+    /// <summary>
+    /// Validates that the specified index time does not exceed the duration of the file if verification is enabled.
+    /// </summary>
+    /// <param name="index">The cue index containing the time to validate against the file duration.</param>
+    /// <inheritdoc cref="ThrowIfOutsideOfFile(CueTime, CueDataFile)"/>
+    private void ThrowIfOutsideOfFile(CueIndex index, CueDataFile? file) => ThrowIfOutsideOfFile(index.Time, file);
+    /// <summary>
+    /// Validates that the specified time does not exceed the duration of the file if verification is enabled.
+    /// </summary>
+    /// <param name="time">The cue time to validate against the file duration.</param>
+    /// <param name="file">The cue data file containing metadata for validation.</param>
+    /// <exception cref="IndexOutsideOfFileException">Thrown when the specified time is outside the bounds of the file duration.</exception>
+    private void ThrowIfOutsideOfFile(CueTime time, CueDataFile? file)
+    {
+        if (!Settings.VerifyAgainstFileDuration || file?.Meta is null)
+        {
+            return;
+        }
+        if (file.Meta.Value.CueDuration <= time)
+        {
+            throw new IndexOutsideOfFileException(file.Name, time);
+        }
+    }
+}
 
-//namespace CueSheetNet;
-
-//public class CueSheet : IEquatable<CueSheet>, IRemCommentable
-//{
-//    #region Rem
-
-//    internal readonly List<CueRemark> RawRems = [];
-
-//    public ReadOnlyCollection<CueRemark> Remarks => RawRems.AsReadOnly();
-
-//    public void AddRemark(string type, string value) => AddRemark(new CueRemark(type, value));
-
-//    public void AddRemark(CueRemark entry) => RawRems.Add(entry);
-
-//    public void AddRemark(IEnumerable<CueRemark> entries)
-//    {
-//        foreach (CueRemark remark in entries)
-//        {
-//            RawRems.Add(remark);
-//        }
-//    }
-
-//    public void ClearRemarks() => RawRems.Clear();
-
-//    public void RemoveRemark(int index)
-//    {
-//        if (index >= 0 || index < RawRems.Count)
-//            RawRems.RemoveAt(index);
-//    }
-
-//    public void RemoveRemark(
-//        string field,
-//        string value,
-//        StringComparison comparisonType = StringComparison.OrdinalIgnoreCase
-//    ) => RemoveRemark(new CueRemark(field, value), comparisonType);
-
-//    public void RemoveRemark(
-//        CueRemark entry,
-//        StringComparison comparisonType = StringComparison.OrdinalIgnoreCase
-//    )
-//    {
-//        int ind = RawRems.FindIndex(x => x.Equals(entry, comparisonType));
-//        if (ind >= 0)
-//            RawRems.RemoveAt(ind);
-//    }
-
-//    #endregion Rem
-
-//    #region Comments
-
-//    internal readonly List<string> RawComments = [];
-
-//    public ReadOnlyCollection<string> Comments => RawComments.AsReadOnly();
-
-//    public void AddComment(IEnumerable<string> comments)
-//    {
-//        foreach (string comment in comments)
-//        {
-//            AddComment(comment);
-//        }
-//    }
-
-//    public void AddComment(string comment) => RawComments.Add(comment);
-
-//    public void ClearComments() => RawComments.Clear();
-
-//    public void RemoveComment(
-//        string comment,
-//        StringComparison comparisonType = StringComparison.OrdinalIgnoreCase
-//    )
-//    {
-//        int ind = RawComments.FindIndex(x => x.Equals(comment, comparisonType));
-//        if (ind >= 0)
-//            RawComments.RemoveAt(ind);
-//    }
-
-//    public void RemoveComment(int index)
-//    {
-//        if (index >= 0 && index < RawComments.Count)
-//            RawComments.RemoveAt(index);
-//    }
-
-//    #endregion Comments
-
-//    #region Tracks
-//    public ReadOnlyCollection<CueTrack> Tracks => Container.Tracks.AsReadOnly();
-//    public CueTrack? LastTrack => Container.Tracks.LastOrDefault();
-
-//    public CueTrack AddTrack(int index, TrackType type, CueDataFile file)
-//    {
-//        if (file.ParentSheet != this)
-//            throw new InvalidOperationException("Specified file does not belong to this cuesheet");
-//        return AddTrack(index, type, file.Index);
-//    }
-
-//    public CueTrack AddTrack(int index, TrackType type, int fileIndex = -1) =>
-//        Container.AddTrack(index, type, fileIndex);
-
-//    #endregion
-
-//    #region Files
-//    public void ChangeFile(int index, string newPath, FileType? type = null)
-//    {
-//        Files[index].SetFile(newPath, type);
-//    }
-
-//    public CueDataFile AddFile(string path, FileType type) => Container.AddFile(path, type);
-
-//    public CueDataFile? LastFile => Container.Files.LastOrDefault();
-
-//    private readonly List<ICueFile> _associatedFiles = [];
-//    public ReadOnlyCollection<ICueFile> AssociatedFiles => _associatedFiles.AsReadOnly();
-
-//    #endregion
-
-
-//    #region Index
-//    internal ReadOnlyCollection<CueIndexImpl> IndexesImpl => Container.Indexes.AsReadOnly();
-
-//    internal CueIndexImpl? GetIndexImplOrDefault(int index) =>
-//        Container.Indexes.Count > index ? Container.Indexes[index] : null;
-
-//    internal CueIndex GetCueIndexAt(int index) => new CueIndex(Container.Indexes[index]);
-
-//    internal CueIndex? GetCueIndexAt_Safe(int index)
-//    {
-//        if (Container.Indexes.Count > index)
-//        {
-//            return GetCueIndexAt(index);
-//        }
-
-//        return null;
-//    }
-
-//    public CueIndex[] Indexes => Container.Indexes.Select(x => new CueIndex(x)).ToArray();
-
-//    public CueIndex AddIndex(CueTime time, CueDataFile file, CueTrack track)
-//    {
-//        if (track.ParentFile != file)
-//            throw new InvalidOperationException(
-//                "Specified track does not belong to specified file"
-//            );
-//        if (file.ParentSheet != this)
-//            throw new InvalidOperationException("Specified file does not belong to this cuesheet");
-//        if (track.ParentSheet != this)
-//            throw new InvalidOperationException("Specified track does not belong to this cuesheet");
-//        return AddIndex(time, file.Index, track.Index);
-//    }
-
-//    public CueIndex AddIndex(CueTime time, int fileIndex = -1, int trackIndex = -1) =>
-//        new(AddIndexInternal(time, fileIndex, trackIndex));
-
-//    #endregion
-
-
-//    #region Fileops
-//    /// <summary>
-//    /// Save the CueSheet to the location specified by its <see cref="SourceFile"/>.
-//    /// After changing, directory is not reverted if saving was unsuccessful.
-//    /// <para/>File is saved using default <see cref="CueWriterSettings"/>. To use different settings use <see cref="CueWriter"/>
-//    /// <para/>Does not do anything with <see cref="CueDataFile" />s of the Cuesheet, or other associated files (use <see cref="CopyFiles(string, string?)"/> or <see cref="MoveFiles(string, string?)"/> for that).
-//    /// </summary>
-//    public void Save()
-//    {
-//        //if (directory is not null)
-//        ExceptionHelper.ThrowIfNull(SourceFile);
-//        CueWriter writer = new();
-//        writer.SaveCueSheet(this);
-//    }
-
-//    public void Save(string path)
-//    {
-//        SetCuePath(path);
-//        Save();
-//    }
-
-//    #endregion
-    
-//    private CueContainer Container { get; }
-
-//    internal void SetParsingMode(bool parsing)
-//    {
-//        this.Container.ParsingMode = parsing;
-//    }
-//    /// <summary>
-//    /// Creates a new blank CueSheet.
-//    /// <para>
-//    /// To load an existing CUE sheet use <see cref="CueReader"/> or <see cref="CueSheet.Read(string)"/>.</para>
-//    /// </summary>
-//    public CueSheet()
-//    {
-//        Container = new(this);
-//    }
-
-//    /// <summary>
-//    /// Creates a new blank CUE sheet and sets its source path.
-//    /// </summary>
-//    /// <param name="cuePath"></param>
-//    private CueSheet(string? cuePath)
-//        : this()
-//    {
-//        SetCuePath(cuePath);
-//        //Refresh(); // is it needed
-//    }
-
-//    public string? Catalog { get; set; }
-
-//    private FileInfo? _cdTextFile;
-//    public FileInfo? CdTextFile
-//    {
-//        get => _cdTextFile;
-//    }
-//    public string? Composer { get; set; }
-//    public int? Date { get; set; }
-//    public string? DiscID { get; set; }
-//    public CueTime? Duration
-//    {
-//        get
-//        {
-//            CueTime sum = CueTime.Zero;
-//            foreach (var fdur in Container.Files.Select(x => x.Meta?.CueDuration))
-//            {
-//                if (fdur == null)
-//                    return null;
-//                sum += fdur.Value;
-//            }
-//            return sum;
-//        }
-//    }
-
-//    public FileInfo? SourceFile { get; private set; }
-//    public ReadOnlyCollection<CueDataFile> Files => Container.Files.AsReadOnly();
-//    public string? Performer { get; set; }
-//    public CueType SheetType { get; internal set; }
-//    public Encoding? SourceEncoding { get; internal set; }
-
-//    /// <summary>
-//    /// AKA Album Name
-//    /// </summary>
-//    public string? Title { get; set; }
-
-//    public static CueSheet Clone(CueSheet cueSheet) => cueSheet.Clone();
-
-//    public bool Equals(CueSheet? other) => Equals(other, StringComparison.CurrentCulture);
-
-//    public bool Equals(CueSheet? other, StringComparison stringComparison)
-//    {
-//        if (other == null)
-//            return false;
-//        if (ReferenceEquals(this, other))
-//            return true;
-//        if (Container.Indexes.Count != other.Container.Indexes.Count)
-//            return false;
-//        if (Container.Tracks.Count != other.Container.Tracks.Count)
-//            return false;
-//        if (Container.Files.Count != other.Container.Files.Count)
-//            return false;
-//        for (int i = 0; i < Container.Indexes.Count; i++)
-//        {
-//            CueIndexImpl one = Container.Indexes[i];
-//            CueIndexImpl two = other.Container.Indexes[i];
-//            if (
-//                one.Number != two.Number
-//                || one.Time != two.Time
-//                || one.File.Index != two.File.Index
-//            )
-//                return false;
-//        }
-//        for (int i = 0; i < Container.Tracks.Count; i++)
-//        {
-//            CueTrack one = Container.Tracks[i];
-//            CueTrack two = other.Container.Tracks[i];
-//            if (!one.Equals(two, StringComparison.InvariantCulture))
-//                return false;
-//        }
-//        for (int i = 0; i < Container.Files.Count; i++)
-//        {
-//            CueDataFile one = Container.Files[i];
-//            CueDataFile two = other.Container.Files[i];
-//            if (!one.Equals(two))
-//                return false;
-//        }
-//        bool finalCheck =
-//            string.Equals(
-//                CdTextFile?.Name,
-//                other.CdTextFile?.Name,
-//                StringComparison.OrdinalIgnoreCase
-//            ) //Paths are compared without caring for case
-//            //&& string.Equals(SourceFile?.Name, other.SourceFile?.Name, StringComparison.OrdinalIgnoreCase)
-//            && string.Equals(Performer, other.Performer, stringComparison)
-//            && string.Equals(Catalog, other.Catalog, StringComparison.Ordinal)
-//            && string.Equals(Composer, other.Composer, stringComparison)
-//            && string.Equals(Title, other.Title, stringComparison);
-//        return finalCheck;
-//    }
-
-//    internal (int Start, int End) GetIndexesOfFile_Range(int fileIndex) =>
-//        Container.GetCueIndicesOfFile_Range(fileIndex);
-
-//    public CueIndex[] GetIndexesOfFile(int fileIndex)
-//    {
-//        (int start, int end) = Container.GetCueIndicesOfFile_Range(fileIndex);
-//        if (start == end)
-//            return [];
-//        return Container
-//            .Indexes.Skip(start)
-//            .Take(end - start)
-//            .Select(x => new CueIndex(x))
-//            .ToArray();
-//    }
-
-//    internal (int Start, int End) GetTracksOfFile_Range(int fileIndex) =>
-//        Container.GetCueIndicesOfTrack_Range(fileIndex);
-
-//    public CueTrack[] GetTracksOfFile(int fileIndex)
-//    {
-//        (int start, int end) = Container.GetCueTracksOfFile_Range(fileIndex);
-//        if (start == end)
-//            return [];
-//        return Container.Tracks.Skip(start).Take(end - start).ToArray();
-//    }
-
-//    internal IEnumerable<CueTrack> GetTracksOfFile_IEnum(int fileIndex)
-//    {
-//        (int start, int end) = Container.GetCueTracksOfFile_Range(fileIndex);
-//        if (start == end)
-//            return [];
-//        return Container.Tracks.Skip(start).Take(end - start);
-//    }
-
-//    internal (int Start, int End) GetIndexesOfTrack_Range(int trackIndex) =>
-//        Container.GetCueIndicesOfTrack_Range(trackIndex);
-
-//    public CueIndex[] GetIndexesOfTrack(int trackIndex)
-//    {
-//        (int start, int end) = Container.GetCueIndicesOfTrack_Range(trackIndex);
-//        if (start == end)
-//            return [];
-//        return Container.Indexes.Skip(start).Take(end - start).Select(x => (CueIndex)x).ToArray();
-//    }
-
-//    public void RemoveCdTextFile() => SetCdTextFile(value: null);
-
-//    public void RemoveCuePath() => SetCuePath(value: null);
-
-//    public void SetCdTextFile(string? value)
-//    {
-//        if (value == null)
-//            _cdTextFile = null;
-//        else
-//        {
-//            string absPath = Path.Combine(SourceFile?.DirectoryName ?? ".", value);
-//            _cdTextFile = new FileInfo(absPath);
-//        }
-//    }
-
-//    internal void SetCuePath(string? value)
-//    {
-//        if (value == null)
-//            SourceFile = null;
-//        else
-//        {
-//            SourceFile = new FileInfo(value);
-//        }
-//        RefreshFiles();
-//    }
-
-//    public bool SetTrackHasZerothIndex(int trackIndex, bool hasZerothIndex)
-//    {
-//        CueTrack? track =
-//            Container.Tracks.ElementAtOrDefault(trackIndex)
-//            ?? throw new ArgumentOutOfRangeException(
-//                nameof(trackIndex),
-//                "Specified track does not exist"
-//            );
-//        (int Start, int End) = Container.GetCueIndicesOfTrack_Range(
-//            trackIndex,
-//            includeDangling: true
-//        );
-//        int count = End - Start;
-//        //0
-//        if (count == 0)
-//            throw new InvalidOperationException("InnerCueTrack has no indices");
-//        //1
-//        if (count == 1)
-//        {
-//            if (hasZerothIndex)
-//                throw new InvalidOperationException(
-//                    "Cannot set zero index for track with only one index"
-//                );
-
-//            return SetZerothIndexImpl(hasZerothIndex, track);
-//        }
-//        //2+
-//        if (Container.Indexes[Start].Time > Container.Indexes[Start + 1].Time) //if 0th time is larger than 1st it means the track is split
-//        {
-//            if (!hasZerothIndex)
-//                throw new InvalidOperationException(
-//                    "Cannot remove zero index in track split across 2 files"
-//                );
-
-//            return SetZerothIndexImpl(hasZerothIndex, track);
-//        }
-//        //2+ indices, one file
-//        return SetZerothIndexImpl(hasZerothIndex, track);
-//    }
-
-//    internal CueIndexImpl AddIndexInternal(CueTime time, int fileIndex = -1, int trackIndex = -1) =>
-//        Container.AddIndex(time, fileIndex, trackIndex);
-
-//    internal (int Start, int End) GetCueIndicesOfTrack(int trackIndex) =>
-//        Container.GetCueIndicesOfTrack_Range(trackIndex, includeDangling: true);
-
-//    internal void RefreshIndices()
-//    {
-//        Container.RefreshFileIndices();
-//        Container.RefreshTracksIndices();
-//        Container.RefreshIndexIndices();
-//    }
-
-//    private static bool SetZerothIndexImpl(bool hasZerothIndex, CueTrack track)
-//    {
-//        bool old = track.HasZerothIndex;
-//        track.HasZerothIndex = hasZerothIndex;
-//        return old != hasZerothIndex;
-//    }
-
-//    public void Refresh()
-//    {
-//        RefreshFiles();
-//        RefreshIndices();
-//        UpdateGlobalPerformer();
-//        UpdateGlobalComposer();
-//        UpdateCueType();
-//    }
-
-//    private void UpdateGlobalPerformer()
-//    {
-//        if (Performer is null)
-//        {
-//            string? p = null;
-//            foreach (CueTrack track in Tracks)
-//            {
-//                if (!track.CommonFieldsSet.HasFlag(FieldsSet.Performer))
-//                {
-//                    // performer is not set, cannot set global
-//                    return;
-//                }
-//                if (p is null)
-//                {
-//                    // set performer to current track's
-//                    p = track.Performer;
-//                }
-//                else if (!string.Equals(p, track.Performer, StringComparison.OrdinalIgnoreCase))
-//                {
-//                    // tracks have different performers
-//                    // cannot set global
-//                    return;
-//                }
-//            }
-//            Performer = p;
-//        }
-//    }
-
-//    private void UpdateGlobalComposer()
-//    {
-//        if (Composer is null)
-//        {
-//            string? p = null;
-//            foreach (CueTrack track in Tracks)
-//            {
-//                if (!track.CommonFieldsSet.HasFlag(FieldsSet.Composer))
-//                {
-//                    // Composer is not set, cannot set global
-//                    return;
-//                }
-//                if (p is null)
-//                {
-//                    // set performer to current track's
-//                    p = track.Composer;
-//                }
-//                else if (!string.Equals(p, track.Composer, StringComparison.OrdinalIgnoreCase))
-//                {
-//                    // tracks have different Composers
-//                    // cannot set global
-//                    return;
-//                }
-//            }
-//            Composer = p;
-//        }
-//    }
-
-//    private void UpdateCueType()
-//    {
-//        CueType type = CueType.Unknown;
-//        if (Tracks.Count == 0)
-//        {
-//            SheetType = type;
-//            return;
-//        }
-//        if (Files.Count == 1)
-//        {
-//            type |= CueType.SingleFile;
-//        }
-//        else if (Files.Count > 1)
-//        {
-//            type |= CueType.MultipleFiles;
-//        }
-//        if (Tracks[0].HasZerothIndex)
-//        {
-//            type |= CueType.HTOA;
-//        }
-//        bool simgaps = false;
-//        bool audio = false;
-//        bool data = false;
-//        foreach (var track in Tracks)
-//        {
-//            audio |= track.Type.ContainsAudioData;
-//            data |= !track.Type.ContainsAudioData;
-//            simgaps |= track.PreGap != default || track.PostGap != default;
-//        }
-//        if (audio)
-//        {
-//            type |= CueType.Audio;
-//        }
-//        if (data)
-//        {
-//            type |= CueType.Data;
-//        }
-//        if (simgaps)
-//        {
-//            type |= CueType.SimulatedGaps;
-//        }
-//        if (Files.Count > 1)
-//        {
-//            bool intergaps = false;
-//            foreach (var file in Files)
-//            {
-//                (int first, int afterLast) = GetIndexesOfFile_Range(file.Index);
-//                intergaps |= IndexesImpl[afterLast - 1].Number == 0;
-//            }
-//            if (intergaps)
-//            {
-//                type |= CueType.InterfileGaps;
-//            }
-//        }
-//        SheetType = type;
-//    }
-
-//    private void RefreshFiles()
-//    {
-//        SourceFile?.Refresh();
-//        foreach (var file in Container.Files)
-//        {
-//            file.RefreshFileInfo();
-//        }
-//        CdTextFile?.Refresh();
-
-//        _associatedFiles.Clear();
-//        _associatedFiles.AddRange(CuePackage.GetAssociatedFiles(this));
-//    }
-
-//    public static bool operator ==(CueSheet? left, CueSheet? right)
-//    {
-//        if (left is not null)
-//            return left.Equals(right, StringComparison.InvariantCulture); // notnull and whatever
-
-//        if (right is not null)
-//            return false; // null and notnull
-
-//        return true; // null and null
-//    }
-
-//    public static bool operator !=(CueSheet? left, CueSheet? right)
-//    {
-//        return !(left == right);
-//    }
-
-//    /// <summary>
-//    /// Creates an independent deep copy of cuesheet contents.
-//    /// Copy is functionally the same, but may not be identical (formatting, etc.).
-//    /// No objects are shared, everything is created anew.
-//    /// </summary>
-//    /// <returns>Deep copy of the <see cref="CueSheet"/></returns>
-//    public CueSheet Clone()
-//    {
-//        CueSheet newCue =
-//            new(SourceFile?.FullName)
-//            {
-//                Catalog = Catalog,
-//                Composer = Composer,
-//                Date = Date,
-//                DiscID = DiscID,
-//                Performer = Performer,
-//                Title = Title,
-//            };
-//        newCue.Container.CloneFrom(Container);
-//        newCue.AddComment(RawComments);
-//        newCue.AddRemark(RawRems.Select(x => x with { })); // creates new remark
-//        newCue.SetCdTextFile(CdTextFile?.FullName);
-//        newCue.Refresh();
-//        return newCue;
-//    }
-
-//    public override string ToString()
-//    {
-//        return string.Format(
-//            "CueSheet: {0} - {1} - {2}",
-//            Performer ?? "No performer",
-//            Title ?? "No title",
-//            SourceFile?.Name ?? "No file"
-//        );
-//    }
-
-//    public override bool Equals(object? obj)
-//    {
-//        return obj is CueSheet sheet && Equals(sheet, StringComparison.InvariantCulture);
-//    }
-
-//    public override int GetHashCode()
-//    {
-//        return HashCode.Combine(
-//            Performer,
-//            Title,
-//            Date,
-//            Files.Count,
-//            Tracks.Count,
-//            Remarks.Count,
-//            Comments.Count
-//        );
-//    }
-
-//    /// <inheritdoc cref="CuePackage.CopyCueFiles(CueSheet, string, string?)"/>
-//    public CueSheet CopyPackage(string destination, string? pattern)
-//        => CopyPackage(destination, pattern, settings: null);
-
-//    /// <inheritdoc cref="CuePackage.CopyCueFiles(CueSheet, string, string?)"/>
-//    public CueSheet CopyPackage(string destination, string? pattern, CueWriterSettings? settings)
-//        => CuePackage.CopyPackage(this, destination, pattern, settings);
-
-//    /// <inheritdoc cref="CuePackage.MoveCueFiles(CueSheet, string, string?)"/>
-//    public CueSheet MovePackage(string destination, string? pattern)
-//        => MovePackage(destination, pattern, settings: null);
-
-//    /// <inheritdoc cref="CuePackage.MoveCueFiles(CueSheet, string, string?)"/>
-//    public CueSheet MovePackage(string destination, string? pattern, CueWriterSettings? settings)
-//        => CuePackage.MovePackage(this, destination, pattern, settings);
-
-//    public void RemovePackage() => CuePackage.RemovePackage(this);
-
-//    public void DeleteFiles()
-//    {
-//        CuePackage.RemovePackage(this);
-//    }
-
-//    internal string DefaultFilename
-//    {
-//        get => $"{Performer ?? "No Artist"} - {Title ?? "No Title"}";
-//    }
-
-//    public static CueSheet Read(string path) => new CueReader().ParseCueSheet(path);
-//}

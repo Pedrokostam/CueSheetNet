@@ -8,25 +8,10 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Reflection.PortableExecutable;
+using System.Xml.Linq;
 
 namespace CueSheetNet;
 
-internal static class FieldInfoLookup
-{
-    public static readonly FieldInfo TrackTitle;
-    public static readonly FieldInfo TrackPerformer;
-    public static readonly FieldInfo TrackSongwriter;
-    static FieldInfoLookup()
-    {
-        TrackTitle = typeof(CueTrack).GetField("_title",
-                                               BindingFlags.Instance | BindingFlags.NonPublic)!;
-        TrackPerformer = typeof(CueTrack).GetField("_performer",
-                                                   BindingFlags.Instance | BindingFlags.NonPublic)!;
-        TrackSongwriter = typeof(CueTrack).GetField("_songwriter",
-                                                    BindingFlags.Instance | BindingFlags.NonPublic)!;
-
-    }
-}
 public sealed class CueWriter
 {
     private static readonly CultureInfo InvCul = CultureInfo.InvariantCulture;
@@ -134,6 +119,7 @@ public sealed class CueWriter
         if (level > 0)
             Builder.Append(' ', level * Settings.IndentationDepth);
     }
+
     private void AppendOptional(CueTrack track, FieldInfo fieldInfo)
     {
         var s = fieldInfo.GetValue(track) as string;
@@ -144,7 +130,24 @@ public sealed class CueWriter
         }
     }
 
-    internal char[] WriteToCharArray(Sheet sheet)
+    private void AppendOptionalFields(CueTrack track)
+    {
+        var fieldsSet = track.ExplicitFields;
+        if (fieldsSet.HasFlag(FieldsSet.Title))
+        {
+            AppendStringify("TITLE", Replace(track.Title), 2, quoteAllowed: true);
+        }
+        if (fieldsSet.HasFlag(FieldsSet.Performer))
+        {
+            AppendStringify("PERFORMER", Replace(track.Performer), 2, quoteAllowed: true);
+        }
+        if (fieldsSet.HasFlag(FieldsSet.Songwriter))
+        {
+            AppendStringify("SONGWRITER", Replace(track.Songwriter), 2, quoteAllowed: true);
+        }
+    }
+
+    public char[] WriteToCharArray(CueSheet sheet)
     {
         FillStringBuilder(sheet);
         char[] tablicaCzarów = new char[Builder.Length];
@@ -152,13 +155,19 @@ public sealed class CueWriter
         return tablicaCzarów;
     }
 
-    public string WriteToString(Sheet sheet)
+    public void WriteToCharSpan(CueSheet sheet, Span<char> destination)
+    {
+        FillStringBuilder(sheet);
+        Builder.CopyTo(0, destination, Builder.Length);
+    }
+
+    public string WriteToString(CueSheet sheet)
     {
         FillStringBuilder(sheet);
         return Builder.ToString();
     }
 
-    private void FillStringBuilder(Sheet sheet)
+    private void FillStringBuilder(CueSheet sheet)
     {
         Logger.LogDebug("Began sheet serialization");
         var st = Stopwatch.StartNew();
@@ -183,9 +192,7 @@ public sealed class CueWriter
                 lastIteratedTrack = link.Track;
                 AppendTrackHeader(link.Track);
                 AppendPregap(link.Track);
-                AppendOptional(link.Track, FieldInfoLookup.TrackTitle);
-                AppendOptional(link.Track, FieldInfoLookup.TrackPerformer);
-                AppendOptional(link.Track, FieldInfoLookup.TrackSongwriter);
+                AppendOptionalFields(link.Track);
                 AppendFlags(link.Track);
                 AppendRems(link.Track.Remarks, depth: 2);
             }
@@ -197,36 +204,12 @@ public sealed class CueWriter
             }
 
         }
-
-        //foreach (CueIndexImpl ind in sheet.IndexesImpl)
-        //{
-        //    if (file != ind.File)
-        //    {
-        //        file = ind.File;
-        //        AppendFileHeader(file);
-        //    }
-        //    if (track != ind.Track)
-        //    {
-        //        track = ind.Track;
-
-        //        AppendTrackHeader(track);
-        //        AppendPregap(track);
-        //        AppendOptional(track, FieldInfoLookup.TrackTitle);
-        //        AppendOptional(track, FieldInfoLookup.TrackPerformer);
-        //        AppendOptional(track, FieldInfoLookup.TrackComposer);
-        //        AppendFlags(track);
-        //        AppendRems(track.Remarks,depth:2);
-        //        AppendPostgap(track);
-        //    }
-        //    AppendIndex(ind);
-        //    var s = Builder.ToString();
-        //}
         if (!string.Equals(Settings.NewLine, Environment.NewLine, StringComparison.Ordinal))
         {
             Builder.Replace(Environment.NewLine, Settings.NewLine);
         }
         st.Stop();
-        Logger.LogInformation("Sheet {} serialized in {}ms", sheet.Title, st.ElapsedMilliseconds);
+        Logger.LogInformation("CueSheet {} serialized in {}ms", sheet.Title, st.ElapsedMilliseconds);
     }
 
     private void AppendFileHeader(CueDataFile file)
@@ -286,7 +269,7 @@ public sealed class CueWriter
     /// </summary>
     /// <param name="sheet">Sheet which may containt source <see cref="Encoding"/></param>
     /// <returns></returns>
-    private Encoding GetProperEncoding(Sheet? sheet)
+    private Encoding GetProperEncoding(CueSheet? sheet)
     {
         Encoding encodingBaza =
             Settings.Encoding ?? sheet?.SourceEncoding ?? CueWriterSettings.DefaultEncoding;
@@ -309,7 +292,7 @@ public sealed class CueWriter
         return encodingBaza;
     }
 
-    public void SaveCueSheet(Sheet sheet)
+    public void SaveCueSheet(CueSheet sheet)
     {
         ExceptionHelper.ThrowIfNull(sheet.SourceFile);
         string textData = WriteToString(sheet);
@@ -341,13 +324,13 @@ public sealed class CueWriter
         sheet.SourceEncoding = encoding;
     }
 
-    public void SaveCueSheet(Sheet sheet, string newDestination)
+    public void SaveCueSheet(CueSheet sheet, string newDestination)
     {
         sheet.SourceFile = new FileInfo(newDestination);
         SaveCueSheet(sheet);
     }
 
-    public void SaveCueSheet(Sheet sheet, string destination, string? pattern)
+    public void SaveCueSheet(CueSheet sheet, string destination, string? pattern)
     {
         string patternParsed = CueTreeFormatter.ParseFormatPattern(sheet, pattern);
         string destinationWithPattern = Path.Combine(destination, patternParsed);

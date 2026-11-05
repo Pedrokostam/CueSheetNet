@@ -4,6 +4,30 @@ using System.Collections.Generic;
 using System.Text;
 
 namespace CueSheetNet.Extensions;
+
+internal static class StreamExtensions
+{
+    extension(Stream stream)
+    {
+        public IList<byte> GetBytes()
+        {
+            try
+            {
+                var arr = new byte[stream.Length - stream.Position];
+                using var memory = new MemoryStream(arr);
+                stream.CopyTo(memory);
+                return memory.GetBuffer();
+
+            }
+            catch (NotSupportedException)
+            {
+                using var memory = new MemoryStream();
+                stream.CopyTo(memory);
+                return memory.ToArray();
+            }
+        }
+    }
+}
 /// <summary>
 /// Provides extension methods for collections and enumerables.
 /// </summary>

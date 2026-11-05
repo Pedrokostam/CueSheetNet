@@ -1,5 +1,4 @@
-﻿using CueSheetNet.Components;
-using System.Reflection;
+﻿using System.Reflection;
 
 namespace CueSheetNet.NameParsing;
 
@@ -11,9 +10,9 @@ internal record PropertyParseToken : ParseToken
                               string description,
                               params string[] alternatives) : base(name, description, alternatives)
     {
-        Property = typeof(Sheet).GetProperty(Name, _propertyBindingFlags) ?? throw new NotSupportedException($"Property {Name} is not supported for parsing.");
+        Property = typeof(CueSheet).GetProperty(Name, _propertyBindingFlags) ?? throw new NotSupportedException($"Property {Name} is not supported for parsing.");
     }
-    public override string GetValue(Sheet sheet)
+    public override string GetValue(CueSheet sheet)
     {
         object? val = Property.GetValue(sheet);
         return val?.ToString() ?? string.Empty;

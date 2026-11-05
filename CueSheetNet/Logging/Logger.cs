@@ -3,8 +3,14 @@ using System.Diagnostics;
 
 namespace CueSheetNet.Logging;
 
+
 public class Logger
 {
+
+
+
+
+
     private delegate void LogDelegateType(LogEntry entry);
 
     private readonly static Dictionary<Guid, ILogDevice> _logDevices = [];
@@ -58,7 +64,7 @@ public class Logger
         bool logIgnored = !RequestedLogLevels.HasFlag(level);
 #if DEBUG
         if (logIgnored)
-            Debug.WriteLine("Skipped log due to level");
+            Debug.WriteLineIf(Debugger.IsAttached,$"Skipped log due to level {level}");
 #endif
         return logIgnored;
     }
@@ -160,7 +166,7 @@ public class Logger
         }
         catch (Exception ex)
         {
-            Debug.WriteLine(ex.ToString());
+            Debug.WriteLineIf(Debugger.IsAttached, $"{ex}");
         }
 #else
         Task.Run(() =>
@@ -178,7 +184,7 @@ public class Logger
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine(ex.ToString());
+                    Debug.WriteLineIf(Debugger.IsAttached, $"{ex}");
                 }
             }
         });
