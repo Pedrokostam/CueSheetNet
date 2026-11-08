@@ -14,16 +14,16 @@ public abstract class FilePath
     public string Name => _parts[^1];
     public string BaseName => IoPath.GetFileNameWithoutExtension(Name);
     public bool IsQualified => IsFirstPartQualified(_parts);
-    protected FileInfo? Info { get; set; }
+    public FileInfo? Info { get; protected set; }
     public string? AbsolutePath
     {
         get
         {
-            if (_sheet.SourceFile is null)
+            if (_sheet.SourceFile?.DirectoryName is null)
             {
                 return null;
             }
-            return GetAbsolutePartsWith(_sheet.SourceFile.FullName);
+            return GetAbsolutePartsWith(_sheet.SourceFile.DirectoryName);
         }
     }
     [MemberNotNullWhen(returnValue: true, nameof(AbsolutePath), nameof(Info))]

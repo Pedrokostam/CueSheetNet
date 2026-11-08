@@ -9,7 +9,7 @@ namespace CueSheetNet.Helpers;
 internal static class AdditionalFileHelper
 {
     // Static HashSet for constant file names to avoid repeated allocation
-    private static readonly System.Collections.Generic.HashSet<string> ConstantTargetNames = 
+    private static readonly System.Collections.Generic.HashSet<string> ConstantTargetNames =
         new(StringComparer.OrdinalIgnoreCase) { "album", "cover", "art" };
 
     public static IEnumerable<CueExtraFile> FindExtraFiles(CueSheet sheet)
@@ -21,24 +21,25 @@ internal static class AdditionalFileHelper
         var baseName = Path.ChangeExtension(sheet.SourceFile.Name, null)!;
         HashSet<FileSystemInfo> skipFiles = new(
             sheet.Files.Select(x => new FileInfo(x.AbsolutePath!)),
-            FileSystemInfoComparer.Default)
+            FileSystemInfoComparer.Instance)
         {
             sheet.SourceFile,
         };
 
-        return  sheet.Files
+        return sheet.Files
             .Select(x => x.AbsolutePath)
             .OfType<string>()
-            .Select(x => new DirectoryInfo(x))
+            .Select(x => Directory.GetParent(x))
+            .OfType<DirectoryInfo>()
             .Append(sheet.SourceFile.Directory!)
-            .Distinct(FileSystemInfoComparer.Default)
+            .Distinct(FileSystemInfoComparer.Instance)
             .Cast<DirectoryInfo>()
             .SelectMany(x => SeekRelated(x, baseName, skipFiles))
             .Select(x => new CueExtraFile(x.FullName, sheet, sheet.UseQualifiedPaths));
     }
     private static bool MatchesBaseName(string nameNoExt, string baseName)
     {
-        if(OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
+        if (OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
         {
             return nameNoExt.Equals(baseName, StringComparison.OrdinalIgnoreCase) ||
                    ConstantTargetNames.Contains(nameNoExt);
@@ -46,7 +47,7 @@ internal static class AdditionalFileHelper
 
         return nameNoExt.Equals(baseName, StringComparison.Ordinal) ||
                ConstantTargetNames.Contains(nameNoExt);
-    }   
+    }
 
     private static IEnumerable<FileInfo> SeekRelated(DirectoryInfo dir, string baseName, HashSet<FileSystemInfo> skipFiles, bool keepQualified = false)
     {

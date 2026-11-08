@@ -24,12 +24,12 @@
 	<Snippets >
 		<Snippet name="FormatProviderParam">
 			<param name="formatProvider">
-				An object that supplies culture-specific formatting information.
+				An object that supplies culture-specific parsing information.
 				<para>
-					This parameter is unused.
+					<see cref="Parse"/> uses invariant culture for its numeric components. <see cref="TryParse"/> passes this provider to the underlying integer parser.
 				</para>
 				<para>
-					CueTime strings are culture insensitive. They do not allow digit grouping and the only suported negative sign is '-'.
+					The timecode layout is culture independent: components are separated by ':' and digit grouping is not supported.
 				</para>
 			</param>
 		</Snippet>
@@ -146,6 +146,9 @@
 				<para>
 					This struct can accurately describe timestamps and time intervals which are multiples of a timecode frame, that is 13⅓ ms.
 				</para>
+				<para>
+					The generic-math implementation treats a <see cref="CueTime"/> as its integral number of timecode frames. Its generic multiplicative identity is therefore one frame, and generic multiplication and division operate on the stored frame counts. These same-type multiplication and division operators are implemented explicitly through <see cref="INumberBase{TSelf}"/> and are not exposed as ordinary <see cref="CueTime"/> operators.
+				</para>
 			</summary>
 		</Member>
 		<Member name="TotalFrames">
@@ -222,7 +225,7 @@
 					Will not exceed 59.
 				</para>
 			</param>
-			<param name="minutes">
+			<param name="frames">
 				Frames part of the time.
 				<para>
 					Will not exceed 74.
@@ -411,7 +414,7 @@
 			<returns>
 				A new CueTime whose <see cref='CueTime.TotalFrames'>TotalFrames</see> have been decreased by one.
 			</returns>
-			<include file='CueTime.xml' path='Elements/Members/Members[@name="Increment"]'/>
+			<include file='CueTime.xml' path='Elements/Members/Member[@name="Increment"]'/>
 		</Member>
 		<Member name="MultiplyInt">
 			<summary>
@@ -629,6 +632,481 @@
 				<see langword="true"/> if <paramref name="input"/> was successfully parsed, otherwise <see langword="false"/>.
 			</returns>
 			<include file='CueTime.xml' path='Elements/Members/Member[@name="ParseString"]'/>
+		</Member>
+
+		<Member name="Zero">
+			<summary>
+				Gets the additive identity: a <see cref="CueTime"/> representing zero timecode frames.
+			</summary>
+		</Member>
+		<Member name="One">
+			<summary>
+				Gets the multiplicative identity used by generic math: a <see cref="CueTime"/> representing one timecode frame.
+			</summary>
+		</Member>
+		<Member name="Radix">
+			<summary>
+				Gets the radix of the underlying integral representation. The value is 10 because <see cref="CueTime.TotalFrames"/> is represented as a decimal integer.
+			</summary>
+		</Member>
+		<Member name="Abs">
+			<summary>
+				Returns the absolute value of a <see cref="CueTime"/>.
+			</summary>
+			<param name="value">The value whose absolute value is to be calculated.</param>
+			<returns>
+				A non-negative <see cref="CueTime"/> with the same magnitude as <paramref name="value"/>.
+			</returns>
+			<exception cref="System.OverflowException">
+				<paramref name="value"/> contains <see cref="int.MinValue"/> timecode frames, whose positive magnitude cannot be represented by <see cref="int"/>.
+			</exception>
+		</Member>
+		<Member name="MaxMagnitude">
+			<summary>Returns the value with the greater absolute magnitude. If the magnitudes are equal, returns the non-negative value.</summary>
+			<param name="x">The first value to compare.</param>
+			<param name="y">The second value to compare.</param>
+			<returns>The value with the greater absolute magnitude.</returns>
+		</Member>
+		<Member name="MaxMagnitudeNumber">
+			<summary>
+				Returns the value with the greater absolute magnitude. Since <see cref="CueTime"/> cannot represent NaN, this has the same behavior as <see cref="MaxMagnitude(CueTime, CueTime)"/>.
+			</summary>
+			<param name="x">The first value to compare.</param>
+			<param name="y">The second value to compare.</param>
+			<returns>The value with the greater absolute magnitude.</returns>
+		</Member>
+		<Member name="MinMagnitude">
+			<summary>Returns the value with the smaller absolute magnitude. If the magnitudes are equal, returns the non-positive value.</summary>
+			<param name="x">The first value to compare.</param>
+			<param name="y">The second value to compare.</param>
+			<returns>The value with the smaller absolute magnitude.</returns>
+		</Member>
+		<Member name="MinMagnitudeNumber">
+			<summary>
+				Returns the value with the smaller absolute magnitude. Since <see cref="CueTime"/> cannot represent NaN, this has the same behavior as <see cref="MinMagnitude(CueTime, CueTime)"/>.
+			</summary>
+			<param name="x">The first value to compare.</param>
+			<param name="y">The second value to compare.</param>
+			<returns>The value with the smaller absolute magnitude.</returns>
+		</Member>
+		<Member name="IsCanonical">
+			<summary>
+				Returns <see langword="true"/> because every stored frame count has a canonical representation.
+			</summary>
+			<param name="value">The value to check.</param>
+		</Member>
+		<Member name="IsComplexNumber">
+			<summary>
+				Always returns <see langword="false"/> because <see cref="CueTime"/> represents real time intervals.
+			</summary>
+			<param name="value">The value to check.</param>
+		</Member>
+		<Member name="IsEvenInteger">
+			<summary>Determines whether the stored number of timecode frames is even.</summary>
+			<param name="value">The value to check.</param>
+		</Member>
+		<Member name="IsFinite">
+			<summary>
+				Always returns <see langword="true"/> because every <see cref="CueTime"/> has a finite integral frame count.
+			</summary>
+			<param name="value">The value to check.</param>
+		</Member>
+		<Member name="IsImaginaryNumber">
+			<summary>
+				Always returns <see langword="false"/> because <see cref="CueTime"/> does not represent imaginary values.
+			</summary>
+			<param name="value">The value to check.</param>
+		</Member>
+		<Member name="IsInfinity">
+			<summary>
+				Always returns <see langword="false"/> because infinity cannot be represented by <see cref="CueTime"/>.
+			</summary>
+			<param name="value">The value to check.</param>
+		</Member>
+		<Member name="IsInteger">
+			<summary>
+				Always returns <see langword="true"/> because the value is stored as an integer number of timecode frames.
+			</summary>
+			<param name="value">The value to check.</param>
+		</Member>
+		<Member name="IsNaN">
+			<summary>
+				Always returns <see langword="false"/> because NaN cannot be represented by <see cref="CueTime"/>.
+			</summary>
+			<param name="value">The value to check.</param>
+		</Member>
+		<Member name="IsNegative">
+			<summary>Determines whether the stored number of timecode frames is negative.</summary>
+			<param name="value">The value to check.</param>
+		</Member>
+		<Member name="IsNegativeInfinity">
+			<summary>
+				Always returns <see langword="false"/> because infinity cannot be represented by <see cref="CueTime"/>.
+			</summary>
+			<param name="value">The value to check.</param>
+		</Member>
+		<Member name="IsNormal">
+			<summary>
+				Always returns <see langword="true"/> for the integral values represented by <see cref="CueTime"/>.
+			</summary>
+			<param name="value">The value to check.</param>
+		</Member>
+		<Member name="IsOddInteger">
+			<summary>Determines whether the stored number of timecode frames is odd.</summary>
+			<param name="value">The value to check.</param>
+		</Member>
+		<Member name="IsPositive">
+			<summary>Determines whether the stored number of timecode frames is non-negative.</summary>
+			<param name="value">The value to check.</param>
+		</Member>
+		<Member name="IsPositiveInfinity">
+			<summary>
+				Always returns <see langword="false"/> because infinity cannot be represented by <see cref="CueTime"/>.
+			</summary>
+			<param name="value">The value to check.</param>
+		</Member>
+		<Member name="IsRealNumber">
+			<summary>
+				Always returns <see langword="true"/> because every <see cref="CueTime"/> represents a real time interval.
+			</summary>
+			<param name="value">The value to check.</param>
+		</Member>
+		<Member name="IsSubnormal">
+			<summary>
+				Always returns <see langword="false"/> because subnormal values do not apply to the integral representation.
+			</summary>
+			<param name="value">The value to check.</param>
+		</Member>
+		<Member name="IsZero">
+			<summary>Determines whether the stored number of timecode frames is zero.</summary>
+			<param name="value">The value to check.</param>
+		</Member>
+		<Member name="ParseNumberStylesString">
+			<summary>
+				Parses a string representation of a <see cref="CueTime"/>.
+			</summary>
+			<param name="s">The string to parse.</param>
+			<param name="style">
+				Ignored. <see cref="CueTime"/> uses its fixed colon-separated timecode syntax.
+			</param>
+			<param name="provider">
+				An object that supplies culture-specific formatting information. The parser applies the <see cref="CueTime"/> parsing rules.
+			</param>
+			<returns>
+				The parsed <see cref="CueTime"/>.
+			</returns>
+			<include file="CueTime.xml" path="Elements/Errors/Error[@name='ArgumentException']"/>
+		</Member>
+		<Member name="ParseNumberStylesSpan">
+			<summary>
+				Parses a character span representing a <see cref="CueTime"/>.
+			</summary>
+			<param name="s">The character span to parse.</param>
+			<param name="style">
+				Ignored. <see cref="CueTime"/> uses its fixed colon-separated timecode syntax.
+			</param>
+			<param name="provider">
+				An object that supplies culture-specific formatting information. The parser applies the <see cref="CueTime"/> parsing rules.
+			</param>
+			<returns>
+				The parsed <see cref="CueTime"/>.
+			</returns>
+			<include file="CueTime.xml" path="Elements/Errors/Error[@name='ArgumentException']"/>
+		</Member>
+		<Member name="TryParseNumberStylesString">
+			<summary>
+				Attempts to parse a string representation of a <see cref="CueTime"/>.
+			</summary>
+			<param name="s">The string to parse.</param>
+			<param name="style">
+				Ignored. <see cref="CueTime"/> uses its fixed colon-separated timecode syntax.
+			</param>
+			<param name="provider">
+				An object that supplies culture-specific formatting information. The parser applies the <see cref="CueTime"/> parsing rules.
+			</param>
+			<param name="result">When this method returns, contains the parsed value, or the default value if parsing failed.</param>
+			<returns>
+				<see langword="true"/> if parsing succeeded; otherwise, <see langword="false"/>.
+			</returns>
+		</Member>
+		<Member name="TryParseNumberStylesSpan">
+			<summary>
+				Attempts to parse a character span representing a <see cref="CueTime"/>.
+			</summary>
+			<param name="s">The character span to parse.</param>
+			<param name="style">
+				Ignored. <see cref="CueTime"/> uses its fixed colon-separated timecode syntax.
+			</param>
+			<param name="provider">
+				An object that supplies culture-specific formatting information. The parser applies the <see cref="CueTime"/> parsing rules.
+			</param>
+			<param name="result">When this method returns, contains the parsed value, or the default value if parsing failed.</param>
+			<returns>
+				<see langword="true"/> if parsing succeeded; otherwise, <see langword="false"/>.
+			</returns>
+		</Member>
+
+		<Member name="Zero">
+			<summary>
+				Gets the additive identity: a <see cref="CueTime"/> representing zero timecode frames.
+			</summary>
+		</Member>
+		<Member name="One">
+			<summary>
+				Gets the multiplicative identity used by generic math: a <see cref="CueTime"/> representing one timecode frame.
+			</summary>
+		</Member>
+		<Member name="Radix">
+			<summary>
+				Gets the radix of the underlying integral representation. The value is 10 because <see cref="CueTime.TotalFrames"/> is represented as a decimal integer.
+			</summary>
+		</Member>
+		<Member name="Abs">
+			<summary>
+				Returns the absolute value of a <see cref="CueTime"/>.
+			</summary>
+			<param name="value">The value whose absolute value is to be calculated.</param>
+			<returns>
+				A non-negative <see cref="CueTime"/> with the same magnitude as <paramref name="value"/>.
+			</returns>
+			<exception cref="System.OverflowException">
+				<paramref name="value"/> contains <see cref="int.MinValue"/> timecode frames, whose positive magnitude cannot be represented by <see cref="int"/>.
+			</exception>
+		</Member>
+		<Member name="MaxMagnitude">
+			<summary>Returns the value with the greater absolute magnitude. If the magnitudes are equal, returns the non-negative value.</summary>
+			<param name="x">The first value to compare.</param>
+			<param name="y">The second value to compare.</param>
+			<returns>The value with the greater absolute magnitude.</returns>
+		</Member>
+		<Member name="MaxMagnitudeNumber">
+			<summary>
+				Returns the value with the greater absolute magnitude. Since <see cref="CueTime"/> cannot represent NaN, this has the same behavior as <see cref="MaxMagnitude(CueTime, CueTime)"/>.
+			</summary>
+			<param name="x">The first value to compare.</param>
+			<param name="y">The second value to compare.</param>
+			<returns>The value with the greater absolute magnitude.</returns>
+		</Member>
+		<Member name="MinMagnitude">
+			<summary>Returns the value with the smaller absolute magnitude. If the magnitudes are equal, returns the non-positive value.</summary>
+			<param name="x">The first value to compare.</param>
+			<param name="y">The second value to compare.</param>
+			<returns>The value with the smaller absolute magnitude.</returns>
+		</Member>
+		<Member name="MinMagnitudeNumber">
+			<summary>
+				Returns the value with the smaller absolute magnitude. Since <see cref="CueTime"/> cannot represent NaN, this has the same behavior as <see cref="MinMagnitude(CueTime, CueTime)"/>.
+			</summary>
+			<param name="x">The first value to compare.</param>
+			<param name="y">The second value to compare.</param>
+			<returns>The value with the smaller absolute magnitude.</returns>
+		</Member>
+		<Member name="IsCanonical">
+			<summary>
+				Returns <see langword="true"/> because every stored frame count has a canonical representation.
+			</summary>
+			<param name="value">The value to check.</param>
+		</Member>
+		<Member name="IsComplexNumber">
+			<summary>
+				Always returns <see langword="false"/> because <see cref="CueTime"/> represents real time intervals.
+			</summary>
+			<param name="value">The value to check.</param>
+		</Member>
+		<Member name="IsEvenInteger">
+			<summary>Determines whether the stored number of timecode frames is even.</summary>
+			<param name="value">The value to check.</param>
+		</Member>
+		<Member name="IsFinite">
+			<summary>
+				Always returns <see langword="true"/> because every <see cref="CueTime"/> has a finite integral frame count.
+			</summary>
+			<param name="value">The value to check.</param>
+		</Member>
+		<Member name="IsImaginaryNumber">
+			<summary>
+				Always returns <see langword="false"/> because <see cref="CueTime"/> does not represent imaginary values.
+			</summary>
+			<param name="value">The value to check.</param>
+		</Member>
+		<Member name="IsInfinity">
+			<summary>
+				Always returns <see langword="false"/> because infinity cannot be represented by <see cref="CueTime"/>.
+			</summary>
+			<param name="value">The value to check.</param>
+		</Member>
+		<Member name="IsInteger">
+			<summary>
+				Always returns <see langword="true"/> because the value is stored as an integer number of timecode frames.
+			</summary>
+			<param name="value">The value to check.</param>
+		</Member>
+		<Member name="IsNaN">
+			<summary>
+				Always returns <see langword="false"/> because NaN cannot be represented by <see cref="CueTime"/>.
+			</summary>
+			<param name="value">The value to check.</param>
+		</Member>
+		<Member name="IsNegative">
+			<summary>Determines whether the stored number of timecode frames is negative.</summary>
+			<param name="value">The value to check.</param>
+		</Member>
+		<Member name="IsNegativeInfinity">
+			<summary>
+				Always returns <see langword="false"/> because infinity cannot be represented by <see cref="CueTime"/>.
+			</summary>
+			<param name="value">The value to check.</param>
+		</Member>
+		<Member name="IsNormal">
+			<summary>
+				Always returns <see langword="true"/> for the integral values represented by <see cref="CueTime"/>.
+			</summary>
+			<param name="value">The value to check.</param>
+		</Member>
+		<Member name="IsOddInteger">
+			<summary>Determines whether the stored number of timecode frames is odd.</summary>
+			<param name="value">The value to check.</param>
+		</Member>
+		<Member name="IsPositive">
+			<summary>Determines whether the stored number of timecode frames is non-negative.</summary>
+			<param name="value">The value to check.</param>
+		</Member>
+		<Member name="IsPositiveInfinity">
+			<summary>
+				Always returns <see langword="false"/> because infinity cannot be represented by <see cref="CueTime"/>.
+			</summary>
+			<param name="value">The value to check.</param>
+		</Member>
+		<Member name="IsRealNumber">
+			<summary>
+				Always returns <see langword="true"/> because every <see cref="CueTime"/> represents a real time interval.
+			</summary>
+			<param name="value">The value to check.</param>
+		</Member>
+		<Member name="IsSubnormal">
+			<summary>
+				Always returns <see langword="false"/> because subnormal values do not apply to the integral representation.
+			</summary>
+			<param name="value">The value to check.</param>
+		</Member>
+		<Member name="IsZero">
+			<summary>Determines whether the stored number of timecode frames is zero.</summary>
+			<param name="value">The value to check.</param>
+		</Member>
+		<Member name="ParseNumberStylesString">
+			<summary>
+				Parses a string representation of a <see cref="CueTime"/>.
+			</summary>
+			<param name="s">The string to parse.</param>
+			<param name="style">
+				Ignored. <see cref="CueTime"/> uses its fixed colon-separated timecode syntax.
+			</param>
+			<param name="provider">
+				An object that supplies culture-specific formatting information. The parser applies the <see cref="CueTime"/> parsing rules.
+			</param>
+			<returns>
+				The parsed <see cref="CueTime"/>.
+			</returns>
+			<include file="CueTime.xml" path="Elements/Errors/Error[@name='ArgumentException']"/>
+		</Member>
+		<Member name="ParseNumberStylesSpan">
+			<summary>
+				Parses a character span representing a <see cref="CueTime"/>.
+			</summary>
+			<param name="s">The character span to parse.</param>
+			<param name="style">
+				Ignored. <see cref="CueTime"/> uses its fixed colon-separated timecode syntax.
+			</param>
+			<param name="provider">
+				An object that supplies culture-specific formatting information. The parser applies the <see cref="CueTime"/> parsing rules.
+			</param>
+			<returns>
+				The parsed <see cref="CueTime"/>.
+			</returns>
+			<include file="CueTime.xml" path="Elements/Errors/Error[@name='ArgumentException']"/>
+		</Member>
+		<Member name="TryParseNumberStylesString">
+			<summary>
+				Attempts to parse a string representation of a <see cref="CueTime"/>.
+			</summary>
+			<param name="s">The string to parse.</param>
+			<param name="style">
+				Ignored. <see cref="CueTime"/> uses its fixed colon-separated timecode syntax.
+			</param>
+			<param name="provider">
+				An object that supplies culture-specific formatting information. The parser applies the <see cref="CueTime"/> parsing rules.
+			</param>
+			<param name="result">When this method returns, contains the parsed value, or the default value if parsing failed.</param>
+			<returns>
+				<see langword="true"/> if parsing succeeded; otherwise, <see langword="false"/>.
+			</returns>
+		</Member>
+		<Member name="TryParseNumberStylesSpan">
+			<summary>
+				Attempts to parse a character span representing a <see cref="CueTime"/>.
+			</summary>
+			<param name="s">The character span to parse.</param>
+			<param name="style">
+				Ignored. <see cref="CueTime"/> uses its fixed colon-separated timecode syntax.
+			</param>
+			<param name="provider">
+				An object that supplies culture-specific formatting information. The parser applies the <see cref="CueTime"/> parsing rules.
+			</param>
+			<param name="result">When this method returns, contains the parsed value, or the default value if parsing failed.</param>
+			<returns>
+				<see langword="true"/> if parsing succeeded; otherwise, <see langword="false"/>.
+			</returns>
+		</Member>
+		<Member name="TryFormat">
+			<summary>
+				Formats the current <see cref="CueTime"/> into the supplied character destination.
+			</summary>
+			<param name="destination">The span into which the formatted characters are written.</param>
+			<param name="charsWritten">When this method returns, contains the number of characters written.</param>
+			<param name="format">The format string. Uses the default format when empty.</param>
+			<param name="provider">An object that supplies culture-specific formatting information. The provider is unused by the timecode formatter.</param>
+			<returns>
+				<see langword="true"/> if the destination was large enough; otherwise, <see langword="false"/>.
+			</returns>
+		</Member>
+
+		<Member name="ParseUtf8">
+			<summary>
+				Parses a UTF-8 encoded character span representing a <see cref="CueTime"/>.
+			</summary>
+			<param name="utf8Text">The UTF-8 encoded timecode text to parse.</param>
+			<param name="provider">An object that supplies culture-specific formatting information. The provider is not used by the timecode parser.</param>
+			<returns>
+				The parsed <see cref="CueTime"/>.
+			</returns>
+			<exception cref="System.ArgumentException">The decoded text has an invalid timecode structure.</exception>
+			<exception cref="System.FormatException">A timecode component is not a valid integer.</exception>
+			<exception cref="System.OverflowException">
+				The resulting frame count cannot be represented by <see cref="int"/>.
+			</exception>
+		</Member>
+		<Member name="TryParseUtf8">
+			<summary>
+				Attempts to parse a UTF-8 encoded character span representing a <see cref="CueTime"/>.
+			</summary>
+			<param name="utf8Text">The UTF-8 encoded timecode text to parse.</param>
+			<param name="provider">An object that supplies culture-specific formatting information. The provider is not used by the timecode parser.</param>
+			<param name="result">When this method returns, contains the parsed value, or the default value if parsing failed.</param>
+			<returns>
+				<see langword="true"/> if parsing succeeded; otherwise, <see langword="false"/>.
+			</returns>
+		</Member>
+		<Member name="TryFormatUtf8">
+			<summary>
+				Formats the current <see cref="CueTime"/> as UTF-8 into the supplied destination.
+			</summary>
+			<param name="utf8Destination">The span into which the UTF-8 encoded characters are written.</param>
+			<param name="bytesWritten">When this method returns, contains the number of bytes written.</param>
+			<param name="format">The format string. Uses the default format when empty.</param>
+			<param name="provider">An object that supplies culture-specific formatting information. The provider is unused by the timecode formatter.</param>
+			<returns>
+				<see langword="true"/> if the destination was large enough; otherwise, <see langword="false"/>.
+			</returns>
 		</Member>
 	</Members>
 </Elements>

@@ -1,4 +1,4 @@
-﻿using CueSheetNet.Logging;
+﻿using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using System.Globalization;
 
@@ -6,6 +6,8 @@ namespace CueSheetNet.FormatReaders;
 
 public sealed class FfprobeFormatReader : IAudioFileFormatReader
 {
+    public static ILogger Loggerio => Loggingq.AudioReadingLogger;
+
     public static bool? FfprobeDetected { get; private set; }
     private static string fFProbePath = "ffprobe";
     public static string FFProbePath
@@ -49,11 +51,11 @@ public sealed class FfprobeFormatReader : IAudioFileFormatReader
         catch (System.ComponentModel.Win32Exception)
         {
             FfprobeDetected = false;
-            Logger.LogWarning($"Could not find ffprobe using path: '{FFProbePath}' - file metadata not read. Specify path to ffprobe using {nameof(FfprobeFormatReader)}.{nameof(FfprobeFormatReader.FFProbePath)}");
+            Loggerio.FfprobeMissingExecutable(FFProbePath, nameof(FfprobeFormatReader), nameof(FFProbePath));
         }
         catch (Exception e)
         {
-            Logger.LogWarning("Error {Error.Message} - file metada not read", e);
+            Loggerio.FfprobeError(e);
         }
         metadata = default;
         return false;
@@ -73,8 +75,7 @@ public sealed class FfprobeFormatReader : IAudioFileFormatReader
         }
         return default_val;
     }
-
-
+    [TraceExecutionTime("FFProbe metadata reading")]
     public void ParseFfprobeOutput(StreamReader sreader, out FileMetadata data)
     {
         string content = sreader.ReadToEnd();

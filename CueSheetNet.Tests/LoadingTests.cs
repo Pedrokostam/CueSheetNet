@@ -1,5 +1,5 @@
-﻿using CueSheetNet;
-using CueSheetNet.Components;
+﻿using CueSheetNet.Tests;
+using CueSheetNet;
 using CueSheetNet.Tests;
 using System;
 using System.Collections.Generic;
@@ -7,14 +7,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SheetNet.Tests;
+namespace CueSheetNet.Tests;
 
 [TestClass]
 public  class LoadingTests
 {
-    Sheet TestItemJethro { get; set; } = default!;
-    Sheet TestItemBallet { get; set; } = default!;
-    Sheet TestItemMulti { get; set; } = default!;
+    CueSheet TestItemJethro { get; set; } = default!;
+    CueSheet TestItemBallet { get; set; } = default!;
+    CueSheet TestItemMulti { get; set; } = default!;
 
     [TestInitialize]
     public void Init()
@@ -23,9 +23,9 @@ public  class LoadingTests
         TestItemBallet = Load("Spandau Ballet - True.cue");
         TestItemMulti = Load("MultiFile.cue");
     }
-    private Sheet Load(string name)
+    private CueSheet Load(string name)
     {
-        return new CueReader().ParseCueSheet(Utils.GetFile("LoadingTests", name));
+        return CueReader.CreateFromFile(Utils.GetFile("LoadingTests", name)).Parse();
     }
     [TestMethod]
     public void Title()

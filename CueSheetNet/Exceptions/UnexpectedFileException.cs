@@ -1,7 +1,13 @@
 ﻿using CueSheetNet.Components;
 
 namespace CueSheetNet.Exceptions;
-
+public class CueUnexpectedItemException(string message) : CueException(message)
+{
+    public static CueUnexpectedItemException Throw(string item, int lineNumber)
+    {
+        throw new CueUnexpectedItemException($"Unexpected {item} at line number {lineNumber}");
+    }
+}
 public class UnexpectedFileException(string previousFile, string unexceptedFile) : Exception($"Attempted to add file \"{unexceptedFile}\" when the previous \"{previousFile}\" had no tracks")
 {
 

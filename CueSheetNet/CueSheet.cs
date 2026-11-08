@@ -82,7 +82,7 @@ public class CueSheet : IRemarkable
     {
         get => _sourceFile; internal set
         {
-            if (!FileSystemInfoComparer.Default.Equals(value, _sourceFile))
+            if (!FileSystemInfoComparer.Instance.Equals(value, _sourceFile))
             {
                 _sourceFile = value;
                 RefreshAdditionalFiles();
@@ -144,7 +144,7 @@ public class CueSheet : IRemarkable
     /// <exception cref="IndexOutsideOfTrackException">Thrown when the index is inserted outside the bounds of the specified track.</exception>
     public void InsertIndex(CueDataFile file, CueTime time, CueTrack? track = null)
     {
-        NegativeIndexTimeException.ThrowIfNegative(time);
+        ArgumentOutOfRangeException.ThrowIfNegative(time);
         ThrowIfOutsideOfFile(time, file);
         if (track is not null && !ReferenceEquals(track.File, file))
             throw new ArgumentException($"Track {track} does not belong to {file}");
@@ -385,6 +385,7 @@ public class CueSheet : IRemarkable
         }
         if (file.Meta.Value.CueDuration <= time)
         {
+            
             throw new IndexOutsideOfFileException(file.Name, time);
         }
     }

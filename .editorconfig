@@ -14,3 +14,6 @@ dotnet_diagnostic.MA0076.severity=silent
 
 # MA0038: Make method static
 dotnet_diagnostic.MA0038.severity=silent
+
+# MA0011: IFormatProvider is missing
+dotnet_diagnostic.MA0011.severity = none

@@ -48,6 +48,11 @@ public static class PathStringNormalization
         // Faster than regex, but uses more memory
         return string.Join(replacement, input.Split(IllegalPath));
     }
+
+    public static bool IsInvalidPathCharacter(char c)
+    {
+        return IllegalPath.AsSpan().Contains(c);
+    }
     /// <summary>
     /// Replaces characters that cannot be used in a filename (OS-dependent)
     /// </summary>

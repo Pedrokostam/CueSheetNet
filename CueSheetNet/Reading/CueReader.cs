@@ -1,52 +1,252 @@
-﻿using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
-using System.Text.RegularExpressions;
-using CueSheetNet.Components;
-using CueSheetNet.Logging;
+﻿using CueSheetNet.Components;
+using CueSheetNet.Extensions;
 using CueSheetNet.Reading;
 using CueSheetNet.Syntax;
 using CueSheetNet.TextParser;
+using Metalama.Framework;
 using Microsoft.Extensions.Logging;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Reflection.Metadata;
+using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 
 namespace CueSheetNet;
 
-public sealed partial class CueReader
+public sealed partial class CueReader : ISourcelessCueReader
 {
+    #region Factories
+    /// <remarks>
+    /// To learn more check the more fine-grained methods:
+    /// <list type="table">
+    /// <item><see cref="WithQuotation(char)"/></item>
+    /// <item><see cref="WithEncoding(Encoding?)"/></item>
+    /// <item><see cref="WithQualifiedPaths(bool)"/></item>
+    /// </list>
+    /// </remarks>
+    /// <inheritdoc cref="ISourcelessCueReader.WithSettings(CueReaderSettings)"/>
+    public CueReader WithSettings(CueReaderSettings settings)
+    {
+        Settings = settings;
+        return this;
+    }
+
+    /// <inheritdoc cref="ISourcelessCueReader.WithQuotation(char)"/>
+    public CueReader WithQuotation(char quote)
+    {
+        Settings = Settings with { Quotation = quote };
+        return this;
+    }
+
+    /// <inheritdoc cref="ISourcelessCueReader.WithEncoding(Encoding?)"/>
+    public CueReader WithEncoding(Encoding? encoding)
+    {
+        Settings = Settings with { Encoding = encoding };
+        return this;
+    }
+
+    /// <inheritdoc cref="ISourcelessCueReader.WithQualifiedPaths(bool)"/>
+    public CueReader WithQualifiedPaths(bool qualified)
+    {
+        Settings = Settings with { KeepQualified = qualified };
+        return this;
+    }
+
+    ///<remarks></remarks>
+    /// <inheritdoc cref="ISourcelessCueReader.FromString(string)"/>
+    public static CueReader CreateFromString(string content)
+    {
+        var reader = new CueReader(null);
+        return reader.FromString(content);
+    }
+    /// <returns>The same instance of CueReader, reset and with the source set to the new value.</returns>
+    /// <inheritdoc cref="ISourcelessCueReader.FromString(string)"/>
+    public CueReader FromString(string content)
+    {
+        Reset();
+        Source = new CueSource(content, SourceType.String);
+        return this;
+    }
+
+    ///<remarks></remarks>
+    /// <inheritdoc cref="ISourcelessCueReader.FromFile(FileInfo)"/>
+    public static CueReader CreateFromFile(FileInfo fileInfo)
+    {
+        var reader = new CueReader(null);
+        return reader.FromFile(fileInfo);
+    }
+    /// <returns>The same instance of CueReader, reset and with the source set to the new value.</returns>
+    /// <inheritdoc cref="ISourcelessCueReader.FromFile(FileInfo)"/>
+    public CueReader FromFile(FileInfo file)
+    {
+        Reset();
+        Source = new CueSource(file.FullName, SourceType.File);
+        return this;
+    }
+    ///<remarks></remarks>
+    /// <inheritdoc cref="ISourcelessCueReader.FromFile(string)"/>
+    public static CueReader CreateFromFile(string filepath)
+    {
+        var reader = new CueReader(null);
+        return reader.FromFile(filepath);
+    }
+    /// <returns>The same instance of CueReader, reset and with the source set to the new value.</returns>
+    /// <inheritdoc cref="ISourcelessCueReader.FromFile(string)"/>
+    public CueReader FromFile(string filepath)
+    {
+        Reset();
+        Source = new CueSource(filepath, SourceType.File);
+        return this;
+    }
+
+    ///<remarks></remarks>
+    /// <inheritdoc cref="ISourcelessCueReader.FromBytes(IList{byte})"/>
+    public static CueReader CreateFromBytes(IList<byte> bytes)
+    {
+        var reader = new CueReader(null);
+        return reader.FromBytes(bytes);
+    }
+    /// <returns>The same instance of CueReader, reset and with the source set to the new value.</returns>
+    /// <inheritdoc cref="ISourcelessCueReader.FromBytes(IList{byte})"/>
+    public CueReader FromBytes(IList<byte> bytes)
+    {
+        Reset();
+        Source = new CueSource(bytes, SourceType.Bytes);
+        return this;
+    }
+    ///<remarks></remarks>
+    /// <inheritdoc cref="ISourcelessCueReader.FromStream(Stream)"/>
+    public static CueReader CreateFromStream(Stream stream)
+    {
+        var reader = new CueReader(null);
+        return reader.FromStream(stream);
+    }
+    /// <returns>The same instance of CueReader, reset and with the source set to the new value.</returns>
+    /// <inheritdoc cref="ISourcelessCueReader.FromStream(Stream)"/>
+    public CueReader FromStream(Stream stream)
+    {
+        Reset();
+        Source = new CueSource(stream, SourceType.Stream);
+        return this;
+    }
+    ISourcelessCueReader ISourcelessCueReader.WithSettings(CueReaderSettings settings)
+    {
+        return WithSettings(settings);
+    }
+
+    ISourcelessCueReader ISourcelessCueReader.WithQuotation(char quote)
+    {
+        return WithQuotation(quote);
+    }
+
+    ISourcelessCueReader ISourcelessCueReader.WithEncoding(Encoding? encoding)
+    {
+        return WithEncoding(encoding);
+    }
+
+    ISourcelessCueReader ISourcelessCueReader.WithQualifiedPaths(bool qualified)
+    {
+        return WithQualifiedPaths(qualified);
+    }
+    #endregion
+
+    [AllowNull]
+    public CueReaderSettings Settings
+    {
+        get; set
+        {
+            if (value.Quotation == default)
+            {
+                field = value with { Quotation = CueReaderSettings.DefaultQuotation };
+            }
+            else
+            {
+                field = value;
+            }
+        }
+    }
     internal ILogger Loggerio => Loggingq.ParsingLogger;
+
     private static readonly CultureInfo InvCul = CultureInfo.InvariantCulture;
-    public const char DefaultQuotation = '"';
-    public int CurrentLineIndex { get; private set; } = -1;
 
-    internal CueSource Source { get; private set; }
-
-    public string? CurrentLine { get; private set; } = "No line read yet";
+    public CueSource Source { get; private set; }
 
     [AllowNull]
     CueSheet Sheet { get; set; }
+
     [MemberNotNullWhen(returnValue: true, nameof(LastTrack))]
     private bool SheetHasTracks => Sheet.Data.Count > 0;
+
     [MemberNotNullWhen(returnValue: true, nameof(LastFile))]
+
     private bool SheetHasFiles => Sheet.Data.Count > 0;
 
-    /// <summary>
-    /// Character used to enclose text when it contains whitespace.
-    /// <para/>
-    /// Usually all fields are enclosed in double quotes.
-    /// </summary>
-    public char Quotation { get; set; } = DefaultQuotation;
-    private Encoding? Encoding { get; set; }
+    private Encoding? UsedEncoding { get; set; }
 
-    private void Reset(Encoding? encoding = null)
+    public ISourcelessCueReader Reset()
     {
         Sheet = null;
         CurrentLineIndex = -1;
-        CurrentLine = "No line read";
-        Encoding = encoding;
+        UsedEncoding = null;
+        Source = default;
+        return (ISourcelessCueReader)this;
     }
 
-    private bool KeepQualified { get; set; } = false;
-
+    /// <summary>
+    /// Parses the sheet from the given source.
+    /// </summary>
+    /// <remarks>
+    /// The reader can be reused after the method. Set the new source and it will automatically call <see cref="Reset"/>.
+    /// </remarks>
+    /// <returns>The new parsed cue sheet.</returns>
+    public CueSheet Parse()
+    {
+        var start = Stopwatch.GetTimestamp();
+        Loggerio.StartedParsing(Source);
+        Exception? error = null;
+        try
+        {
+            if (!Source.Initialized)
+            {
+                throw new InvalidOperationException("You must set a source (From* methods) to be able to parse");
+            }
+            if (Source.Type == SourceType.None || Source.Data is null)
+            {
+                throw new InvalidOperationException("Cannot parse when Source is \"None\"");
+            }
+            if (Source.Type == SourceType.String)
+            {
+                return ParseString((string)Source.Data);
+            }
+            IList<byte> bytes = Source.Type switch
+            {
+                SourceType.File => File.ReadAllBytes((string)Source.Data),
+                SourceType.Stream => ((Stream)Source.Data).GetBytes(),
+                SourceType.Bytes => (IList<byte>)Source.Data,
+                SourceType.None => throw new UnreachableException("None should have already been dealt with"),
+                SourceType.String => throw new UnreachableException("String should have already been dealt with"),
+                _ => throw new InvalidEnumArgumentException(nameof(Source), (int)Source.Type, typeof(SourceType))
+            };
+            return bytes switch
+            {
+                byte[] arr => ParseBytes(arr.AsSpan()),
+                List<byte> list => ParseBytes(CollectionsMarshal.AsSpan(list)),
+                _ => ParseBytes(bytes.ToArray()),
+            };
+        }
+        catch (Exception e)
+        {
+            error = e;
+            throw;
+        }
+        finally
+        {
+            var elapsed = Stopwatch.GetElapsedTime(start);
+            Loggerio.EndedParsing(Source, elapsed.TotalMilliseconds, error);
+        }
+    }
     /// <summary>
     /// Currently parsed file
     /// </summary>
@@ -64,52 +264,70 @@ public sealed partial class CueReader
     /// </summary>
     private CueTrack? LastTrack => _currentTrack ?? (Sheet.Data.Count > 0 ? Sheet.Data[^1].Track : null);
 
+    public int CurrentLineIndex { get; private set; }
+    CueReaderSettings ISourcelessCueReader.Settings { get; }
 
-    public CueReader() { }
-
-
-    /// <summary>Parsing CueSheet from: {Source}</summary>
-    private void LogParseSource() => Logger.LogInformation("Parsing CueSheet from: {Source}", Source);
-
-    /// <summary>Parsing started</summary>
-    private static void LogParseStart() => Logger.LogDebug("Parsing started");
-
-    private CueSheet ParseAll_impl(Stream fs, string? path)
+    private CueReader(CueReaderSettings? settings)
     {
-        LogParseStart();
-        Sheet = new(path);
-        if (Encoding is null)
-        {
-            Stopwatch st = Stopwatch.StartNew();
-            var tester = new CueEncodingTester(fs, Source);
-            Encoding = tester.DetectCueEncoding();
-            st.Stop();
-            Logger.LogInformation(
-                "Detected {Encoding.EncodingName} encoding in {Time}ms",
-                Encoding,
-                st.ElapsedMilliseconds
-            );
-        }
-        fs.Seek(0, SeekOrigin.Begin);
-        using TextReader strr = new StreamReader(
-            fs,
-            Encoding,
-            detectEncodingFromByteOrderMarks: false
-        );
-        return ReadImpl(strr);
+        Settings = settings ?? new();
+        Reset();
     }
-    [TraceExecutionTime("Read")]
-    private CueSheet ReadImpl(TextReader txtRead)
+    private static readonly UTF8Encoding Utf8Strict = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+    [TraceExecutionTime]
+    private CueSheet ParseBytes(ReadOnlySpan<byte> data)
     {
-        Stopwatch st = Stopwatch.StartNew();
-        while (txtRead.ReadLine()?.Trim() is string line)
+        var fileInfo = Source.Type switch
         {
+            SourceType.File => new FileInfo((string)Source.Data!),
+            _ => null
+        };
+        Sheet = new(fileInfo);
+        if (Settings.Encoding is not null)
+        {
+            return DecodeAndParse(Settings.Encoding, data);
+        }
+        var tester = new CueEncodingTester2(Source);
+        UsedEncoding = tester.DetectCueEncoding(data);
+        try
+        {
+            if (UsedEncoding is not null)
+            {
+                return DecodeAndParse(UsedEncoding, data);
+            }
+            return DecodeAndParse(Utf8Strict, data);
+        }
+        catch (DecoderFallbackException)
+        {
+            return DecodeAndParse(CueEncodingTester2.Win1252, data);
+        }
+    }
+    private CueSheet DecodeAndParse(Encoding encoding, ReadOnlySpan<byte> bytes)
+    {
+        ArgumentNullException.ThrowIfNull(encoding);
+        UsedEncoding = encoding;
+        bytes = bytes[UsedEncoding.Preamble.Length..];
+        Span<char> text = stackalloc char[UsedEncoding.GetMaxCharCount(bytes.Length)];
+        var length = UsedEncoding.GetChars(bytes, text);
+        text = text[..length];
+        return ParseString(text);
+    }
+
+    [TraceExecutionTime("Parsing Cue Sheet", 2)]
+    private CueSheet ParseString(ReadOnlySpan<char> txtRead)
+    {
+        foreach (var lineRaw in txtRead.EnumerateLines())
+        {
+            var line = lineRaw.Trim();
             CurrentLineIndex++;
-            CurrentLine = line;
+            if (line.Length == 0)
+            {
+                continue;
+            }
             string value = GetKeyword(line).ToUpperInvariant();
             if (!Enum.TryParse(value, out Keywords key))
             {
-                throw new InvalidDataException("Invalid Cuesheet");
+                // non breaking space ?!
+                throw new FormatException($"Unknown keyword {value} at line {CurrentLineIndex}");
             }
             switch (key)
             {
@@ -149,26 +367,17 @@ public sealed partial class CueReader
                     break;
             }
         }
-        st.Stop();
-        Logger.LogInformation(
-            "Finished parsing {Source} in {Time}ms",
-            Source,
-            st.ElapsedMilliseconds
-        );
-        Sheet.SourceEncoding = Encoding;
+        Sheet.SourceEncoding = UsedEncoding;
         return Sheet;
     }
 
-    private void ParseTitle(string line)
+    [TraceExecutionTime]
+    private void ParseTitle(ReadOnlySpan<char> line)
     {
         string? title = GetValue(line, 5); // TITLE_
         if (title == null)
         {
-            Logger.LogWarning(
-                "Invalid TITLE at line {Line number}: \"{Line}\"",
-                CurrentLineIndex,
-                CurrentLine
-            );
+            Loggerio.InvalidKeyword("TITLE", CurrentLineIndex, line.ToString());
             return;
         }
 
@@ -182,7 +391,8 @@ public sealed partial class CueReader
         }
     }
 
-    private void ParseFile(string line)
+    [TraceExecutionTime]
+    private void ParseFile(ReadOnlySpan<char> line)
     {
         (string path, string type) = GetFile(line, 5); // FILE_
         var fileType = FileType.FromString(type);
@@ -194,7 +404,7 @@ public sealed partial class CueReader
         //    );
         //    typeEnum = FileType.WAVE;
         //}
-        _currentFile = new CueDataFile(path, Sheet, fileType, KeepQualified);
+        _currentFile = new CueDataFile(path, Sheet, fileType, Settings.KeepQualified);
     }
     private int CountTracks()
     {
@@ -211,18 +421,14 @@ public sealed partial class CueReader
         return i;
     }
 
-    private void ParseTrack(string line)
+    [TraceExecutionTime]
+    private void ParseTrack(ReadOnlySpan<char> line)
     {
         string num = GetKeyword(line, 6); // TRACK_
         int? desired = null;
         if (!int.TryParse(num, NumberStyles.Integer, InvCul, out int number))
         {
-            Logger.LogWarning(
-                "Invalid TRACK number at line {Line number}: \\\"{Line}\\\"\". Assigning consecutive rest",
-                CurrentLineIndex,
-                CurrentLine,
-                number
-            );
+            Loggerio.InvalidKeyword("TRACK", CurrentLineIndex, line.ToString());
         }
         else
         {
@@ -238,16 +444,13 @@ public sealed partial class CueReader
         _currentTrack = new CueTrack(type, Sheet) { Gap = gap };
     }
 
-    private void ParsePerformer(string line)
+    [TraceExecutionTime]
+    private void ParsePerformer(ReadOnlySpan<char> line)
     {
         string? performer = GetValue(line, 10); // PERFORMER_
         if (performer == null)
         {
-            Logger.LogWarning(
-                "Invalid PERFORMER at line {Line number}: \"{Line}\"",
-                CurrentLineIndex,
-                CurrentLine
-            );
+            Loggerio.InvalidKeyword("PEFORMER", CurrentLineIndex, line.ToString());
             return;
         }
 
@@ -261,39 +464,34 @@ public sealed partial class CueReader
         }
     }
 
-    private void ParseCdTextFile(string line)
+    [TraceExecutionTime]
+    private void ParseCdTextFile(ReadOnlySpan<char> line)
     {
         string? cdt = GetValue(line, 11); // CDTEXTFILE_
         if (cdt == null)
         {
-            Logger.LogWarning(
-                "Invalid CDTEXT at line {Line number}: \"{Line}\"",
-                CurrentLineIndex,
-                CurrentLine
-            );
+            Loggerio.InvalidKeyword("CDTEXT", CurrentLineIndex, line.ToString());
             return;
         }
-        Sheet.CdTextFile = new CueExtraFile(cdt, Sheet, KeepQualified);
+        Sheet.CdTextFile = new CueExtraFile(cdt, Sheet, Settings.KeepQualified);
     }
 
-    private void ParseFlags(string line)
+    [TraceExecutionTime]
+    private void ParseFlags(ReadOnlySpan<char> line)
     {
         if (LastTrack is not CueTrack track)
         {
-            Logger.LogWarning(
-                "FLAGS present before any track at line {Line number}: \"{Line}\"",
-                CurrentLineIndex,
-                CurrentLine
-            );
+            Loggerio.InvalidKeyword("FLAGS", CurrentLineIndex, line.ToString());
             return;
         }
         TrackFlags flags = TrackFlags.None;
-        string[] parts = line[6..] // FLAGS_
-            .Replace("\"", "", StringComparison.Ordinal)
-            .Replace("'", "", StringComparison.Ordinal)
-            .Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        foreach (var part in parts)
+        Span<Range> ranges = stackalloc Range[8];
+        line = line[6..];// FLAGS_
+        line.Trim("\"'")
+            .Split(ranges, ' ', StringSplitOptions.RemoveEmptyEntries);
+        foreach (var range in ranges)
         {
+            var part = line[range];
             char trim = part[0];
             flags |= trim switch
             {
@@ -306,50 +504,43 @@ public sealed partial class CueReader
         }
         track.Flags = flags;
     }
-
-    private void ParseISRC(string line)
+    [TraceExecutionTime]
+    private void ParseISRC(ReadOnlySpan<char> line)
     {
         if (LastTrack is not CueTrack track)
             return;
         string? isrc = GetValue(line, 5); // ISRC_
         if (isrc == null)
         {
-            Logger.LogWarning(
-                "Invalid ISRC at line {Line number}: \"{Line}\"",
-                CurrentLineIndex,
-                CurrentLine
-            );
-
+            Loggerio.InvalidKeyword("ISRC", CurrentLineIndex, line.ToString());
             return;
         }
         track.Isrc = isrc;
     }
 
-    private void ParseCatalog(string line)
+    [TraceExecutionTime]
+    private void ParseCatalog(ReadOnlySpan<char> line)
     {
         string? cata = GetValue(line, 8); // CATALOG_
         if (cata == null)
         {
-            Logger.LogWarning(
-                "Invalid CATALOG at line {Line number}: \"{Line}\"",
-                CurrentLineIndex,
-                CurrentLine
-            );
+            Loggerio.InvalidKeyword("CATALOG", CurrentLineIndex, line.ToString());
             return;
         }
         Sheet.Catalog = cata;
     }
 
-    private void ParseIndex(string line)
+    [TraceExecutionTime]
+    private void ParseIndex(ReadOnlySpan<char> line)
     {
         if (LastTrack is null || LastFile is null)
         {
-            Logger.LogWarning(
-                "INDEX line present before any track at line {Line number}: \"{Line}\"",
-                CurrentLineIndex,
-                CurrentLine
-            );
-            return;
+            if (Settings.IgnoreIncorrectPlacement)
+            {
+                Loggerio.PrematureIndex(CurrentLineIndex, line.ToString());
+                return;
+            }
+            throw new NotImplementedException("index before track");
         }
         string number = GetKeyword(line, 6); // INDEX_
         if (!int.TryParse(number, NumberStyles.Integer, InvCul, out int num))
@@ -359,7 +550,7 @@ public sealed partial class CueReader
                 $"Incorrect Position number format at line {CurrentLineIndex}: {line}"
             );
         }
-        if (!CueTime.TryParse(line.AsSpan(6 + number.Length + 1), InvCul, out CueTime cueTime))
+        if (!CueTime.TryParse(line.Slice(6 + number.Length + 1), InvCul, out CueTime cueTime))
         {
             //Logger.LogError("Incorrect Index format at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
             throw new FormatException($"Incorrect Position format at line {CurrentLineIndex}: {line}");
@@ -371,41 +562,33 @@ public sealed partial class CueReader
         _currentTrack = null;
     }
 
-    private void ParseGap(string line, string gapType)
+    [TraceExecutionTime]
+    private void ParseGap(ReadOnlySpan<char> line, string gapType)
     {
-        if (LastFile is null)
+        if (LastTrack is null)
         {
-            Logger.LogWarning(
-                "GAP line present before any file at line {Line number}: \"{Line}\"",
-                CurrentLineIndex,
-                CurrentLine
-            );
-            return;
-        }
-        if (LastTrack is not CueTrack track)
-        {
-            Logger.LogWarning(
-                "GAP line present before any track at line {Line number}: \"{Line}\"",
-                CurrentLineIndex,
-                CurrentLine
-            );
-            return;
+            if (Settings.IgnoreIncorrectPlacement)
+            {
+                Loggerio.PrematureGap(CurrentLineIndex, line.ToString());
+                return;
+            }
+            throw new NotImplementedException("gap before track/file");
         }
 
         string type = GetKeyword(line, 0);
-        if (!CueTime.TryParse(line.AsSpan(6 + type.Length + 1), InvCul, out CueTime cueTime))
+        if (!CueTime.TryParse(line.Slice(6 + type.Length + 1), InvCul, out CueTime cueTime))
         {
             //Logger.LogError("Incorrect Gap format at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
             throw new FormatException($"Incorrect Gap format at line {CurrentLineIndex}: {line}");
         }
         // the whole line is guarentedd to be uppercase
         if (gapType.StartsWith("PRE", StringComparison.Ordinal))
-            track.PreGap = cueTime;
+            LastTrack.PreGap = cueTime;
         else
-            track.PostGap = cueTime;
+            LastTrack.PostGap = cueTime;
     }
     [TraceExecutionTime]
-    private void ParseREM(string line)
+    private void ParseREM(ReadOnlySpan<char> line)
     {
         string firstWord = GetKeyword(line, 4).ToUpperInvariant();
         int valueStart = 4 + firstWord.Length + 1;
@@ -415,7 +598,7 @@ public sealed partial class CueReader
         {
             // we only have one word and maybe some spaces - it cant be any common rem field
             // add it as legacy - add the whole line after REM
-            remmy.Remarks.Add(line[4..]);
+            remmy.Remarks.Add(line[4..].ToString());
         }
         else
         {
@@ -428,17 +611,17 @@ public sealed partial class CueReader
     /// </summary>
     /// <param name="s">String to get values from</param>
     /// <returns><see cref="ValueTuple"/> of filename and type</returns>
-    private (string Path, string Type) GetFile(string s, int start)
+    private (string Path, string Type) GetFile(ReadOnlySpan<char> s, int start)
     {
-        ReadOnlySpan<char> spanny = s.AsSpan(start).Trim();
+        ReadOnlySpan<char> spanny = s[start..].Trim();
         string path;
         string type;
-        if (spanny[0] == Quotation)
+        if (spanny[0] == Settings.Quotation)
         {
             int end = -1;
             for (int i = spanny.Length - 1; i >= 1; i--)
             {
-                if (spanny[i] == Quotation)
+                if (spanny[i] == Settings.Quotation)
                 {
                     end = i;
                     break;
@@ -471,25 +654,25 @@ public sealed partial class CueReader
     /// <param name="start">Index from which the search will be started</param>
     /// <param name="end">How many characters are skipped at the end</param>
     /// <returns>String if there was text, enclosed in quotations or not; <see cref="null"/> if there was no non-whitespace text, or there were quutations with nothing inside</returns>
-    private string? GetValue(string s, int start, int end = 0) => GetValue(s, start, out _, end);
-    /// <inheritdoc cref="GetValue(string, int, int)"/>
+    private string? GetValue(ReadOnlySpan<char> s, int start, int end = 0) => GetValue(s, start, out _, end);
+    /// <inheritdoc cref="GetValue(ReadOnlySpan<char>, int, int)"/>
     /// <param name="wasQuoted">Whether the return string was surrouned by quotation marks</param>
-    private string? GetValue(string s, int start, out bool wasQuoted, int end = 0)
+    private string? GetValue(ReadOnlySpan<char> s, int start, out bool wasQuoted, int end = 0)
     {
-        ReadOnlySpan<char> spanny = s.AsSpan(start, s.Length - start - end).Trim();
+        ReadOnlySpan<char> spanny = s.Slice(start, s.Length - start - end).Trim();
         if (spanny.Length == 0)
         {
             wasQuoted = false;
             return null;
         }
 
-        if (spanny.Length == 2 && spanny[0] == spanny[1] && spanny[0] == Quotation)
+        if (spanny.Length == 2 && spanny[0] == spanny[1] && spanny[0] == Settings.Quotation)
         {
             wasQuoted = true;
             return null;
         }
 
-        if (spanny.Length > 2 && spanny[^1] == Quotation && spanny[0] == Quotation)
+        if (spanny.Length > 2 && spanny[^1] == Settings.Quotation && spanny[0] == Settings.Quotation)
         {
             wasQuoted = true;
             return spanny[1..^1].ToString();
@@ -505,12 +688,12 @@ public sealed partial class CueReader
     /// <param name="startIndex">Index from which the word will be sought</param>
     /// <param name="maxSearchLength">Maximum search length. If exceeded, empty string is returned</param>
     /// <returns>String of characters from <paramref name="startIndex"/> to first whitespace, or empty string if no whitespace has been detected in the first <paramref name="maxSearchLength"/> characters</returns>
-    internal static string GetKeyword(string s, int startIndex = 0, int maxSearchLength = -1)
+    internal static string GetKeyword(ReadOnlySpan<char> s, int startIndex = 0, int maxSearchLength = -1)
     {
         if (maxSearchLength <= 0)
             maxSearchLength = s.Length;
         maxSearchLength = maxSearchLength.Clamp(0, s.Length - startIndex);
-        ReadOnlySpan<char> spanish = s.AsSpan(startIndex, maxSearchLength).TrimStart();
+        ReadOnlySpan<char> spanish = s.Slice(startIndex, maxSearchLength).TrimStart();
         for (int i = 0; i < spanish.Length; i++)
         {
             if (char.IsWhiteSpace(spanish[i]))
@@ -537,5 +720,6 @@ public sealed partial class CueReader
 
     [GeneratedRegex(@"(?<PATH>\w+)\s+(?<TYPE>\w*)", RegexOptions.Compiled, 500)]
     private static partial Regex NonQuotedFileRegex();
+
 
 }

@@ -104,46 +104,40 @@ public static class CueExtensions
     {
         public static CueSheet Parse(string path)
         {
-            var reader = CueReader2.CreateFromFile(path);
+            var reader = CueReader.CreateFromFile(path);
             return reader.Parse();
         }
 
         public void Save()
         {
             ArgumentNullException.ThrowIfNull(cueSheet.SourceFile, "Cannot save cue sheet without a source file. Use SaveAs() to save to a new file.");
-            var writer = new CueWriter();
-            writer.SaveCueSheet(cueSheet);
+            CueWriter.Create().Save(cueSheet);
         }
 
         public void SaveAs(string path)
         {
-            path = Path.ChangeExtension(path, "cue");
-            var writer = new CueWriter();
-            writer.SaveCueSheet(cueSheet, path);
+            CueWriter.Create().SaveAs(cueSheet, path);
         }
 
         public string WriteToString()
         {
-            var writer = new CueWriter();
-            return writer.WriteToString(cueSheet);
+            return CueWriter.Create().WriteToString(cueSheet);
         }
 
         public char[] WriteToCharArray()
         {
-            var writer = new CueWriter();
-            return writer.WriteToCharArray(cueSheet);
+            return CueWriter.Create().WriteToCharArray(cueSheet);
         }
 
         public void WriteToCharSpan(Span<char> destination)
         {
-            var writer = new CueWriter();
-            writer.WriteToCharSpan(cueSheet, destination);
+            CueWriter.Create().WriteToCharSpan(cueSheet, destination);
         }
 
         public CueSheet Clone()
         {
             var s = cueSheet.WriteToString();
-            var reader = CueReader2.CreateFromString(s);
+            var reader = CueReader.CreateFromString(s);
             return reader.Parse();
         }
     }
@@ -159,6 +153,17 @@ public static class CueExtensions
                 if (!string.IsNullOrWhiteSpace(value))
                 {
                     cueSheet.Remarks.AddUnique("COMPOSER", value);
+                }
+            }
+        }
+        public string? DiscId
+        {
+            get => cueSheet.Remarks.GetField("DISCID");
+            set
+            {
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    cueSheet.Remarks.AddUnique("DISCID", value);
                 }
             }
         }

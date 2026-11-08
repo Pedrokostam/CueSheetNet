@@ -7,6 +7,18 @@ public record FieldRemark : Remark
 {
     public string Field { get; init; }
     public string Value { get; init; }
+    public bool IsValueEmpty
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(Value))
+            {
+                return true;
+            }
+            var s = Value.AsSpan().Trim("\"'").Trim();
+            return s.Length == 0;
+        }
+    }
     internal FieldRemark(string field, string value)
     {
         Field = field.ToUpperInvariant();

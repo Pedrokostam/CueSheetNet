@@ -8,7 +8,7 @@ public class Benchmark
 {
     public string Path { get; set; } = @"C:\Users\Pedro\Repos\Sony - PlayStation - Cuesheets (10914) (2026-06-15 11-55-46)\Sabrina l'Apprentie Sorciere et l'Horloge Cosmique (France).cue";
 
-    CueReader2 Reader { get; set; } = CueReader2.CreateFromString("");
+    CueReader Reader { get; set; } = CueReader.CreateFromString("");
 
 
     [Benchmark(Baseline = true)]

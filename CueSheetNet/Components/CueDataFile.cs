@@ -78,6 +78,7 @@ public class CueDataFile : FilePath
     public void RefreshMeta()
     {
         Debug.WriteLineIf(Debugger.IsAttached,$"Refreshing file meta: {Path}");
+        Info?.Refresh();
         if (this.Exists)
         {
             FileMetadata? resMeta = FormatReader.ReadMetadata(

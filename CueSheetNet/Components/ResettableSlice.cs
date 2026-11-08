@@ -103,7 +103,7 @@ internal class ResettableSlice<TSource, TData> : IReadOnlyList<TSource>
             }
             start++;
             // until we find the matching track from enumData
-        } while (getterDataSource(enumData.Current)!.Equals(enumSource.Current));
+        } while (!getterDataSource(enumData.Current)!.Equals(enumSource.Current));
         // start is known
 
         // now find which is the last item that belongs to parent

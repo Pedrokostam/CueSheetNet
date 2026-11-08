@@ -1,9 +1,12 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using Microsoft.Extensions.Logging;
+using System.Diagnostics.CodeAnalysis;
 
 namespace CueSheetNet.Helpers;
 
 public class FileSystemInfoComparer : EqualityComparer<FileSystemInfo>, IEqualityComparer<string>
 {
+    static ILogger Loggerio => Loggingq.EditingLogger;
+    public static FileSystemInfoComparer Instance { get; } = new();
     public override bool Equals(FileSystemInfo? x, FileSystemInfo? y)
     {
         if (!Type.Equals(x?.GetType(), y?.GetType()))
@@ -13,6 +16,7 @@ public class FileSystemInfoComparer : EqualityComparer<FileSystemInfo>, IEqualit
         return this.Equals(x?.FullName, y?.FullName);
     }
 
+    [TraceExecutionTime]
     public bool Equals(string? x, string? y)
     {
         if (x is null && y is null)
@@ -35,7 +39,7 @@ public class FileSystemInfoComparer : EqualityComparer<FileSystemInfo>, IEqualit
         }
         throw new PlatformNotSupportedException();
     }
-
+    [TraceExecutionTime]
     public override int GetHashCode([DisallowNull] FileSystemInfo obj)
     {
         if (System.OperatingSystem.IsWindows())
@@ -50,6 +54,7 @@ public class FileSystemInfoComparer : EqualityComparer<FileSystemInfo>, IEqualit
         throw new PlatformNotSupportedException();
     }
 
+    [TraceExecutionTime]
     public int GetHashCode([DisallowNull] string obj)
     {
         if (System.OperatingSystem.IsWindows())

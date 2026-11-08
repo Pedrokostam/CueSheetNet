@@ -1,7 +1,10 @@
-﻿namespace CueSheetNet.FormatReaders;
+﻿using Microsoft.Extensions.Logging;
+
+namespace CueSheetNet.FormatReaders;
 
 internal sealed class FlacFormatReader : IAudioBinaryStreamFormatReader
 {
+    static ILogger Loggerio => Loggingq.AudioReadingLogger;
     public string FormatName { get; } = "Flac";
     public string[] Extensions { get; } = [".flac"];
     private static readonly byte[] fLaC = "fLaC"u8.ToArray(); // 0x66 0x4c 0x61 0x43
@@ -20,6 +23,7 @@ internal sealed class FlacFormatReader : IAudioBinaryStreamFormatReader
         return four.SequenceEqual(fLaC);
     }
 
+    [TraceExecutionTime("fLaC metadata reading")]
     public bool ReadMetadata(Stream stream, out FileMetadata metadata)
     {
         metadata = default;

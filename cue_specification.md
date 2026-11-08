@@ -142,8 +142,6 @@ While the REM types are arbitrary there are some types that are commonly used an
 
 Remarks do not have to be unique, especially Comments.
 
-Fields Genre, Date, DiscID, Composer are treated as if they were first-class fields - they can be accessed as properties, as opossed to going through the list of Remarks
-
 ## Common fields
 
 The following fields can appear in **TRACKs** and the whole **Sheet**:

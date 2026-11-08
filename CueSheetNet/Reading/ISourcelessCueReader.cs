@@ -27,7 +27,7 @@ public interface ISourcelessCueReader
     /// <returns>The same instance used to call it, with changed quotation.</returns>
     public ISourcelessCueReader WithQuotation(char quote);
     /// <summary>
-    /// Sets the encoding to be used to decode most source types, except <see cref="CueReader2.FromString(string)">string</see>.
+    /// Sets the encoding to be used to decode most source types, except <see cref="CueReader.FromString(string)">string</see>.
     /// </summary>
     /// <remarks>
     /// If set to null, the reader will attempt to detect the file encoding.
@@ -65,7 +65,7 @@ public interface ISourcelessCueReader
     /// </remarks>
     /// <param name="content">String to be parsed directly</param>
     /// <returns>An instance of CueReader with the source set.</returns>
-    CueReader2 FromString(string content);
+    CueReader FromString(string content);
 
     /// <summary>
     /// Sets the source of the cuesheet to the existing file.
@@ -75,7 +75,7 @@ public interface ISourcelessCueReader
     /// </remarks>
     /// <param name="filepath">Path of the file to be read and parsed.</param>
     /// <returns>An instance of CueReader with the source set.</returns>
-    CueReader2 FromFile(string filepath);
+    CueReader FromFile(string filepath);
 
     /// <summary>
     /// Sets the source of the cuesheet to the existing file.
@@ -85,7 +85,7 @@ public interface ISourcelessCueReader
     /// </remarks>
     /// <param name="fileInfo">A FileInfo instance pointing to the file to be parsed.</param>
     /// <returns>An instance of CueReader with the source set.</returns>
-    CueReader2 FromFile(FileInfo fileInfo);
+    CueReader FromFile(FileInfo fileInfo);
 
     /// <summary>
     /// Sets the source of the cuesheet to the string content. Will attempt detect encoding if not specified.
@@ -95,7 +95,7 @@ public interface ISourcelessCueReader
     /// </remarks>
     /// <param name="bytes">Byte source to be decoded to text and parsed</param>
     /// <returns>An instance of CueReader with the source set.</returns>
-    CueReader2 FromBytes(IList<byte> bytes);
+    CueReader FromBytes(IList<byte> bytes);
     /// <summary>
     /// Sets the source of the cuesheet to the stream. The stream will be read fully before parsing.
     /// </summary>
@@ -104,5 +104,5 @@ public interface ISourcelessCueReader
     /// </remarks>
     /// <param name="bytes">Byte source to be decoded to text and parsed</param>
     /// <returns>An instance of CueReader with the source set.</returns>
-    CueReader2 FromStream(Stream stream);
+    CueReader FromStream(Stream stream);
 }

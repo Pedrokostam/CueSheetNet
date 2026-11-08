@@ -1,13 +1,16 @@
-﻿using CueSheetNet.Logging;
+﻿
+
+using Microsoft.Extensions.Logging;
 
 namespace CueSheetNet.FormatReaders;
 
 public static class FormatReader
 {
+    static ILogger Loggerio => Loggingq.AudioReadingLogger;
     static FormatReader()
     {
         BaseAudioFileReaders = [new FlacFormatReader(), new WaveFormatReader(),];
-        AudioFileReaders = new List<IAudioFileFormatReader>(BaseAudioFileReaders);
+        AudioFileReaders = [.. BaseAudioFileReaders];
         CdReader = new();
         BaseFallbackReader = new FfprobeFormatReader();
         FallbackReader = BaseFallbackReader;
@@ -25,24 +28,14 @@ public static class FormatReader
     public static void AddFileReader(IAudioFileFormatReader reader)
     {
         AudioFileReaders.Add(reader);
-        Logger.Log(
-            LogLevel.Debug,
-            $"Added {reader.FormatName} file format reader for a total of {AudioFileReaders.Count} readers",
-            nameof(FormatReader),
-            ""
-        );
+        Loggerio.AudioReaderAdded(reader.FormatName);
     }
 
     public static void ResetFileReader()
     {
-        Logger.Log(
-            LogLevel.Debug,
-            $"Reset file readers list to base state",
-            nameof(FormatReader),
-            ""
-        );
         AudioFileReaders.Clear();
         AudioFileReaders.AddRange(BaseAudioFileReaders);
+        Loggerio.AudioReadersReset();
     }
 
     public static FileMetadata? ReadMetadata(string filePath, IEnumerable<TrackType> trackTypes)
@@ -61,23 +54,13 @@ public static class FormatReader
                         read = reader.ReadMetadata(filePath, out meta);
                         if (read)
                         {
-                            Logger.Log(
-                                LogLevel.Debug,
-                                "Read metadata on {File} using {Reader.FormatName} reader",
-                                filePath,
-                                reader
-                            );
+                            Loggerio.AudioReadingSuccess(filePath, reader.FormatName);
                             return meta;
                         }
                     }
-                    catch (Exception x) when (x is InvalidDataFormatException)
+                    catch (Exception x)
                     {
-                        Logger.Log(
-                            LogLevel.Warning,
-                            "Could not read audio file metadata of \"{File}\". Error: {Error}",
-                            filePath,
-                            x
-                        );
+                        Loggerio.AudioReadingFail(filePath, reader.FormatName, x);
                     }
                 }
             }

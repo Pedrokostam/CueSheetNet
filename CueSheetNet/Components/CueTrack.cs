@@ -149,7 +149,7 @@ public record CueTrack : IRemarkable
     public CueTime PreGap { get; internal set; }
     public CueTime PostGap { get; internal set; }
 
-    private string GetDefaultTitle() => $"{Performer} {_sheet.Title} {Position:D2}";
+    private string GetDefaultTitle() => $"{Performer} {_sheet.Title} {Position:D2}".Trim();
 }
 
 #pragma warning restore MA0008 // Add StructLayoutAttribute

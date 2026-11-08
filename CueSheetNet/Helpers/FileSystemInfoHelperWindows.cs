@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 
 namespace CueSheetNet.Helpers;
 
-public static class FileSystemInfoHelperWindows
+internal static partial class FileSystemInfoHelperWindows
 {
     [StructLayout(LayoutKind.Sequential)]
     public readonly record struct FILE_ID_INFO(ulong VolumeSerialNumber, FILE_ID_128 FileId)
@@ -15,24 +15,23 @@ public static class FileSystemInfoHelperWindows
     public readonly record struct FILE_ID_128(ulong Low, ulong High)
     {
     }
-    [DllImport("kernel32.dll", SetLastError = true)]
-    static extern bool GetFileInformationByHandleEx(
-    SafeFileHandle hFile,
-    int FileInformationClass,
-    out FILE_ID_INFO lpFileInformation,
-    uint dwBufferSize);
+    [LibraryImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool GetFileInformationByHandleEx(SafeFileHandle hFile,
+                                                    int FileInformationClass,
+                                                    out FILE_ID_INFO lpFileInformation,
+                                                    uint dwBufferSize);
 
     const int FileIdInfo = 18;
 
-    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-    static extern SafeFileHandle CreateFile(
-    string lpFileName,
-    uint dwDesiredAccess,
-    uint dwShareMode,
-    IntPtr lpSecurityAttributes,
-    uint dwCreationDisposition,
-    uint dwFlagsAndAttributes,
-    IntPtr hTemplateFile);
+    [LibraryImport("kernel32.dll",EntryPoint ="CreateFileW" ,SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+    internal static partial SafeFileHandle CreateFile(string lpFileName,
+                                            uint dwDesiredAccess,
+                                            uint dwShareMode,
+                                            IntPtr lpSecurityAttributes,
+                                            uint dwCreationDisposition,
+                                            uint dwFlagsAndAttributes,
+                                            IntPtr hTemplateFile);
 
     const uint FILE_SHARE_READ = 1;
     const uint FILE_SHARE_WRITE = 2;

@@ -1,8 +1,8 @@
 ﻿using CueSheetNet.Components;
-using CueSheetNet.Logging;
 using CueSheetNet.NameParsing;
 using CueSheetNet.Syntax;
 using CueSheetNet.TextParser;
+using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -14,6 +14,47 @@ namespace CueSheetNet;
 
 public sealed class CueWriter
 {
+    #region Factories
+    public static CueWriter Create() { return new CueWriter(settings: null); }
+    public static CueWriter Create(CueWriterSettings settings) { return new CueWriter(settings); }
+    public CueWriter WithSettings(CueWriterSettings settings)
+    {
+        this.Settings = settings;
+        return this;
+    }
+    public CueWriter WithNewline(CueWriterSettings.NewLineType type)
+    {
+        this.Settings = this.Settings with { NewLine = type };
+        return this;
+    }
+    public CueWriter WithIndentation(int depth, char indentChar)
+    {
+        this.Settings = this.Settings with { IndentationDepth = depth, IndentationCharacter = indentChar };
+        return this;
+    }
+    public CueWriter WithInnerQuotes(InnerQuotation innerQuotation)
+    {
+        this.Settings = this.Settings with { InnerQuotationReplacement = innerQuotation };
+        return this;
+    }
+    public CueWriter WithRedundantFields(bool keepRedundant)
+    {
+        this.Settings = this.Settings with { KeepRedundantFields = keepRedundant };
+        return this;
+    }
+    public CueWriter WithForcedQuotes(bool forceQuotes)
+    {
+        this.Settings = this.Settings with { ForceQuoting = forceQuotes };
+        return this;
+    }
+    public CueWriter WithEnconding(Encoding? encoding)
+    {
+        this.Settings = this.Settings with { Encoding = encoding };
+        return this;
+    }
+    #endregion // Factories
+
+    public static ILogger Loggerio => Loggingq.WritingLogger;
     private static readonly CultureInfo InvCul = CultureInfo.InvariantCulture;
     /// <summary>
     /// Based on personal collection, where most of the sheets were well under 2000 characters long, with the longest being ~7500
@@ -21,14 +62,10 @@ public sealed class CueWriter
     readonly StringBuilder Builder;
     public CueWriterSettings Settings { get; set; }
 
-    public CueWriter()
-        : this(settings: null) { }
-
     public CueWriter(CueWriterSettings? settings)
     {
         Settings = settings ?? new();
         Builder = new(2000);
-        Logger.LogDebug("CueWriter created");
     }
 
     private bool HasWhitespace(string? val)
@@ -67,6 +104,10 @@ public sealed class CueWriter
         switch (rem)
         {
             case FieldRemark field:
+                if (field.IsValueEmpty)
+                {
+                    return false;
+                }
                 return AppendStringify("REM " + field.Field, Replace(field.Value), depth, quoteAllowed: true);
             case TextRemark text:
                 AppendIndentation(depth);
@@ -89,7 +130,7 @@ public sealed class CueWriter
         return "\"" + s + "\"";
     }
 
-    public string? Stringify<T>(string Header, T? value, bool quoteAllowed)
+    private string? Stringify<T>(string Header, T? value, bool quoteAllowed)
     {
         if (value == null)
             return null;
@@ -166,11 +207,9 @@ public sealed class CueWriter
         FillStringBuilder(sheet);
         return Builder.ToString();
     }
-
+    [TraceExecutionTime("writing cue sheet string")]
     private void FillStringBuilder(CueSheet sheet)
     {
-        Logger.LogDebug("Began sheet serialization");
-        var st = Stopwatch.StartNew();
         Builder.Clear();
         AppendStringify("TITLE", Replace(sheet.Title), 0, quoteAllowed: true);
         AppendStringify("PERFORMER", Replace(sheet.Performer), 0, quoteAllowed: true);
@@ -204,12 +243,10 @@ public sealed class CueWriter
             }
 
         }
-        if (!string.Equals(Settings.NewLine, Environment.NewLine, StringComparison.Ordinal))
+        if (!string.Equals(Settings.NewlineString(), Environment.NewLine, StringComparison.Ordinal))
         {
-            Builder.Replace(Environment.NewLine, Settings.NewLine);
+            Builder.Replace(Environment.NewLine, Settings.NewlineString());
         }
-        st.Stop();
-        Logger.LogInformation("CueSheet {} serialized in {}ms", sheet.Title, st.ElapsedMilliseconds);
     }
 
     private void AppendFileHeader(CueDataFile file)
@@ -284,56 +321,31 @@ public sealed class CueWriter
             && (encodingBaza is UTF32Encoding || encodingBaza is UnicodeEncoding)
         )
         {
-            Logger.LogWarning(
-                "Using non-standard encoding multi-byte encoding without byte order mark: {Encoding.BodyName}",
-                encodingBaza
-            );
+            Loggerio.NonStandardEncoding(encodingBaza.BodyName);
         }
         return encodingBaza;
     }
 
-    public void SaveCueSheet(CueSheet sheet)
+    public void Save(CueSheet sheet)
     {
-        ExceptionHelper.ThrowIfNull(sheet.SourceFile);
+        ArgumentNullException.ThrowIfNull(sheet.SourceFile);
         string textData = WriteToString(sheet);
         sheet.SourceFile.Directory!.Create();
         Encoding encoding = GetProperEncoding(sheet);
-        try
-        {
-            File.WriteAllText(sheet.SourceFile.FullName, textData, encoding);
-            sheet.SourceEncoding = encoding;
-        }
-        catch (EncoderFallbackException x)
-        {
-            int offendingChar = x.CharUnknown;
-            string offendingString = $"0x{offendingChar:X8} - {offendingChar}";
-            Logger.LogWarning(
-                "Specified encoding {Encoding} cannot be used to encode contents if {CueSheet} (Offending character - {Byte}) . Falling back to {DefaultEncoding}",
-                encoding,
-                sheet,
-                offendingString,
-                CueWriterSettings.DefaultEncoding
-            );
-            encoding = CueWriterSettings.DefaultEncoding;
-            File.WriteAllText(
-                sheet.SourceFile.FullName,
-                textData,
-                CueWriterSettings.DefaultEncoding
-            );
-        }
+        File.WriteAllText(sheet.SourceFile.FullName, textData, encoding);
         sheet.SourceEncoding = encoding;
     }
 
-    public void SaveCueSheet(CueSheet sheet, string newDestination)
+    public void SaveAs(CueSheet sheet, string newDestination)
     {
         sheet.SourceFile = new FileInfo(newDestination);
-        SaveCueSheet(sheet);
+        Save(sheet);
     }
 
-    public void SaveCueSheet(CueSheet sheet, string destination, string? pattern)
+    public void SaveAs(CueSheet sheet, string destination, string? pattern)
     {
         string patternParsed = CueTreeFormatter.ParseFormatPattern(sheet, pattern);
         string destinationWithPattern = Path.Combine(destination, patternParsed);
-        SaveCueSheet(sheet, destinationWithPattern);
+        SaveAs(sheet, destinationWithPattern);
     }
 }

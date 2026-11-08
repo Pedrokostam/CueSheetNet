@@ -1,9 +1,11 @@
-﻿using CueSheetNet.Logging;
+﻿
+using Microsoft.Extensions.Logging;
 
 namespace CueSheetNet.FormatReaders;
 
 internal sealed class CdFormatReader : IBinaryStreamFormatReader
 {
+    public static ILogger Loggerio => Loggingq.AudioReadingLogger;
     public string FormatName { get; } = "BINARY";
     public string[] Extensions { get; } = [".BIN", ".MM2", ".ISO", ".MOT", ".IMG"];
 
@@ -37,31 +39,31 @@ internal sealed class CdFormatReader : IBinaryStreamFormatReader
         return byteGood;
     }
 
-
+    [TraceExecutionTime("CD metadata reading")]
     public bool ReadMetadata(Stream stream, IEnumerable<TrackType> trackTypes, out FileMetadata metadata)
     {
         if (trackTypes.FirstOrDefault() is not TrackType trackType)
             throw new ArgumentException("No track type specified", nameof(trackTypes));
         var t = trackTypes.Select(x => x.SectorSize).Distinct().Count();
         if (t > 1)
-            throw new InvalidDataFormatException("Differing sector sizes specified");
+            throw new InvalidDataException("The file contains tracks with different sector sizes");
 
         int size = trackType.SectorSize;
         if (!FileSignatureMatches(stream, size, trackType.Mode))
         {
-            Logger.LogWarning("Data stream has mismatched Header");
+            Loggerio.CdFormatMismatchedHeader(trackType);
             metadata = default;
             return false;
         }
         long numberOfSectors = Math.DivRem(stream.Length, size, out long Remainder);
         if (Remainder > 0)
-            throw new InvalidDataFormatException("Length of data is not a multiple of specified sector size");
+            throw new InvalidDataException("Length of data is not a multiple of specified sector size");
         // each sector corresponds to 1 cue frame, so 75 of them is 1 second
         TimeSpan duration = TimeSpan.FromSeconds(numberOfSectors / 75.0);
         bool hasAudio = trackTypes.Any(x => x.ContainsAudioData);
         metadata = new FileMetadata(
             duration,
-Binary: true,
+            true,
             hasAudio ? 44100 : -1,
             hasAudio ? 2 : -1,
             hasAudio ? 16 : -1,
@@ -69,6 +71,7 @@ Binary: true,
             );
         return true;
     }
+
     public bool ReadMetadata(string path, IEnumerable<TrackType> trackTypes, out FileMetadata metadata)
     {
         using Stream stream = File.OpenRead(path);

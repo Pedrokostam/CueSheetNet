@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using Microsoft.Extensions.Logging;
+using System.Collections;
 using System.Collections.ObjectModel;
 
 
@@ -6,6 +7,7 @@ namespace CueSheetNet.Components;
 
 internal class ResettableCollection<T> : IReadOnlyList<T>
 {
+    static ILogger Loggerio => Loggingq.EditingLogger;
     private Func<IEnumerable<T>> Populator { get; }
     public int InvalidationCounter { get; private set; }
     public int LastValidatedAt { get; private set; } = -1;
