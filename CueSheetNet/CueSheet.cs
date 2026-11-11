@@ -1,5 +1,6 @@
 ﻿#pragma warning disable MA0008 // Add StructLayoutAttribute
 
+using CueSheetNet.Comparing;
 using CueSheetNet.Components;
 using CueSheetNet.Exceptions;
 using CueSheetNet.Extensions;
@@ -34,7 +35,7 @@ public record CueSettings
     public bool VerifyAgainstFileDuration { get; set; } = false;
 }
 
-public class CueSheet : IRemarkable
+public class CueSheet : IRemarkable, IEquatable<CueSheet>
 {
 
     internal bool UseQualifiedPaths { get; private set; }
@@ -266,7 +267,7 @@ public class CueSheet : IRemarkable
     }
 
 
-    public void InsertFile(int insertionIndex, string filepath, string type, TrackInsertParameters? trackInsertParameters = null ) => InsertFile(insertionIndex, filepath, FileType.FromString(type), trackInsertParameters);
+    public void InsertFile(int insertionIndex, string filepath, string type, TrackInsertParameters? trackInsertParameters = null) => InsertFile(insertionIndex, filepath, FileType.FromString(type), trackInsertParameters);
     public void InsertFile(int? index, string filepath, FileType type, TrackInsertParameters? trackInsertParameters = null)
     {
         CueTime time = CueTime.Zero; // first index in a file MUST be 00:00:00
@@ -385,9 +386,34 @@ public class CueSheet : IRemarkable
         }
         if (file.Meta.Value.CueDuration <= time)
         {
-            
+
             throw new IndexOutsideOfFileException(file.Name, time);
         }
+    }
+
+    public bool Equals(CueSheet? other)
+    {
+        return CueSheetEqualityComparer.CurrentCulture.Equals(this, other);
+    }
+    public bool Equals(CueSheet? other, CueSheetEqualityComparer comparer)
+    {
+        return comparer.Equals(this, other);
+    }
+    public override bool Equals(object? obj)
+    {
+        return Equals(obj as CueSheet, CueSheetEqualityComparer.CurrentCulture);
+    }
+    public override int GetHashCode()
+    {
+        return CueSheetEqualityComparer.CurrentCulture.GetHashCode(this);
+    }
+    public int GetHashCode(StringComparison comparison)
+    {
+        return new CueSheetEqualityComparer(comparison).GetHashCode(this);
+    }
+    public int GetHashCode(CueSheetEqualityComparer comparer)
+    {
+        return comparer.GetHashCode(this);
     }
 }
 

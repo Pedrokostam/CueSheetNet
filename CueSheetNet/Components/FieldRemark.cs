@@ -19,6 +19,9 @@ public record FieldRemark : Remark
             return s.Length == 0;
         }
     }
+
+    public override string Line => $"{Field} {Value}";
+
     internal FieldRemark(string field, string value)
     {
         Field = field.ToUpperInvariant();

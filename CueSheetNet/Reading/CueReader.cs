@@ -315,6 +315,7 @@ public sealed partial class CueReader : ISourcelessCueReader
     [TraceExecutionTime("Parsing Cue Sheet", 2)]
     private CueSheet ParseString(ReadOnlySpan<char> txtRead)
     {
+        Sheet ??= new();
         foreach (var lineRaw in txtRead.EnumerateLines())
         {
             var line = lineRaw.Trim();

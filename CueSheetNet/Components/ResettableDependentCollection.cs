@@ -101,6 +101,10 @@ internal class ResettableDependentCollection<T, R> : IReadOnlyList<T>
         InvalidationCounter++;
     }
     public int Count => ((ICollection<T>)Data).Count;
+    /// <summary>
+    /// Returns the number of items in the collection WITHOUT checking for invalidation
+    /// </summary>
+    public int LastCount => _data.Count;
 
     public bool IsReadOnly { get; } = true;
 

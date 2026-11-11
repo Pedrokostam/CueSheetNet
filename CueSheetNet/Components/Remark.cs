@@ -4,6 +4,7 @@ namespace CueSheetNet.Components;
 
 public abstract record Remark
 {
+    public abstract string Line { get; }
     public static Remark Create(string line)
     {
         if (line.StartsWith("REM", StringComparison.OrdinalIgnoreCase))

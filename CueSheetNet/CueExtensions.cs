@@ -97,6 +97,7 @@ public static class CueExtensions
             cueSheet.Unlink(withAssociatedFiles, removeEmptyDirs: false);
             return moved;
         }
+
     }
 
     // Parsing / Writing
@@ -105,6 +106,12 @@ public static class CueExtensions
         public static CueSheet Parse(string path)
         {
             var reader = CueReader.CreateFromFile(path);
+            return reader.Parse();
+        }
+
+        public static CueSheet ParseFromString(string content)
+        {
+            var reader = CueReader.CreateFromString(content);
             return reader.Parse();
         }
 
