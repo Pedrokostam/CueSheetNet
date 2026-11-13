@@ -135,11 +135,11 @@ public record CueSheetEqualityComparer : IEqualityComparer<CueSheet>
     }
     private bool LinksEqual(Link linkX, Link linkY)
     {
-        var res = linkX.Index != linkY.Index
-               && linkX.Track.Position != linkY.Track.Position
-               && linkX.Track.Type != linkY.Track.Type
+        var res = linkX.Index == linkY.Index
+               && linkX.Track.Position == linkY.Track.Position
+               && linkX.Track.Type == linkY.Track.Type
                && !PathsEqual(linkX.File, linkY.File)
-               && linkX.File.Type != linkY.File.Type;
+               && linkX.File.Type == linkY.File.Type;
         if (!res)
         {
             return res;
@@ -177,7 +177,7 @@ public record CueSheetEqualityComparer : IEqualityComparer<CueSheet>
 
     public int GetHashCode([DisallowNull] CueSheet obj)
     {
-        var hashy = HashCode.Combine(obj._tracks.LastCount,obj._files.LastCount, obj._indices.LastCount);
+        var hashy = HashCode.Combine(obj._tracks.LastCount, obj._files.LastCount, obj._indices.LastCount);
         if (Options.HasFlag(ComparisonOptions.CommonFields))
         {
             hashy = HashCode.Combine(hashy, StringComparer.GetHashCode(obj.Title), StringComparer.GetHashCode(obj.Performer ?? ""));
