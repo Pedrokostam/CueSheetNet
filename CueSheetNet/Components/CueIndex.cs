@@ -103,22 +103,30 @@ public class CueIndex
 
     public void MoveTime(CueTime newTime)
     {
-        CueTime? boundStart = PrevioustIndexInTrack()?.Time;
-        CueTime? boundEnd = NextIndexInTrack()?.Time ?? Track.Duration;
-        if (boundStart > newTime && newTime < boundEnd)
-        {
-            Time = newTime;
-        }
-        else
-        {
+        // Index times are relative to their file, so any index in the same file (regardless of track) bounds the move.
+        int position = AbsolutePosition;
+        var file = _sheet.Data[position].File;
+        bool aboveLower = position > 0 && ReferenceEquals(_sheet.Data[position - 1].File, file)
+            ? newTime > _sheet.Data[position - 1].Index.Time
+            : newTime >= CueTime.Zero;
+        bool belowUpper = position + 1 < _sheet.Data.Count && ReferenceEquals(_sheet.Data[position + 1].File, file)
+            ? newTime < _sheet.Data[position + 1].Index.Time
+            : file.Meta is not { } meta || newTime < meta.CueDuration;
+        if (!aboveLower || !belowUpper)
             throw new InvalidIndexEditException(nameof(Time), Time, newTime);
-        }
+        Time = newTime;
     }
 
     public void ShiftTime(CueTime timeshift)
     {
         MoveTime(Time + timeshift);
     }
-    public override string ToString() =>
-        $"INDEX {Position:d2} {Time} ({AbsolutePosition:d2}, {Track.Title}, {File.Name})";
+    public override string ToString()
+    {
+        int position = AbsolutePosition;
+        if (position < 0)
+            return $"INDEX {Position:d2} {Time} (detached)";
+        var link = _sheet.Data[position];
+        return $"INDEX {Position:d2} {Time} ({position:d2}, {link.Track.Title}, {link.File.Name})";
+    }
 }

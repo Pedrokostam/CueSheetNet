@@ -25,5 +25,4 @@ public abstract record Remark
             false => throw new ArgumentException("The field and value do not match any recognized field remark"),
         };
     }
-
 }

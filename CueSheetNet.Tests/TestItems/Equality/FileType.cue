@@ -1,0 +1,16 @@
+REM GENRE Rock
+REM COMMENT "Base sheet"
+CATALOG 1234567890123
+PERFORMER "Test Artist"
+TITLE "Test Album"
+FILE "Disc.flac" MP3
+  TRACK 01 AUDIO
+    TITLE "First"
+    PERFORMER "Test Artist"
+    REM COMPOSER "Composer One"
+    INDEX 01 00:00:00
+  TRACK 02 AUDIO
+    TITLE "Second"
+    PERFORMER "Test Artist"
+    INDEX 00 03:00:00
+    INDEX 01 03:02:00

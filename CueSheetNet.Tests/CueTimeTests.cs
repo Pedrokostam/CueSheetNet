@@ -1,8 +1,6 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Metalama.Framework;
-using System.ComponentModel;
 using System.Reflection;
-using static CueSheetNet.Tests.CueTimeTests;
 [assembly: TestDataSourceDiscovery(TestDataSourceDiscoveryOption.DuringExecution)]
 
 namespace CueSheetNet.Tests;
@@ -10,19 +8,6 @@ namespace CueSheetNet.Tests;
 [TestClass]
 public class CueTimeTests
 {
-    [Flags]
-    public enum Operations
-    {
-        None,
-        Reversed = 1,
-        Add = 2,
-        Subtract = 4,
-        Multiply = 8,
-        Divide = 16,
-        Increment = 32,
-        Decrement = 64,
-        Negate = 128,
-    }
     static public (string Text, CueTime Time)[] TestTexts { get; set; } = [
              ("00:00:00",        new(0)),
             ("-00:00:00",       new(0)),
@@ -38,12 +23,12 @@ public class CueTimeTests
             ("50:360:750",      new(50,360,750)),
             ("9999:360:750",      new(9999,360,750)),
         ];
-    static public string[][] FailTexts { get; set; } = [
-            [""],
+    static public object[][] FailTexts { get; set; } = [
+            ["", typeof(ArgumentException)],
             //"10",// Is now valid, to comply with Foobar2000 standard
             //"101010",// Is now valid, to comply with Foobar2000 standard - it's just the number of frames
-            ["477219:0:0"],
-            ["477217:9999:9999"]
+            ["477219:0:0", typeof(OverflowException)],
+            ["477217:9999:9999", typeof(OverflowException)]
         ];
     private static CueTime Cm(double minutes) => CueTime.FromMinutes(minutes);
     private static TimeSpan Ts(double minutes) => TimeSpan.FromMinutes(minutes);
@@ -69,32 +54,31 @@ public class CueTimeTests
             (DateTime.Now,false),
             (DateOnly.FromDayNumber(1),false),
         ];
-    public static (CueTime Time, object Other, Operations Operation)[] OverflowingOperations { get; } = [
-            (CueTime.MaxValue,new(),Operations.Increment),
-            (CueTime.MinValue,new(),Operations.Decrement),
-            (CueTime.MinValue,new(),Operations.Negate),
+    public static object[][] OverflowingOperations { get; } = [
+            ["Max++", () => { var t = CueTime.MaxValue; return ++t; }],
+            ["Min--", () => { var t = CueTime.MinValue; return --t; }],
+            ["-Min", () => -CueTime.MinValue],
 
-            (CueTime.MaxValue,CueTime.One,Operations.Add),
-            (CueTime.MaxValue,CueTime.One,Operations.Add|Operations.Reversed),
-            (CueTime.MinValue,CueTime.One,Operations.Subtract),
-            (CueTime.Zero,CueTime.MinValue,Operations.Subtract),
-            (CueTime.MaxValue,new CueTime(-2),Operations.Subtract|Operations.Reversed),
+            ["Max + One", () => CueTime.MaxValue + CueTime.One],
+            ["One + Max", () => CueTime.One + CueTime.MaxValue],
+            ["Min - One", () => CueTime.MinValue - CueTime.One],
+            ["Zero - Min", () => CueTime.Zero - CueTime.MinValue],
+            ["-2 - Max", () => new CueTime(-2) - CueTime.MaxValue],
 
-            (CueTime.MaxValue,1,Operations.Add),
-            (CueTime.MaxValue,1,Operations.Add|Operations.Reversed),
-            (CueTime.MaxValue,2,Operations.Multiply),
-            (CueTime.MaxValue,2,Operations.Multiply|Operations.Reversed),
+            ["Max + 1", () => CueTime.MaxValue + 1],
+            ["1 + Max", () => new CueTime(1) + CueTime.MaxValue],
+            ["Max * 2", () => CueTime.MaxValue * 2],
+            ["2 * Max", () => 2 * CueTime.MaxValue],
 
-            (CueTime.MinValue,1,Operations.Subtract),
-            (CueTime.MinValue,1,Operations.Subtract|Operations.Reversed),
-            (CueTime.MinValue,2,Operations.Multiply),
-            (CueTime.MinValue,2,Operations.Multiply|Operations.Reversed),
+            ["Min - 1", () => CueTime.MinValue - 1],
+            ["1 - Min", () => new CueTime(1) - CueTime.MinValue],
+            ["Min * 2", () => CueTime.MinValue * 2],
+            ["2 * Min", () => 2 * CueTime.MinValue],
 
-            (CueTime.MaxValue,1.1d,Operations.Multiply),
-            (CueTime.MaxValue,1.1d,Operations.Multiply|Operations.Reversed),
-            (CueTime.MinValue,1.1d,Operations.Multiply),
-            (CueTime.MinValue,1.1d,Operations.Multiply|Operations.Reversed),
-
+            ["Max * 1.1", () => CueTime.MaxValue * 1.1d],
+            ["1.1 * Max", () => 1.1d * CueTime.MaxValue],
+            ["Min * 1.1", () => CueTime.MinValue * 1.1d],
+            ["1.1 * Min", () => 1.1d * CueTime.MinValue],
             ];
     static public (long Ticks, int TargetFrames)[] TestTickToFrameConversion { get; set; } = [
             (10000000, 75), // 1 second
@@ -122,7 +106,8 @@ public class CueTimeTests
             CueTime ct = new(i);
             TimeSpan ts = ct;
             CueTime back = (CueTime)ts;
-            Assert.AreEqual(back, ct);
+            Assert.AreEqual(ct, back);
+            Assert.AreEqual(0, ct.CompareTo(ts), $"{ct}");
         }
     }
 
@@ -140,21 +125,21 @@ public class CueTimeTests
     {
         if (!CueTime.TryParse(text, out CueTime ct))
             Assert.Fail($"Could not parse {text}");
-        Assert.AreEqual(ct, time);
+        Assert.AreEqual(time, ct);
     }
     [DataTestMethod("Parse various valid strings as strings")]
     [DynamicData(nameof(TestTexts))]
     public void ParseTestString(string text, CueTime time)
     {
         CueTime ct = CueTime.Parse(text);
-        Assert.AreEqual(ct, time);
+        Assert.AreEqual(time, ct);
     }
     [DataTestMethod("Parse various valid strings as ReadOnlySpan<char>")]
     [DynamicData(nameof(TestTexts))]
     public void ParseTestSpan(string text, CueTime time)
     {
         CueTime ct = CueTime.Parse(text.AsSpan());
-        Assert.AreEqual(ct, time);
+        Assert.AreEqual(time, ct);
     }
     [DataTestMethod("TryParse various valid strings as ReadOnlySpan<char>")]
     [DynamicData(nameof(TestTexts))]
@@ -163,46 +148,44 @@ public class CueTimeTests
         var span = text.AsSpan();
         if (!CueTime.TryParse(span, out CueTime ct))
             Assert.Fail();
-        Assert.AreEqual(ct, time);
+        Assert.AreEqual(time, ct);
     }
 
     [DataTestMethod("Fail TryParsing of invalid strings")]
     [DynamicData(nameof(FailTexts))]
-    public void TryParseTestStringFail(string item)
+    public void TryParseTestStringFail(string item, Type _)
     {
         Assert.IsFalse(CueTime.TryParse(item, out CueTime ct), $"Text {item} parsed successfully ({ct})");
     }
     [DataTestMethod("Fail TryParsing of invalid strings as ReadOnlySpan<char>")]
     [DynamicData(nameof(FailTexts))]
-    public void TryParseTestSpanFail(string item)
+    public void TryParseTestSpanFail(string item, Type _)
     {
         Assert.IsFalse(CueTime.TryParse(item.AsSpan(), out CueTime ct), $"Text {item} parsed successfully ({ct})");
     }
     [DataTestMethod("Fail parsing of invalid strings")]
     [DynamicData(nameof(FailTexts))]
-    public void ParseTestStringFail(string item)
+    public void ParseTestStringFail(string item, Type expected)
     {
-        try
-        {
-            CueTime.Parse(item);
-            Assert.Fail();
-        }
-        catch (Exception)
-        {
-        }
+        Assert.AreEqual(expected, ThrownType(() => CueTime.Parse(item)), item);
     }
     [DataTestMethod("Fail parsing of invalid strings as ReadOnlySpan<char>")]
     [DynamicData(nameof(FailTexts))]
-    public void ParseTestSpanFail(string item)
+    public void ParseTestSpanFail(string item, Type expected)
+    {
+        Assert.AreEqual(expected, ThrownType(() => CueTime.Parse(item.AsSpan())), item);
+    }
+    private static Type? ThrownType(Action action)
     {
         try
         {
-            CueTime.Parse(item.AsSpan());
-            Assert.Fail();
+            action();
         }
-        catch (Exception)
+        catch (Exception e)
         {
+            return e.GetType();
         }
+        return null;
     }
     [DataTestMethod]
     [DynamicData(nameof(TestObjectComparisons))]
@@ -210,7 +193,7 @@ public class CueTimeTests
     {
         foreach (var (ts, res) in timespans)
         {
-            Assert.AreEqual(time.CompareTo(ts), res,$"{time} - {ts.Ticks}");
+            Assert.AreEqual(res, time.CompareTo(ts),$"{time} - {ts.Ticks}");
         }
     }
     [DataTestMethod]
@@ -230,94 +213,8 @@ public class CueTimeTests
    
     [DataTestMethod]
     [DynamicData(nameof(OverflowingOperations))]
-    public void CheckedOverflowDetectedTest2(CueTime time, object other, Operations operation)
+    public void CheckedOverflowDetectedTest2(string name, Func<CueTime> operation)
     {
-        Assert.ThrowsException<OverflowException>(() =>
-        {
-            CheckedOps(time, other, operation);
-        }, $"{time} - {other?.GetType().Name ?? null} {other} - {operation}");
-    }
-    private static object CheckedOps(CueTime time, object? other, Operations operation)
-    {
-        checked
-        {
-            switch (operation)
-            {
-                case Operations.Increment:
-                    time++;
-                    return time;
-                case Operations.Decrement:
-                    time--;
-                    return time;
-                case Operations.Negate:
-                    return -time;
-                default:
-                    break;
-            }
-            if (other is int i)
-            {
-                switch (operation)
-                {
-                    case Operations.Add:
-                        return time + i;
-                    case Operations.Add | Operations.Reversed:
-                        return new CueTime(i) + time;
-                    case Operations.Subtract:
-                        return time - i;
-                    case Operations.Subtract | Operations.Reversed:
-                        return new CueTime(i) - time;
-                    case Operations.Multiply:
-                        return time * i;
-                    case Operations.Multiply | Operations.Reversed:
-                        return i * time;
-                    case Operations.Divide:
-                        return time / i;
-                    //case Operations.Divide | Operations.Reversed:
-                    default:
-                        throw new InvalidEnumArgumentException($"Int operation {operation} not supported");
-                }
-            }
-            else if (other is double d)
-            {
-                switch (operation)
-                {
-                    //case Operations.Add:
-                    //case Operations.Add | Operations.Reversed:
-                    //case Operations.Subtract:
-                    //case Operations.Subtract | Operations.Reversed:
-                    case Operations.Multiply:
-                        return time * d;
-                    case Operations.Multiply | Operations.Reversed:
-                        return d * time;
-                    case Operations.Divide:
-                        return time / d;
-                    //case Operations.Divide | Operations.Reversed:
-                    default:
-                        throw new InvalidEnumArgumentException($"Double operation {operation} not supported");
-                }
-            }
-            else if (other is CueTime m)
-            {
-                switch (operation)
-                {
-                    case Operations.Add:
-                        return time + m;
-                    case Operations.Add | Operations.Reversed:
-                        return m + time;
-                    case Operations.Subtract:
-                        return time - m;
-                    case Operations.Subtract | Operations.Reversed:
-                        return m - time;
-                    //case Operations.Multiply:
-                    //case Operations.Multiply | Operations.Reversed:
-                    //case Operations.Divide:
-                    //case Operations.Divide | Operations.Reversed:
-                    default:
-                        throw new InvalidEnumArgumentException($"Double operation {operation} not supported");
-                }
-            }
-
-            throw new InvalidOperationException($"{other.GetType().Name} {other} not supported");
-        }
+        Assert.ThrowsException<OverflowException>(() => operation(), name);
     }
 }

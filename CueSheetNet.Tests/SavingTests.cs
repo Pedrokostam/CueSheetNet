@@ -1,67 +1,50 @@
-﻿namespace CueSheetNet.Tests;
+namespace CueSheetNet.Tests;
 [TestClass]
 public class SavingTests
 {
-    [TestInitialize]
-    public void Init()
+    public static IEnumerable<object[]> Files =>
+        Utils.GetFiles("*.cue", "SavingTests").Select(f => new object[] { Path.GetFileName(f) });
+
+    private static CueSheet Load(string fileName) => CueReader.CreateFromFile(Utils.GetFile("SavingTests", fileName)).Parse();
+
+    private static void AssertSame(CueSheet expected, CueSheet actual, string fileName)
     {
+        if (fileName.Contains("wrong", StringComparison.OrdinalIgnoreCase))
+            Assert.AreNotEqual(expected, actual, fileName);
+        else
+            Assert.AreEqual(expected, actual, fileName);
     }
+
     [TestMethod("Test if cloned sheet is equal to its source")]
-    public void LoadCloneSame()
+    [DynamicData(nameof(Files))]
+    public void LoadCloneSame(string fileName)
     {
-        foreach (var file in Utils.GetFiles("*.cue", "SavingTests"))
-        {
-            var cue = CueReader.CreateFromFile(file).Parse();
-            var clone = cue.Clone();
-            if (Path.GetFileNameWithoutExtension(file).Contains("wrong", StringComparison.OrdinalIgnoreCase))
-            {
-                Assert.AreNotEqual(clone, cue, Path.GetFileNameWithoutExtension(file));
-            }
-            else
-            {
-                Assert.AreEqual(clone, cue, Path.GetFileNameWithoutExtension(file));
-            }
-        }
+        var cue = Load(fileName);
+        AssertSame(cue.Clone(), cue, fileName);
     }
+
     [TestMethod("Test if save and reloaded sheet is equal to its source")]
-    public void SaveReloadSame()
+    [DynamicData(nameof(Files))]
+    public void SaveReloadSame(string fileName)
     {
-        foreach (var file in Utils.GetFiles("*.cue", "SavingTests"))
-        {
-            var cue = CueReader.CreateFromFile(file).Parse();
-            var clone = cue.Clone();
-            var temp = Path.GetTempFileName();
-            CueWriter.Create().SaveAs(cue, temp);
-            var cue2 = CueReader.CreateFromFile(temp).Parse();
-            if (Path.GetFileNameWithoutExtension(file).Contains("wrong", StringComparison.OrdinalIgnoreCase))
-            {
-                Assert.AreNotEqual(clone, cue2, Path.GetFileNameWithoutExtension(file));
-            }
-            else
-            {
-                Assert.AreEqual(clone, cue2, Path.GetFileNameWithoutExtension(file));
-            }
-            File.Delete(temp);
-        }
+        var cue = Load(fileName);
+        var clone = cue.Clone();
+        var temp = Path.GetTempFileName();
+        CueWriter.Create().SaveAs(cue, temp);
+        var reloaded = CueReader.CreateFromFile(temp).Parse();
+        File.Delete(temp);
+        AssertSame(clone, reloaded, fileName);
     }
+
     [TestMethod("Test if saved sheet is equal to its source's clone")]
-    public void SaveCloneSame()
+    [DynamicData(nameof(Files))]
+    public void SaveCloneSame(string fileName)
     {
-        foreach (var file in Utils.GetFiles("*.cue", "SavingTests"))
-        {
-            var cue = CueReader.CreateFromFile(file).Parse();
-            var clone = cue.Clone();
-            var temp = Path.GetTempFileName();
-            CueWriter.Create().SaveAs(cue, temp);
-            File.Delete(temp);
-            if (Path.GetFileNameWithoutExtension(file).Contains("wrong", StringComparison.OrdinalIgnoreCase))
-            {
-                Assert.AreNotEqual(clone, cue, Path.GetFileNameWithoutExtension(file));
-            }
-            else
-            {
-                Assert.AreEqual(clone, cue, Path.GetFileNameWithoutExtension(file));
-            }
-        }
+        var cue = Load(fileName);
+        var clone = cue.Clone();
+        var temp = Path.GetTempFileName();
+        CueWriter.Create().SaveAs(cue, temp);
+        File.Delete(temp);
+        AssertSame(clone, cue, fileName);
     }
 }

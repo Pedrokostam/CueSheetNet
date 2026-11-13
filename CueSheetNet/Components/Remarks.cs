@@ -27,6 +27,20 @@ public class Remarks : IList<Remark>
     }
     public void Add(string line) => _items.Add(Remark.Create(line));
     public void Add(string field, string value) => _items.Add(Remark.Create(field, value));
+    /// <summary>
+    /// Adds a deep copy of the remark.
+    /// </summary>
+    /// <param name="remark"></param>
+    public void Add(Remark remark)
+    {
+        Remark rem = remark switch
+        {
+            FieldRemark field => new FieldRemark(field.Field, field.Value),
+            TextRemark text => new TextRemark(text.Text),
+            _ => throw new InvalidOperationException()
+        };
+        _items.Add(rem);
+    }
     public void AddUnique(string field, string value)
     {
         _items.RemoveAll(x => x is FieldRemark f && f.Field.Equals(field, StringComparison.OrdinalIgnoreCase));
@@ -46,10 +60,6 @@ public class Remarks : IList<Remark>
 
     public bool IsReadOnly => ((ICollection<Remark>)_items).IsReadOnly;
 
-    public void Add(Remark item)
-    {
-        ((ICollection<Remark>)_items).Add(item);
-    }
 
     public void Clear()
     {

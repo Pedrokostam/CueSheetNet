@@ -1,4 +1,4 @@
-﻿using CueSheetNet.Tests;
+using CueSheetNet.Tests;
 using CueSheetNet;
 using CueSheetNet.Tests;
 using System;
@@ -30,22 +30,22 @@ public  class LoadingTests
     [TestMethod]
     public void Title()
     {
-        Assert.AreEqual(TestItemJethro.Title, "Aqualung");
-        Assert.AreEqual(TestItemBallet.Title, "True");
-        Assert.AreEqual(TestItemMulti.Title, "MultiFile");
+        Assert.AreEqual("Aqualung", TestItemJethro.Title);
+        Assert.AreEqual("True", TestItemBallet.Title);
+        Assert.AreEqual("MultiFile", TestItemMulti.Title);
     }
     [TestMethod]
     public void Performer()
     {
-        Assert.AreEqual(TestItemJethro.Performer, "Jethro Tull");
-        Assert.AreEqual(TestItemBallet.Performer, "Spandau Ballet");
-        Assert.AreEqual(TestItemMulti.Performer, "The Multis");
+        Assert.AreEqual("Jethro Tull", TestItemJethro.Performer);
+        Assert.AreEqual("Spandau Ballet", TestItemBallet.Performer);
+        Assert.AreEqual("The Multis", TestItemMulti.Performer);
     }
     //[TestMethod]
     //public void Performer()
     //{
-    //    Assert.AreEqual(TestItemJethro.Performer, "Jethro Tull");
-    //    Assert.AreEqual(TestItemBallet.Performer, "Spandau Ballet");
-    //    Assert.AreEqual(TestItemMulti.Performer, "The Multis");
+    //    Assert.AreEqual("Jethro Tull", TestItemJethro.Performer);
+    //    Assert.AreEqual("Spandau Ballet", TestItemBallet.Performer);
+    //    Assert.AreEqual("The Multis", TestItemMulti.Performer);
     //}
 }

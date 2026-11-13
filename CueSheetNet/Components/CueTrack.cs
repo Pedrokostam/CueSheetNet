@@ -71,6 +71,28 @@ public record CueTrack : IRemarkable
         _sheet = sheet;
         _indices = new(_sheet.Data, _sheet._indices, x => x.Index, x => ReferenceEquals(x.Track, this) && ReferenceEquals(x.File, this.File));
     }
+    /// <summary>
+    /// Deep copy constructor
+    /// </summary>
+    /// <param name="track"></param>
+    /// <param name="sheet"></param>
+    internal CueTrack (CueTrack track,CueSheet sheet):this(track.Type,sheet)
+    {
+        this.Songwriter = track._songwriter;
+        this.Upc = track.Upc;
+        this.Pregap = track.Pregap;
+        this.Postgap = track.Postgap;
+        this.Flags = track.Flags;
+        this.Title = track._title;
+        this.Genre = track.Genre;
+        this.Isrc = track.Isrc;
+        this.Gap = track.Gap;
+        this.Performer = track._performer;
+        foreach (var item in track.Remarks)
+        {
+            this.Remarks.Add(item);
+        }
+    }
     internal CueTrack(string type, CueSheet sheet) : this(TrackType.FromString(type), sheet) { }
     internal static CueTrack FromInsertionParams(TrackInsertParameters? insertParameters, CueSheet sheet)
     {

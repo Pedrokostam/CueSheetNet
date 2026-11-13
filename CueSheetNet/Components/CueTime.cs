@@ -644,11 +644,8 @@ public readonly record struct CueTime
     }
     public int CompareTo(TimeSpan other)
     {
-        // TotalTicks require only a multiplication and TimeSpan.Ticks are not computed
-        // Using double variant since fraction ticks can affect the result (?)
-        // Also, between int.MinValue and int.MaxValue the precision of double is below one,
-        // so there is no way the floating point error can affect the result.
-        return TotalTicks.CompareTo(other.Ticks);
+        // Rounds to frames like the TimeSpan -> CueTime cast, so ct.CompareTo((TimeSpan)ct) is always 0.
+        return TotalFrames.CompareTo(TicksToFrames(other.Ticks));
     }
 
     public static bool Equals(CueTime ct1, CueTime ct2)

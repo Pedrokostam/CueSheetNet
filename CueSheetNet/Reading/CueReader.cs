@@ -347,6 +347,9 @@ public sealed partial class CueReader : ISourcelessCueReader
                 case Keywords.CDTEXTFILE:
                     ParseCdTextFile(line);
                     break;
+                case Keywords.SONGWRITER:
+                    ParseSongwriter(line);
+                    break;
                 case Keywords.TRACK:
                     ParseTrack(line);
                     break;
@@ -370,6 +373,26 @@ public sealed partial class CueReader : ISourcelessCueReader
         }
         Sheet.SourceEncoding = UsedEncoding;
         return Sheet;
+    }
+
+    [TraceExecutionTime]
+    private void ParseSongwriter(ReadOnlySpan<char> line)
+    {
+        string? performer = GetValue(line, 11); // SONGWRITER_
+        if (performer == null)
+        {
+            Loggerio.InvalidKeyword("SONGWRITER", CurrentLineIndex, line.ToString());
+            return;
+        }
+
+        if (LastTrack is CueTrack track)
+        {
+            track.Songwriter = performer;
+        }
+        else
+        {
+            Sheet.Songwriter = performer;
+        }
     }
 
     [TraceExecutionTime]
@@ -577,7 +600,7 @@ public sealed partial class CueReader : ISourcelessCueReader
         }
 
         string type = GetKeyword(line, 0);
-        if (!CueTime.TryParse(line.Slice(6 + type.Length + 1), InvCul, out CueTime cueTime))
+        if (!CueTime.TryParse(line.Slice(type.Length + 1), InvCul, out CueTime cueTime))
         {
             //Logger.LogError("Incorrect Gap format at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
             throw new FormatException($"Incorrect Gap format at line {CurrentLineIndex}: {line}");

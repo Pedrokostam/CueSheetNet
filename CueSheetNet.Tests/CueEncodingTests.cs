@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace CueSheetNet.Tests;
@@ -37,8 +37,14 @@ public partial class CueEncodingTests
             return Encoding.GetEncoding(int.Parse(name));
         }
     }
-    private void TestParsing(string filepath)
+    public static IEnumerable<object[]> EncodingFiles =>
+        Utils.GetFiles("*.cue", "EncodingDetection").Select(f => new object[] { Path.GetFileName(f) });
+
+    [TestMethod]
+    [DynamicData(nameof(EncodingFiles))]
+    public void TestEncodingDetection(string fileName)
     {
+        string filepath = Utils.GetFile("EncodingDetection", fileName);
         Encoding target = ParseEncodingFromName(filepath);
         var cue = CueReader.CreateFromFile(filepath).Parse();
         Encoding cueEnc = cue.SourceEncoding!;
@@ -48,15 +54,6 @@ public partial class CueEncodingTests
         Assert.IsTrue(match, $"Target: {target.EncodingName}, actual: {cueEnc.EncodingName}, actual preamble: {string.Join(", ", a)}-{Path.GetFileNameWithoutExtension(filepath)}");
     }
 
-    [TestMethod]
-    public void TestEncodingDetection()
-    {
-        var files = Utils.GetFiles("*.cue", "EncodingDetection");
-        foreach (var file in files)
-        {
-            TestParsing(file);
-        }
-    }
     [TestMethod]
     public void TestParsingMinimum()
     {

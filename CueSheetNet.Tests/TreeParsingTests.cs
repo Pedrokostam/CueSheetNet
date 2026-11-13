@@ -1,4 +1,4 @@
-﻿using CueSheetNet.NameParsing;
+using CueSheetNet.NameParsing;
 using CueSheetNet.Tests;
 using System.Xml.Linq;
 
@@ -11,7 +11,7 @@ public class TreeParsingTests
     public void TestAllAvailable()
     {
         var t = CueTreeFormatter.AvailableProperties;
-        Assert.AreNotEqual(t.Length, 0);
+        Assert.AreNotEqual(0, t.Length);
     }
     private static string P(CueSheet sheet, string? pattern, string? replacement = null) => CueTreeFormatter.ParseFormatPattern(sheet, pattern, replacement);
 

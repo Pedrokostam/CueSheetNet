@@ -59,6 +59,7 @@ public class CueSheet : IRemarkable, IEquatable<CueSheet>
         _additionalFiles = new ResettableCollection<CueExtraFile>(() => AdditionalFileHelper.FindExtraFiles(this));
         SourceFile = sourceFile;
     }
+  
 
     internal readonly ResettableDependentCollection<CueTrack, Link> _tracks;
     internal readonly ResettableDependentCollection<CueDataFile, Link> _files;
@@ -74,7 +75,10 @@ public class CueSheet : IRemarkable, IEquatable<CueSheet>
     public IReadOnlyList<CueIndex> Indices => _indices;
     public IReadOnlyList<CueExtraFile> AdditionalFiles => _additionalFiles;
 
-    public void RefreshAdditionalFiles()
+    /// <summary>
+    /// Refreshes the source file info and invalidates additional files.
+    /// </summary>
+    public void RefreshFileInfos()
     {
         SourceFile?.Refresh();
         _additionalFiles.Invalidate();
@@ -86,7 +90,7 @@ public class CueSheet : IRemarkable, IEquatable<CueSheet>
             if (!FileSystemInfoComparer.Instance.Equals(value, _sourceFile))
             {
                 _sourceFile = value;
-                RefreshAdditionalFiles();
+                RefreshFileInfos();
             }
 
         }

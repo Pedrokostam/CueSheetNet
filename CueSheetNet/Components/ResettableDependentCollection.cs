@@ -1,10 +1,12 @@
 ﻿using Microsoft.Extensions.Logging;
 using System.Collections;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 
 
 namespace CueSheetNet.Components;
 
+[DebuggerDisplay("Count = {Count}")]
 internal class ResettableCollection<T> : IReadOnlyList<T>
 {
     static ILogger Loggerio => Loggingq.EditingLogger;
@@ -75,6 +77,7 @@ internal class ResettableCollection<T> : IReadOnlyList<T>
         return -1;
     }
 }
+[DebuggerDisplay("Count = {Count}")]
 internal class ResettableDependentCollection<T, R> : IReadOnlyList<T>
 {
     private Func<IEnumerable<R>, IEnumerable<T>> Populator { get; }

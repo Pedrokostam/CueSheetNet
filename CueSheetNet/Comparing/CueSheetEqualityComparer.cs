@@ -110,7 +110,9 @@ public record CueSheetEqualityComparer : IEqualityComparer<CueSheet>
         }
         if (Options.HasFlag(ComparisonOptions.OptionalFields))
         {
-            if (!StringComparer.Equals(x.Songwriter, y.Songwriter))
+            if (!StringComparer.Equals(x.Songwriter, y.Songwriter)
+                || !StringComparer.Equals(x.Catalog, y.Catalog)
+                || !PathsEqual(x.CdTextFile, y.CdTextFile))
             {
                 return false;
             }
@@ -121,11 +123,11 @@ public record CueSheetEqualityComparer : IEqualityComparer<CueSheet>
             {
                 return false;
             }
-            for (int i = 0; i < x.Data.Count; i++)
-            {
-                if (!LinksEqual(x.Data[i], y.Data[i]))
-                    return false;
-            }
+        }
+        for (int i = 0; i < x.Data.Count; i++)
+        {
+            if (!LinksEqual(x.Data[i], y.Data[i]))
+                return false;
         }
         if (Options.HasFlag(ComparisonOptions.Remarks))
         {
@@ -135,11 +137,13 @@ public record CueSheetEqualityComparer : IEqualityComparer<CueSheet>
     }
     private bool LinksEqual(Link linkX, Link linkY)
     {
-        var res = linkX.Index == linkY.Index
+        var res = IndicesEqual(linkX.Index, linkY.Index)
                && linkX.Track.Position == linkY.Track.Position
                && linkX.Track.Type == linkY.Track.Type
-               && !PathsEqual(linkX.File, linkY.File)
-               && linkX.File.Type == linkY.File.Type;
+               && PathsEqual(linkX.File, linkY.File)
+               && linkX.File.Type == linkY.File.Type
+               && linkX.Track.PreGap == linkY.Track.PreGap
+               && linkX.Track.PostGap == linkY.Track.PostGap;
         if (!res)
         {
             return res;
@@ -155,7 +159,8 @@ public record CueSheetEqualityComparer : IEqualityComparer<CueSheet>
         }
         if (Options.HasFlag(ComparisonOptions.OptionalFields))
         {
-            if (!StringComparer.Equals(linkX.Track.Songwriter, linkY.Track.Songwriter))
+            if (!StringComparer.Equals(linkX.Track.Songwriter, linkY.Track.Songwriter)
+                || !StringComparer.Equals(linkX.Track.Isrc, linkY.Track.Isrc))
             {
                 return false;
             }
@@ -166,8 +171,13 @@ public record CueSheetEqualityComparer : IEqualityComparer<CueSheet>
         }
         return true;
     }
-    private static bool PathsEqual(FilePath a, FilePath b)
+    private static bool IndicesEqual(CueIndex a, CueIndex b) =>
+        a.Position == b.Position && a.Time == b.Time && a.IsSplit == b.IsSplit;
+
+    private static bool PathsEqual(FilePath? a, FilePath? b)
     {
+        if (a is null || b is null)
+            return a is null && b is null;
         if (OperatingSystem.IsWindows() || OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst())
         {
             return string.Equals(a.Path, b.Path, StringComparison.OrdinalIgnoreCase);
@@ -177,14 +187,24 @@ public record CueSheetEqualityComparer : IEqualityComparer<CueSheet>
 
     public int GetHashCode([DisallowNull] CueSheet obj)
     {
-        var hashy = HashCode.Combine(obj._tracks.LastCount, obj._files.LastCount, obj._indices.LastCount);
+        int tracks = 0, files = 0;
+        Link? previous = null;
+        foreach (var link in obj.Data)
+        {
+            if (!ReferenceEquals(previous?.Track, link.Track))
+                tracks++;
+            if (!ReferenceEquals(previous?.File, link.File))
+                files++;
+            previous = link;
+        }
+        var hashy = HashCode.Combine(tracks, files, obj.Data.Count);
         if (Options.HasFlag(ComparisonOptions.CommonFields))
         {
             hashy = HashCode.Combine(hashy, StringComparer.GetHashCode(obj.Title), StringComparer.GetHashCode(obj.Performer ?? ""));
         }
         if (Options.HasFlag(ComparisonOptions.Remarks))
         {
-            hashy = HashCode.Combine(RemarksComparer.GetHashCode(obj.Remarks));
+            hashy = HashCode.Combine(hashy, RemarksComparer.GetHashCode(obj.Remarks));
         }
         return hashy;
     }

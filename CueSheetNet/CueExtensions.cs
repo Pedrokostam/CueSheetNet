@@ -16,7 +16,7 @@ public static class CueExtensions
     {
         public void Unlink(bool withAssociatedFiles, bool removeEmptyDirs)
         {
-            cueSheet.RefreshAdditionalFiles();
+            cueSheet.RefreshFileInfos();
             if (cueSheet.SourceFile is null || !cueSheet.SourceFile.Exists)
             {
                 throw new InvalidOperationException("Cannot unlink cue sheet whose source file does not exist");
@@ -47,9 +47,18 @@ public static class CueExtensions
                 }
             }
         }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="newCueSheetPath">The file path where the cue sheet file should be copied to.</param>
+        /// <param name="withAssociatedFiles"></param>
+        /// <param name="makePathsRelative"></param>
+        /// <returns></returns>
+        /// <exception cref="InvalidOperationException"></exception>
+        /// <exception cref="DirectoryNotFoundException"></exception>
         public CueSheet Copy(string newCueSheetPath, bool withAssociatedFiles, bool makePathsRelative)
         {
-            cueSheet.RefreshAdditionalFiles();
+            cueSheet.RefreshFileInfos();
             if (cueSheet.SourceFile is null || !cueSheet.SourceFile.Exists)
             {
                 throw new InvalidOperationException("Cannot copy cue sheet whose source file does not exist. Use SaveAs()");
@@ -72,6 +81,11 @@ public static class CueExtensions
             }
             foreach (var item in cueFiles)
             {
+                item.Info?.Refresh();
+                if (!item.Exists)
+                {
+                    continue;
+                }
                 if (!item.IsQualified)
                 {
                     filesToMove.Add((item.AbsolutePath!, Path.Combine(newRoot, item.Path)));
@@ -87,8 +101,8 @@ public static class CueExtensions
                 File.Copy(item.Source, item.Target);
             }
             clone.SaveAs(newCueSheetPath);
+            clone.RefreshFileInfos();
             return clone;
-
         }
 
         public CueSheet Move(string newCueSheetPath, bool withAssociatedFiles, bool makePathsRelative)
@@ -143,9 +157,47 @@ public static class CueExtensions
 
         public CueSheet Clone()
         {
-            var s = cueSheet.WriteToString();
-            var reader = CueReader.CreateFromString(s);
-            return reader.Parse();
+            var newCue = new CueSheet(cueSheet.SourceFile)
+            {
+                Catalog = cueSheet.Catalog,
+                CdTextFile = cueSheet.CdTextFile,
+                Composer = cueSheet.Composer,
+                Genre = cueSheet.Genre,
+                Performer = cueSheet.Performer,
+                Songwriter = cueSheet.Songwriter,
+                SourceEncoding = cueSheet.SourceEncoding,
+                Title = cueSheet.Title,
+                Upc = cueSheet.Upc,
+            };
+            newCue.ChangeFilePathsType(cueSheet.UseQualifiedPaths);
+            CueTrack? lastDonorTrack = null;
+            CueDataFile? lastDonorFile = null;
+            CueTrack lastAddedTrack = null!;
+            CueDataFile lastAddedFile = null!;
+            foreach (var rem in cueSheet.Remarks)
+            {
+                newCue.Remarks.Add(rem);
+            }
+            foreach (var link in cueSheet.Data)
+            {
+                if (!ReferenceEquals(link.File, lastDonorFile))
+                {
+                    lastAddedFile = new CueDataFile(link.File.Path, newCue, link.File.Type);
+                    lastDonorFile = link.File;
+                }
+                if (!ReferenceEquals(link.Track, lastDonorTrack))
+                {
+                    lastAddedTrack = new CueTrack(link.Track, newCue);
+                    lastDonorTrack = link.Track;
+                }
+                var ind = new CueIndex(link.Index.Position, link.Index.Time, newCue) { IsSplit = link.Index.IsSplit };
+                newCue.AddIndex(ind, lastAddedTrack, lastAddedFile);
+            }
+            newCue.Invalidate();
+            //newCue.NormalizeGaps();
+            newCue.RefreshFileInfos();
+            _ = newCue.AdditionalFiles;
+            return newCue;
         }
     }
 

@@ -1,5 +1,6 @@
 ﻿using CueSheetNet.Components;
 using CueSheetNet.FileHandling;
+using System.Net.WebSockets;
 using System.Security.Cryptography;
 
 namespace CueSheetNet.Tests;
@@ -7,58 +8,103 @@ namespace CueSheetNet.Tests;
 [TestClass]
 public class CopyingTests
 {
-
-    [TestMethod("Copies sheet package and compares hashes of non-cue files, then moves the copied one and compares hashes again")]
-    public void CopyMoveSimple()
+    private static (Dictionary<string,byte[]>,CueSheet) Coppyy(string sourceSheetPath, string targetSheetPath)
     {
+        var cue = CueReader.CreateFromFile(sourceSheetPath).Parse();
         using var md5 = MD5.Create();
-        var files = Utils.GetFiles("*.*", "CopyingTests");
+        var sourceParent = Directory.GetParent(sourceSheetPath);
+        var files = sourceParent.EnumerateFiles().ToArray();
         Dictionary<string, byte[]> hashes = new Dictionary<string, byte[]>(StringComparer.OrdinalIgnoreCase);
         foreach (var file in files)
         {
-            if (Path.GetExtension(file).Equals(".cue", StringComparison.InvariantCultureIgnoreCase))
+            if (file.Extension.Equals(".cue", StringComparison.InvariantCultureIgnoreCase))
             {
                 continue;
             }
-            using FileStream fs = File.OpenRead(file);
-            hashes.Add(Path.GetFileName(file), md5.ComputeHash(fs));
+            using FileStream fs = file.OpenRead();
+            hashes.Add(file.Name, md5.ComputeHash(fs));
         }
-        CueSheet sheet = CueSheet.Parse(Utils.GetFile("CopyingTests", "Spandau Ballet - True.cue"));
-        string output = CreateTempDirectory("CueCopying");
+        var targetDir = Directory.GetParent(targetSheetPath)!;
+        targetDir.Create();
+        foreach (var exFile in targetDir.EnumerateFiles())
+        {
+            exFile.Delete();
+        }
+        var copied = cue.Copy(targetSheetPath, true, false);
+        var newFiles = targetDir.EnumerateFiles().ToArray();
+        foreach (var item in hashes)
+        {
+            Assert.IsTrue(newFiles.Any(x => x.Name == item.Key),$"Missing copied item: {item.Key}");
+            var match = newFiles.First(x=>x.Name == item.Key);
+            var hash = md5.ComputeHash(match.OpenRead());
+            Assert.IsTrue(item.Value.SequenceEqual(hash), $"Different file hash: {item.Key}");
+        }
+        return (hashes, copied);
+    }
 
-        sheet.Copy(output,true, false);
-        CueSheet copied = CueSheet.Parse(Path.Combine(Path.GetTempPath(), "CueCopying", sheet.SourceFile!.Name));
-        Assert.AreEqual(copied, sheet);
-        foreach (var file in Directory.EnumerateFiles(output))
+    [TestMethod("Copies sheet package and compares hashes of non-cue files")]
+    public void Copy()
+    {
+        string sourceSheetPath = Utils.GetFile("CopyingTests", "Spandau Ballet - True.cue");
+        string targetSheetPath = Path.Combine(CreateTempDirectory("CueCopying"), "CopiedSheet.cue");
+        Coppyy(sourceSheetPath, targetSheetPath);
+    }
+
+    [TestMethod("Moved a copied sheet and compares file hashes")]
+    public void Move()
+    {
+        using var md5 = MD5.Create();
+        string sourceSheetPath = Utils.GetFile("CopyingTests", "Spandau Ballet - True.cue");
+        string targetSheetPath = Path.Combine(CreateTempDirectory("CueCopying2"), "CopiedSheet.cue");
+        string moveTargetSheetPath = Path.Combine(CreateTempDirectory("CueMoving"), "MovedSheet.cue");
+        (var hashes, var copied) = Coppyy(sourceSheetPath, targetSheetPath);
+        var moved = copied.Move(moveTargetSheetPath, true, false);
+        foreach (var deadFile in copied.AdditionalFiles)
         {
-            if (Path.GetExtension(file).Equals(".cue", StringComparison.InvariantCultureIgnoreCase))
-            {
-                continue;
-            }
-            using FileStream fs = File.OpenRead(file);
-            var hash = md5.ComputeHash(fs);
-            Assert.IsTrue(hashes[Path.GetFileName(file)].SequenceEqual(hash));
+            deadFile.Info?.Refresh();
+            Assert.IsFalse(deadFile.Exists);
         }
-        string outputMove = CreateTempDirectory("CueCopying", "Moving");
-        copied.Move(outputMove,true,false);
-        CueSheet moved = CueSheet.Parse(Path.Combine(Path.GetTempPath(), "CueCopying", "Moving", sheet.SourceFile.Name));
-        Assert.AreEqual(copied, moved);
-        foreach (var file in Directory.EnumerateFiles(outputMove))
+        foreach (var deadFile in copied.Files)
         {
-            if (Path.GetExtension(file).Equals(".cue", StringComparison.InvariantCultureIgnoreCase))
+            deadFile.Info?.Refresh();
+            Assert.IsFalse(deadFile.Exists);
+        }
+        foreach (var file in moved.SourceFile!.Directory!.EnumerateFiles())
+        {
+            if (file.Extension.Equals(".cue", StringComparison.InvariantCultureIgnoreCase))
             {
                 continue;
             }
-            using FileStream fs = File.OpenRead(file);
+            using FileStream fs = file.OpenRead();
             var hash = md5.ComputeHash(fs);
-            Assert.IsTrue(hashes[Path.GetFileName(file)].SequenceEqual(hash));
+            Assert.IsTrue(hashes.ContainsKey(file.Name));
+            Assert.IsTrue(hashes[Path.GetFileName(file.Name)].SequenceEqual(hash));
+        }
+    }
+
+    [TestMethod("Deletes copied sheet")]
+    public void Unlink()
+    {
+        using var md5 = MD5.Create();
+        string sourceSheetPath = Utils.GetFile("CopyingTests", "Spandau Ballet - True.cue");
+        string targetSheetPath = Path.Combine(CreateTempDirectory("CueCopying3"), "CopiedSheet.cue");
+        (var hashes, var copied) = Coppyy(sourceSheetPath, targetSheetPath);
+        copied.Unlink( true, false);
+        foreach (var deadFile in copied.AdditionalFiles)
+        {
+            deadFile.Info?.Refresh();
+            Assert.IsFalse(deadFile.Exists);
+        }
+        foreach (var deadFile in copied.Files)
+        {
+            deadFile.Info?.Refresh();
+            Assert.IsFalse(deadFile.Exists);
         }
     }
 
     private static string CreateTempDirectory(params string[] parts)
     {
-        List<string> pp = new List<string>(parts);
-        pp.Insert(0, Path.GetTempPath());
+        List<string> pp = ["TestItems", "TempData", .. parts];
         string[] p = [.. pp];
         string output = Path.Combine(p);
         if (Directory.Exists(output))

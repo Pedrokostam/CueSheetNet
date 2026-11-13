@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using CueSheetNet.Components;
+using CueSheetNet.Extensions;
 using CueSheetNet.FileHandling;
 using CueSheetNet.FormatReaders;
 
@@ -45,7 +46,7 @@ public class CueDataFile : FilePath
     }
 
 
-    public int Position => _sheet._files.FindIndex(x => ReferenceEquals(x, this));
+    public int Position => _sheet._files.IndexOfRef(this);
 
     public IReadOnlyList<CueTrack> Tracks => _tracks;
 

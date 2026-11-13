@@ -36,8 +36,8 @@ public class RemarksEqualityComparer : IEqualityComparer<Remarks>, IEqualityComp
             return false;
         if (x.Count != y.Count)
             return false;
-        var itemA = x.OrderBy(x => x.Line, StringComparer.OrdinalIgnoreCase);
-        var itemB = y.OrderBy(x => x.Line, StringComparer.OrdinalIgnoreCase);
+        var itemA = x.OrderBy(r => r.Line, StringComparer);
+        var itemB = y.OrderBy(r => r.Line, StringComparer);
         return itemA.SequenceEqual(itemB, this);
     }
 

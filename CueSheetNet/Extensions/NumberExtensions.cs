@@ -47,7 +47,7 @@ internal static class NumberExtensions
     /// <returns></returns>
     public static string GetPaddedNumber(int number, int digitCount)
     {
-        return number.ToString(CultureInfo.InvariantCulture).PadRight(digitCount, '0');
+        return number.ToString(CultureInfo.InvariantCulture).PadLeft(digitCount, '0');
         // apparently fewer JIT instruction than creating dynamic formatting string -- x.ToString($"d{w}")
     }
 
