@@ -271,7 +271,7 @@ public static class CueExtensions
                 if (value is null)
                     cueSheet.Remarks.RemoveField("DATE");
                 else
-                    cueSheet.Remarks.AddUnique("DATE", value.ToString());
+                    cueSheet.Remarks.AddUnique("DATE", value.Value.ToString(CultureInfo.InvariantCulture));
             }
         }
         public double? ReplayGainAlbumGain
@@ -290,7 +290,7 @@ public static class CueExtensions
                 if (value is null)
                     cueSheet.Remarks.RemoveField("REPLAYGAIN_ALBUM_GAIN");
                 else
-                    cueSheet.Remarks.AddUnique("REPLAYGAIN_ALBUM_GAIN", value.ToString());
+                    cueSheet.Remarks.AddUnique("REPLAYGAIN_ALBUM_GAIN", value.Value.ToString(CultureInfo.InvariantCulture));
             }
         }
         public double? ReplayGainAlbumPeak
@@ -309,7 +309,7 @@ public static class CueExtensions
                 if (value is null)
                     cueSheet.Remarks.RemoveField("REPLAYGAIN_ALBUM_PEAK");
                 else
-                    cueSheet.Remarks.AddUnique("REPLAYGAIN_ALBUM_PEAK", value.ToString());
+                    cueSheet.Remarks.AddUnique("REPLAYGAIN_ALBUM_PEAK", value.Value.ToString(CultureInfo.InvariantCulture));
             }
         }
     }
@@ -366,7 +366,7 @@ public static class CueExtensions
                 if (value is null)
                     track.Remarks.RemoveField("DATE");
                 else
-                    track.Remarks.AddUnique("DATE", value.ToString());
+                    track.Remarks.AddUnique("DATE", value.Value.ToString(CultureInfo.InvariantCulture));
             }
         }
         public double? ReplayGainTrackGain
@@ -385,7 +385,7 @@ public static class CueExtensions
                 if (value is null)
                     track.Remarks.RemoveField("REPLAYGAIN_TRACK_GAIN");
                 else
-                    track.Remarks.AddUnique("REPLAYGAIN_TRACK_GAIN", value.ToString());
+                    track.Remarks.AddUnique("REPLAYGAIN_TRACK_GAIN", value.Value.ToString(CultureInfo.InvariantCulture));
             }
         }
         public double? ReplayGainTrackPeak
@@ -404,7 +404,7 @@ public static class CueExtensions
                 if (value is null)
                     track.Remarks.RemoveField("REPLAYGAIN_TRACK_PEAK");
                 else
-                    track.Remarks.AddUnique("REPLAYGAIN_TRACK_PEAK", value.ToString());
+                    track.Remarks.AddUnique("REPLAYGAIN_TRACK_PEAK", value.Value.ToString(CultureInfo.InvariantCulture));
             }
         }
         public double? ReplayGainAlbumGain
@@ -424,7 +424,7 @@ public static class CueExtensions
                 if (value is null)
                     track.Remarks.RemoveField("REPLAYGAIN_ALBUM_GAIN");
                 else
-                    track.Remarks.AddUnique("REPLAYGAIN_ALBUM_GAIN", value.ToString());
+                    track.Remarks.AddUnique("REPLAYGAIN_ALBUM_GAIN", value.Value.ToString(CultureInfo.InvariantCulture));
             }
         }
         public double? ReplayGainAlbumPeak
@@ -444,7 +444,7 @@ public static class CueExtensions
                 if (value is null)
                     track.Remarks.RemoveField("REPLAYGAIN_ALBUM_PEAK");
                 else
-                    track.Remarks.AddUnique("REPLAYGAIN_ALBUM_PEAK", value.ToString());
+                    track.Remarks.AddUnique("REPLAYGAIN_ALBUM_PEAK", value.Value.ToString(CultureInfo.InvariantCulture));
             }
         }
     }

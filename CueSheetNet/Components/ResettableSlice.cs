@@ -117,13 +117,16 @@ internal class ResettableSlice<TSource, TData> : IReadOnlyList<TSource>
         }
 
         int count = 1;
-        while (enumSource.MoveNext())
+        if (!lastItem.Equals(enumSource.Current))
         {
-            if (!lastItem.Equals(enumSource.Current))
+            while (enumSource.MoveNext())
             {
-                break;
+                count++;
+                if (lastItem.Equals(enumSource.Current))
+                {
+                    break;
+                }
             }
-            count++;
         }
 
         return (start, count);

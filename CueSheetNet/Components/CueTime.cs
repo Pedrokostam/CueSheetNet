@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Metalama.Framework.Code;
+using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
@@ -483,21 +484,36 @@ public readonly record struct CueTime
         if (spanTrimmed.Length == 0)
             throw new ArgumentException("Empty CueTime string", nameof(input));
         List<int> inds = SeekSeparator(spanTrimmed);
-        if (inds.Count < 4)
+        if (inds.Count <= 1)
             throw new ArgumentException(
-                $"CueTime string has less than 3 parts ({input.ToString()})",
+                $"CueTime string must have at least one part ({input})",
                 nameof(input)
             );
-        Span<int> nums = stackalloc int[3];
+        if (inds.Count > 4)
+            throw new ArgumentException(
+                $"CueTime string must not have more than 3 parts ({input})",
+                nameof(input)
+            );
+        Span<int> nums = stackalloc int[Math.Min(3, inds.Count - 1)];
         int numCount = 0;
+        int multiplier = 0;
         for (int i = 1; i < inds.Count; i++)
         {
             int rangeStart = inds[i - 1] + 1; //plus one, because it was included in previous range
             //That's why the SeekSeparator adds -1 as the first element
             //so that the first rangeStart will be equal to 0
             int rangeEnd = inds[i];
+            var parsee = spanTrimmed[rangeStart..rangeEnd].Trim();
+            if (multiplier == 0)
+            {
+                multiplier = parsee[0] == '-' ? -1 : 1;
+            }
+            else if (parsee[0] == '-' || parsee[0] == '+')
+            {
+                throw new ArgumentException("Sign character encountered in the middle of the string");
+            }
             int x = int.Parse(
-                Slice(spanTrimmed, rangeStart, rangeEnd),
+                parsee,
                 NumberStyles.Integer,
                 CultureInfo.InvariantCulture
             );
@@ -505,10 +521,10 @@ public readonly record struct CueTime
             if (++numCount > 2)
                 break;
         }
-        int multiplier = nums[0] >= 0 ? 1 : -1;
-        int _minutes = Math.Abs(nums[0]);
-        int _seconds = Math.Abs(nums[1]);
-        int _frames = Math.Abs(nums[2]);
+
+        int _minutes = nums.Length == 3 ? Math.Abs(nums[^3]) : 0; // If there are 3 elements, take the third from the end (i.e the zeroth)
+        int _seconds = nums.Length >= 2 ? Math.Abs(nums[^2]) : 0; // If there are 2 or 3 elements, take the second from the end (i.e the zeroth or the first)
+        int _frames = Math.Abs(nums[^1]); // take last element
         int totalFrames = CalculateTotalFrames(_minutes, _seconds, _frames) * multiplier;
         return new CueTime(totalFrames);
     }
@@ -537,20 +553,36 @@ public readonly record struct CueTime
     {
         cueTime = default;
         ReadOnlySpan<char> spanTrimmed = input.Trim();
+        if (spanTrimmed.Length == 0)
+        {
+            return false;
+        }
         List<int> inds = SeekSeparator(spanTrimmed);
         if (inds.Count <= 1)
             return false;
+        if (inds.Count > 4)
+            return false;
         Span<int> nums = stackalloc int[Math.Min(3, inds.Count - 1)];
         int numCount = 0;
+        int multiplier = 0;
         for (int i = 1; i < inds.Count; i++)
         {
             int rangeStart = inds[i - 1] + 1; //plus one, because it was included in previous range
             //That'input why the SeekSeparator adds -1 as the first element
             //so that the first rangeStart will be equal to 0
             int rangeEnd = inds[i];
+            var parsee = spanTrimmed[rangeStart..rangeEnd].Trim();
+            if (multiplier == 0)
+            {
+                multiplier = parsee[0] == '-' ? -1 : 1;
+            }
+            else if (parsee[0] == '-' || parsee[0] == '+')
+            {
+                return false;
+            }
             if (
                 !int.TryParse(
-                    Slice(spanTrimmed, rangeStart, rangeEnd),
+                    parsee,
                     NumberStyles.Integer,
                     formatProvider,
                     out int x
@@ -561,7 +593,6 @@ public readonly record struct CueTime
             if (++numCount > 2)
                 break;
         }
-        int multiplier = nums[0] >= 0 ? 1 : -1;
         int _minutes = nums.Length == 3 ? Math.Abs(nums[^3]) : 0; // If there are 3 elements, take the third from the end (i.e the zeroth)
         int _seconds = nums.Length >= 2 ? Math.Abs(nums[^2]) : 0; // If there are 2 or 3 elements, take the second from the end (i.e the zeroth or the first)
         int _frames = Math.Abs(nums[^1]); // take last element
@@ -696,7 +727,7 @@ public readonly record struct CueTime
             throw new NotFiniteNumberException(divisor);
         if (divisor == 0)
             throw new DivideByZeroException();
-        return new((int)(TotalFrames / divisor));
+        return new(checked((int)(TotalFrames / divisor)));
     }
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="DivideCueTime"]'/>
@@ -949,8 +980,9 @@ public readonly record struct CueTime
     /// <inheritdoc cref="AppendOther(StringBuilder, ReadOnlySpan{char}, int)"/>
     private static int AppendEscaped(StringBuilder strb, ReadOnlySpan<char> format, int index)
     {
-        if (index < format.Length - 1)
+        if (index == format.Length - 1)
         {
+            strb.Append(format[index]);
             return 1;
         }
         strb.Append(format[index + 1]);
@@ -958,7 +990,7 @@ public readonly record struct CueTime
     }
     private static StringBuilder AppendPaddedInteger(StringBuilder sb, int number, int minWidth)
     {
-        return sb.Append(number.ToString(CultureInfo.InvariantCulture).PadRight(minWidth, '0'));
+        return sb.Append(number.ToString(CultureInfo.InvariantCulture).PadLeft(minWidth, '0'));
     }
 
     /// <summary>

@@ -135,11 +135,12 @@ public sealed class CueWriter
     {
         if (value == null)
             return null;
+        string? valString = value?.ToString();
+        valString = valString?.ReplaceLineEndings("");
+        if (quoteAllowed && HasWhitespace(valString))
+            return Header + " " + Enquote(valString);
 
-        if (quoteAllowed && HasWhitespace(value.ToString()))
-            return Header + " " + Enquote(value.ToString());
-
-        return Header + " " + value;
+        return Header + " " + valString;
     }
 
 
@@ -341,7 +342,16 @@ public sealed class CueWriter
         string textData = WriteToString(sheet);
         sheet.SourceFile.Directory!.Create();
         Encoding encoding = GetProperEncoding(sheet);
-        File.WriteAllText(sheet.SourceFile.FullName, textData, encoding);
+        try
+        {
+
+            File.WriteAllText(sheet.SourceFile.FullName, textData, encoding);
+        }
+        catch (EncoderFallbackException)
+        {
+            encoding = CueWriterSettings.DefaultEncoding;
+            File.WriteAllText(sheet.SourceFile.FullName, textData, encoding);
+        }
         sheet.SourceEncoding = encoding;
     }
 

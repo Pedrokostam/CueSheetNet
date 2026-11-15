@@ -472,6 +472,7 @@
 			</returns>
 			<include file='CueTime.xml' path='Elements/Errors/Error[@name="InfiniteNanArgument"]'/>
 			<include file='CueTime.xml' path='Elements/Members/Member[@name="DivideInt"]'/>
+			<include file='CueTime.xml' path='Elements/Snippets/Snippet[@name="CheckedOperation"]'/>
 		</Member>
 		<Member name="DivideOperatorDouble">
 			<include file='CueTime.xml' path='Elements/Snippets/Snippet[@name="ParamTime"]'/>

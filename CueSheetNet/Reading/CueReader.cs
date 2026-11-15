@@ -140,7 +140,7 @@ public sealed partial class CueReader : ISourcelessCueReader
     #endregion
 
     [AllowNull]
-    public CueReaderSettings Settings    {        get; set;    }
+    public CueReaderSettings Settings { get; set; }
     internal ILogger Loggerio => Loggingq.ParsingLogger;
 
     private static readonly CultureInfo InvCul = CultureInfo.InvariantCulture;
@@ -487,7 +487,7 @@ public sealed partial class CueReader : ISourcelessCueReader
         line = line[6..];// FLAGS_
         line = line.Trim().Trim("\"' \t").Trim();
         var lim = line
-            .Split(ranges, ' ', StringSplitOptions.RemoveEmptyEntries|StringSplitOptions.TrimEntries);
+            .Split(ranges, ' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         ranges = ranges[..lim]; // remember to slice the range span down from the maximum size
         foreach (var range in ranges)
         {
@@ -593,7 +593,7 @@ public sealed partial class CueReader : ISourcelessCueReader
         string firstWord = GetKeyword(line, 4).ToUpperInvariant();
         int valueStart = 4 + firstWord.Length + 1;
         string? rest = GetValue(line, valueStart);
-        IRemarkable remmy = SheetHasTracks ? LastTrack : Sheet;
+        IRemarkable remmy = LastTrack as IRemarkable ?? Sheet;
         if (rest is null)
         {
             // we only have one word and maybe some spaces - it cant be any common rem field

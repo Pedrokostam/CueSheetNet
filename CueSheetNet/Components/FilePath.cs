@@ -14,7 +14,7 @@ public abstract class FilePath
     public string Name => _parts[^1];
     public string BaseName => IoPath.GetFileNameWithoutExtension(Name);
     public bool IsQualified => IsFirstPartQualified(_parts);
-    public FileInfo? Info { get; protected set; }
+    public FileInfo? Info => AbsolutePath is string x ? new FileInfo(x) : null;
     public string? AbsolutePath
     {
         get
@@ -92,7 +92,6 @@ public abstract class FilePath
             newPath = PathHelper.GetRelativePath(newPath, _sheet.SourceFile);
         }
         GetParts(newPath.AsSpan(), _parts);
-        Info = AbsolutePath is string x ? new FileInfo(x) : null;
     }
 
     public void Copy(string cueSheetDirectory)

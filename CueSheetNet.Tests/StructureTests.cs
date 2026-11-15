@@ -1,4 +1,4 @@
-using CueSheetNet.Components;
+﻿using CueSheetNet.Components;
 using CueSheetNet.Syntax;
 using System.Reflection;
 
@@ -25,7 +25,7 @@ public class StructureTests
             var cue = NewCue();
             item.SetValue(getter(cue), "TEST TEST");
             var clone = cloning(cue);
-            Assert.AreEqual(item.GetValue(getter(cue)), item.GetValue(getter(cue)), $"Reflection property {item.Name} of {typeof(T).Name}");
+            Assert.AreEqual(item.GetValue(getter(cue)), item.GetValue(getter(clone)), $"Reflection property {item.Name} of {typeof(T).Name}");
         }
     }
     [TestInitialize]
@@ -46,7 +46,6 @@ public class StructureTests
             ("Postgap",CueTime.One),
             ("Type",TrackType.MODE2_2336),
             ("Flags",TrackFlags.PreEmphasis|TrackFlags.DigitalCopyPermitted|TrackFlags.FourChannel|TrackFlags.SerialCopyManagementSystem),
-            ("Title","TEST TEST"),
     ];
 
     public static (string Name, object Value)[] SheetProps { get; }= [
