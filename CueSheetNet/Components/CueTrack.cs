@@ -8,9 +8,7 @@ using System.Globalization;
 using System.Net.Security;
 using System.Net.WebSockets;
 namespace CueSheetNet.Components;
-
-
-public record CueTrack : IRemarkable
+public class CueTrack : IRemarkable
 {
     public Remarks Remarks { get; } = [];
 
@@ -82,12 +80,10 @@ public record CueTrack : IRemarkable
     internal CueTrack (CueTrack track,CueSheet sheet):this(track.Type,sheet)
     {
         this.Songwriter = track._songwriter;
-        this.Upc = track.Upc;
         this.Pregap = track.Pregap;
         this.Postgap = track.Postgap;
         this.Flags = track.Flags;
         this.Title = track._title;
-        this.Genre = track.Genre;
         this.Isrc = track.Isrc;
         this.Gap = track.Gap;
         this.Performer = track._performer;
@@ -112,6 +108,9 @@ public record CueTrack : IRemarkable
         };
     }
 
+    /// <summary>
+    /// Time value of INDEX 1 of the track.
+    /// </summary>
     public CueTime Start => Indices[0].StartsContent ? Indices[0].Time : Indices[1].Time;
 
     public CueTime? Duration
@@ -130,7 +129,7 @@ public record CueTrack : IRemarkable
                 {
                     // Next index is in the same file, ergo next track
                     // may be eac or not, does not matter
-                    return nextLink.Index.Time;
+                    return nextLink.Index.Time - Start;
                 }
                 // different file, so need to refer to file
             }
@@ -154,7 +153,7 @@ public record CueTrack : IRemarkable
     {
         var inTrackIndex = _sheet.Tracks.IndexOfRef(this);
         var diff = forward ? 1 : -1;
-        if (inTrackIndex + diff >= _sheet.Tracks.Count || inTrackIndex < 0)
+        if (inTrackIndex + diff >= _sheet.Tracks.Count || inTrackIndex + diff < 0)
         {
             return null;
         }
@@ -189,5 +188,3 @@ public record CueTrack : IRemarkable
         return $"TRACK {Position:d2} {Type} - {Title}";
     }
 }
-
-#pragma warning restore MA0008 // Add StructLayoutAttribute

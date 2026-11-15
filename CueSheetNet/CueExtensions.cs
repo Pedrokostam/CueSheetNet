@@ -167,7 +167,7 @@ public static class CueExtensions
             var newCue = new CueSheet(cueSheet.SourceFile)
             {
                 Catalog = cueSheet.Catalog,
-                CdTextFile = cueSheet.CdTextFile,
+                CdTextFile = null, // added after cloning, since reference is needed
                 Composer = cueSheet.Composer,
                 Genre = cueSheet.Genre,
                 Performer = cueSheet.Performer,
@@ -177,6 +177,7 @@ public static class CueExtensions
                 Upc = cueSheet.Upc,
             };
             newCue.ChangeFilePathsType(cueSheet.UseQualifiedPaths);
+            newCue.CdTextFile = cueSheet.CdTextFile?.Clone(newCue);
             CueTrack? lastDonorTrack = null;
             CueDataFile? lastDonorFile = null;
             CueTrack lastAddedTrack = null!;

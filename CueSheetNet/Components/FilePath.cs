@@ -62,8 +62,15 @@ public abstract class FilePath
         {
             return false;
         }
+        // If the path starts with the current directory followed by a separator we want to get rid of it
         if (s[0] == '.')
         {
+            // but beware of just a single dot (which is an invalid path, since it would lead to the sheet's directory, but I ain't checking that
+            if (s.Length == 1)
+            {
+                parts.Add(s[0].ToString());
+                return true;
+            }
             if (s[1] == IoPath.DirectorySeparatorChar || s[1] == IoPath.AltDirectorySeparatorChar)
             {
                 s = s[2..];
@@ -85,7 +92,6 @@ public abstract class FilePath
     public void Update(string newPath, bool keepAbsolute = false)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(newPath);
-        newPath = newPath.Replace(@"\\", @"\", StringComparison.Ordinal);
         bool isAbsolute = IoPath.IsPathFullyQualified(newPath);
         if (isAbsolute && _sheet.SourceFile is not null && !keepAbsolute)
         {
@@ -114,6 +120,10 @@ public abstract class FilePath
 
     private string GetAbsolutePartsWith(string directory)
     {
+        if (this.IsQualified)
+        {
+            return IoPath.Join([.. _parts]);
+        }
         string[] pp = new string[_parts.Count + 1];
         pp[0] = directory;
         _parts.CopyTo(pp, 1);
@@ -130,18 +140,19 @@ public abstract class FilePath
         if (OperatingSystem.IsWindows())
         {
             var firstPart = parts[0];
-            if (firstPart.Length == 2
-                && char.IsLetter(firstPart[0])
-                && firstPart[1] == ':')
+            if (firstPart.Length == 2)
             {
-                return true;
+                if (char.IsLetter(firstPart[0]) && firstPart[1] == ':')
+                    return true; // C:\blabla
+                if (firstPart[0] == '\\' && firstPart[1] == '\\')
+                    return true; // \\blabla
             }
             return false;
         }
         else
         {
             var firstPart = parts[0];
-            if (firstPart.Length == 0 && firstPart[0] == IoPath.DirectorySeparatorChar)
+            if (firstPart.Length ==1 && firstPart[0] == IoPath.DirectorySeparatorChar)
             {
                 return true;
             }
@@ -157,10 +168,18 @@ public abstract class FilePath
         path = path.Trim();
         if (OperatingSystem.IsWindows())
         {
-            var count = path.Split(ranges,
+            int serverAdd = 0;
+            if (path.Length > 2 && path.StartsWith(@"\\", StringComparison.Ordinal))
+            {
+                // paths starts with a UNC server prefix. Noone will ever do this, but it's a valid path
+                ranges[0] = new Range(0, 2);
+                ranges = ranges[1..];
+                serverAdd = 1;
+            }
+            var count = path.SplitAny(ranges,
                            [IoPath.DirectorySeparatorChar, IoPath.AltDirectorySeparatorChar],
                            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            return count;
+            return count + serverAdd;
         }
         else
         {

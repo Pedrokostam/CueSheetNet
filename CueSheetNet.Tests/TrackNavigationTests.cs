@@ -45,16 +45,6 @@ public class TrackNavigationTests
     }
 
     [TestMethod]
-    public void RecordCopyOfTrackIsNotEqualToOriginal()
-    {
-        // bug: CueTrack is a record; a detached `with` copy compares equal and shares the index slice
-        var cue = CueSheet.ParseFromString(ThreeTracks);
-        var track = cue.Tracks[1];
-        var copy = track with { };
-        Assert.AreNotEqual(track, copy);
-    }
-
-    [TestMethod]
     public void CloneDoesNotMaterializeInheritedRemarksOnTracks()
     {
         // bug: CueTrack copy constructor copies inherited Genre/Upc as explicit remarks

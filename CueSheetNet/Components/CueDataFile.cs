@@ -113,7 +113,7 @@ public class CueDataFile : FilePath
     public CueDataFile? NextFile()
     {
         var nextIndex = Position + 1;
-        if (nextIndex >= _sheet.Data.Count)
+        if (nextIndex >= _sheet.Files.Count)
         {
             return null;
         }

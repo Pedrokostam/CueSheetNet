@@ -8,9 +8,9 @@ public class ParsingTests
 {
     private static void AssertFormatError(string content)
     {
+            CueSheet.ParseFromString(content);
         try
         {
-            CueSheet.ParseFromString(content);
         }
         catch (Exception e)
         {

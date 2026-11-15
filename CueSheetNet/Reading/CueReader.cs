@@ -550,6 +550,10 @@ public sealed partial class CueReader : ISourcelessCueReader
                 $"Incorrect Position number format at line {CurrentLineIndex}: {line}"
             );
         }
+        if(line.Length==6 + number.Length)
+        {
+            throw new NotImplementedException("trucnated index");
+        }
         if (!CueTime.TryParse(line.Slice(6 + number.Length + 1), InvCul, out CueTime cueTime))
         {
             //Logger.LogError("Incorrect Index format at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
@@ -590,8 +594,10 @@ public sealed partial class CueReader : ISourcelessCueReader
     [TraceExecutionTime]
     private void ParseREM(ReadOnlySpan<char> line)
     {
-        string firstWord = GetKeyword(line, 4).ToUpperInvariant();
-        int valueStart = 4 + firstWord.Length + 1;
+        string firstWord = GetKeyword(line, 4);
+        // Since there may be spaces between REM and Keyword we cannot hardcode value start
+        int valueStart = line.IndexOf(firstWord,StringComparison.Ordinal) + firstWord.Length + 1;
+        firstWord = firstWord.ToUpperInvariant();
         string? rest = GetValue(line, valueStart);
         IRemarkable remmy = LastTrack as IRemarkable ?? Sheet;
         if (rest is null)
@@ -659,6 +665,11 @@ public sealed partial class CueReader : ISourcelessCueReader
     /// <param name="wasQuoted">Whether the return string was surrouned by quotation marks</param>
     private string? GetValue(ReadOnlySpan<char> s, int start, out bool wasQuoted, int end = 0)
     {
+        if(start>= s.Length)
+        {
+            wasQuoted = false;
+            return null;
+        }
         ReadOnlySpan<char> spanny = s.Slice(start, s.Length - start - end).Trim();
         if (spanny.Length == 0)
         {

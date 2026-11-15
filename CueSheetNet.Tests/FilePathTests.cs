@@ -63,7 +63,7 @@ public class FilePathTests
     public void UnixRootedPathIsQualified()
     {
         // bug: FilePath.IsFirstPartQualified checks Length == 0 && [0] == '/', which is never true
-        if (!OperatingSystem.IsLinux())
+        if (OperatingSystem.IsWindows())
             Assert.Inconclusive("Unix-only path syntax");
         var file = AddFile(new CueSheet(), "/home/x/a.flac");
         Assert.IsTrue(file.IsQualified, file.Path);
@@ -73,8 +73,8 @@ public class FilePathTests
     public void BackslashPathIsSplitOnUnix()
     {
         // bug: on Unix both separator constants are '/', so Windows-made sheets keep "CD1\track.flac" as one part
-        if (!OperatingSystem.IsLinux())
-            Assert.Inconclusive("Unix-only behavior");
+        if (Path.AltDirectorySeparatorChar!=Path.DirectorySeparatorChar)
+            Assert.Inconclusive("Behavior only present on platforms with only one directory separator");
         var file = AddFile(new CueSheet(), @"CD1\track.flac");
         Assert.AreEqual("track.flac", file.Name);
     }

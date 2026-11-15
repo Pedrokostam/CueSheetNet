@@ -12,7 +12,7 @@ public class UnexpectedFileException(string previousFile, string unexceptedFile)
 {
 
 }
-public class UnexpectedIndexException() : Exception($"Attempted to add index without a file or track")
+public class UnexpectedIndexException() : CueException($"Attempted to add index without a file or track")
 {
 
 }

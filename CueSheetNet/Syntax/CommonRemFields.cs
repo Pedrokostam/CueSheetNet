@@ -37,9 +37,9 @@ namespace CueSheetNet.Syntax
             {
                 return true;
             }
-            if (rest is null)
+            if (string.IsNullOrWhiteSpace(rest))
             {
-                return true;
+                return false;
             }
             rest= rest.Trim('"');
             if (string.IsNullOrWhiteSpace(rest))
