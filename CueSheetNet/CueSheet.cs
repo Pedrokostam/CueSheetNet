@@ -138,6 +138,10 @@ public class CueSheet : IRemarkable, IEquatable<CueSheet>
         }
         CdTextFile?.ChangeFilePathType(keepPathQualified);
     }
+    public void InsertZerothIndex()
+    {
+
+    }
     /// <summary>
     /// Inserts a new index at the specified time in the given file and track.
     /// </summary>
@@ -156,7 +160,7 @@ public class CueSheet : IRemarkable, IEquatable<CueSheet>
         var allFileIndices = file.GetAllIndices().ToList();
         if (allFileIndices.Exists(x => x.Time == time))
             throw new DuplicateTimeException(time, file);
-        int insertionIndex = allFileIndices.FindIndex(x => x.Time > time);
+        int insertionIndex = allFileIndices.FindIndex(x => x.Time >= time);
         CueTrack expectedTrack;
         int dataInsertionIndex;
         if (insertionIndex < 0) // no time in the given file is greater than the given time
@@ -194,7 +198,7 @@ public class CueSheet : IRemarkable, IEquatable<CueSheet>
 
     public void InsertTrack(CueDataFile file, TrackInsertParameters trackParams, CueTime firstIndex) //null -> last
     {
-        NegativeIndexTimeException.ThrowIfNegative(firstIndex);
+        ArgumentOutOfRangeException.ThrowIfNegative(firstIndex);
         ThrowIfOutsideOfFile(firstIndex, file);
         var allFileIndices = file.GetAllIndices().ToList();
         if (allFileIndices.Exists(x => x.Time == firstIndex))
@@ -270,8 +274,13 @@ public class CueSheet : IRemarkable, IEquatable<CueSheet>
         }
     }
 
+    public void Spit()
+    {
 
-    public void InsertFile(int insertionIndex, string filepath, string type, TrackInsertParameters? trackInsertParameters = null) => InsertFile(insertionIndex, filepath, FileType.FromString(type), trackInsertParameters);
+    }
+
+
+    public void InsertFile(int? insertionIndex, string filepath, string type, TrackInsertParameters? trackInsertParameters = null) => InsertFile(insertionIndex, filepath, FileType.FromString(type), trackInsertParameters);
     public void InsertFile(int? index, string filepath, FileType type, TrackInsertParameters? trackInsertParameters = null)
     {
         CueTime time = CueTime.Zero; // first index in a file MUST be 00:00:00

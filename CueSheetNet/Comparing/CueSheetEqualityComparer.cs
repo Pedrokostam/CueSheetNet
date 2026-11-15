@@ -142,8 +142,8 @@ public record CueSheetEqualityComparer : IEqualityComparer<CueSheet>
                && linkX.Track.Type == linkY.Track.Type
                && PathsEqual(linkX.File, linkY.File)
                && linkX.File.Type == linkY.File.Type
-               && linkX.Track.PreGap == linkY.Track.PreGap
-               && linkX.Track.PostGap == linkY.Track.PostGap;
+               && linkX.Track.Pregap == linkY.Track.Pregap
+               && linkX.Track.Postgap == linkY.Track.Postgap;
         if (!res)
         {
             return res;

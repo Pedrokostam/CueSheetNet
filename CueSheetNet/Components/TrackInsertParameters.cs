@@ -16,6 +16,8 @@ public readonly record struct TrackInsertParameters
     public string? Isrc { get; init; }
     public TrackFlags Flags { get; init; }
     public int Gap { get; init; }
+    public CueTime? Postgap { get; init; }
+    public CueTime? Pregap { get; init; }
 
     public TrackInsertParameters(string type) 
     {

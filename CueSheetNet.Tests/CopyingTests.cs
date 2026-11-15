@@ -13,7 +13,7 @@ public class CopyingTests
         var cue = CueReader.CreateFromFile(sourceSheetPath).Parse();
         using var md5 = MD5.Create();
         var sourceParent = Directory.GetParent(sourceSheetPath);
-        var files = sourceParent.EnumerateFiles().ToArray();
+        var files = sourceParent!.EnumerateFiles().ToArray();
         Dictionary<string, byte[]> hashes = new Dictionary<string, byte[]>(StringComparer.OrdinalIgnoreCase);
         foreach (var file in files)
         {

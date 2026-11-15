@@ -41,6 +41,21 @@ public  class LoadingTests
         Assert.AreEqual("Spandau Ballet", TestItemBallet.Performer);
         Assert.AreEqual("The Multis", TestItemMulti.Performer);
     }
+
+    [TestMethod]
+    public void TracKTitle()
+    {
+        Assert.AreEqual("Aqualung", TestItemJethro.Tracks[0].Title);
+        Assert.AreEqual("Pleasure", TestItemBallet.Tracks[0].Title);
+        Assert.AreEqual("Uno", TestItemMulti.Tracks[0].Title);
+    }
+    [TestMethod]
+    public void TracKPerformer()
+    {
+        Assert.AreEqual("Jethro Tull", TestItemJethro.Tracks[0].Performer);
+        Assert.AreEqual("Spandau Ballet", TestItemBallet.Tracks[0].Performer);
+        Assert.AreEqual("The Multis", TestItemMulti.Tracks[0].Performer);
+    }
     //[TestMethod]
     //public void Performer()
     //{

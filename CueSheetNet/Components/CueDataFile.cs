@@ -143,6 +143,9 @@ public class CueDataFile : FilePath
 
     public override string ToString()
     {
-        return "File " + Position.ToString("D2") + " \"" + Path + "\" " + Type;
+        int position = Position;
+        if (position < 0)
+            return $"FILE (detached) \"{Path}\"";
+        return $"FILE ({Position:d2}) \"{Path}\"";
     }
 }

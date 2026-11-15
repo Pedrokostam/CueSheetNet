@@ -17,15 +17,7 @@ public interface ISourcelessCueReader
     /// <param name="encoding">The settings to set.</param>
     /// <returns>The same instance used to call it, with changed settings.</returns>
     public ISourcelessCueReader WithSettings(CueReaderSettings settings);
-    /// <summary>
-    /// Sets the quotation char to be used when parsing the sheet.
-    /// </summary>
-    /// <remarks>
-    /// The CDRWin standard only allows the double quotes, but if your sheet for some reason uses a different character this may prevent parsing errors.
-    /// </remarks>
-    /// <param name="quote">Single character used instead double quotes.</param>
-    /// <returns>The same instance used to call it, with changed quotation.</returns>
-    public ISourcelessCueReader WithQuotation(char quote);
+
     /// <summary>
     /// Sets the encoding to be used to decode most source types, except <see cref="CueReader.FromString(string)">string</see>.
     /// </summary>
@@ -44,9 +36,12 @@ public interface ISourcelessCueReader
     /// </summary>
     /// <remarks>
     /// By default all absolute (qualified) file paths (FILE, CDTEXT, associated files) will be converted to be relative to the sheet's directory, if possible.
-    /// <br>
+    /// <para>
     /// Setting this to <see langword="true"/> will do the opposite - all paths will be converted to qualified paths, if possible.
-    /// </br>
+    /// </para>
+    /// <para>
+    /// This setting will be preserved in the parsed sheet's settings.
+    /// </para>
     /// </remarks>
     /// <param name="qualified">Whether the paths should be converted to qualified paths whenever possible.</param>
     /// <returns>The same instance used to call it, with the given qualified paths behavior.</returns>

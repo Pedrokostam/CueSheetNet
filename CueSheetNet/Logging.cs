@@ -82,6 +82,11 @@ public static partial class Loggingq
     public static partial void NoMatchingParseProperty(this ILogger logger, string property, string format);
     #endregion // NamePattern
 
+    #region Writing 500-600
+    [LoggerMessage(EventId = 0,Level =LogLevel.Debug, Message = "Skipped writing empty field remark {field}")]
+    public static partial void SkippedEmptyFieldRemark(this ILogger logger, string field);
+    #endregion // Writing 500-600
+
     #region AudioReading 10000-...
     [LoggerMessage(EventId = 10000, Level = LogLevel.Information, Message = "Added audio reader for format {format}")]
     public static partial void AudioReaderAdded(this ILogger logger, string format);

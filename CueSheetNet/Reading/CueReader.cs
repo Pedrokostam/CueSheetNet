@@ -21,7 +21,6 @@ public sealed partial class CueReader : ISourcelessCueReader
     /// <remarks>
     /// To learn more check the more fine-grained methods:
     /// <list type="table">
-    /// <item><see cref="WithQuotation(char)"/></item>
     /// <item><see cref="WithEncoding(Encoding?)"/></item>
     /// <item><see cref="WithQualifiedPaths(bool)"/></item>
     /// </list>
@@ -30,13 +29,6 @@ public sealed partial class CueReader : ISourcelessCueReader
     public CueReader WithSettings(CueReaderSettings settings)
     {
         Settings = settings;
-        return this;
-    }
-
-    /// <inheritdoc cref="ISourcelessCueReader.WithQuotation(char)"/>
-    public CueReader WithQuotation(char quote)
-    {
-        Settings = Settings with { Quotation = quote };
         return this;
     }
 
@@ -136,11 +128,6 @@ public sealed partial class CueReader : ISourcelessCueReader
         return WithSettings(settings);
     }
 
-    ISourcelessCueReader ISourcelessCueReader.WithQuotation(char quote)
-    {
-        return WithQuotation(quote);
-    }
-
     ISourcelessCueReader ISourcelessCueReader.WithEncoding(Encoding? encoding)
     {
         return WithEncoding(encoding);
@@ -153,20 +140,7 @@ public sealed partial class CueReader : ISourcelessCueReader
     #endregion
 
     [AllowNull]
-    public CueReaderSettings Settings
-    {
-        get; set
-        {
-            if (value.Quotation == default)
-            {
-                field = value with { Quotation = CueReaderSettings.DefaultQuotation };
-            }
-            else
-            {
-                field = value;
-            }
-        }
-    }
+    public CueReaderSettings Settings    {        get; set;    }
     internal ILogger Loggerio => Loggingq.ParsingLogger;
 
     private static readonly CultureInfo InvCul = CultureInfo.InvariantCulture;
@@ -511,8 +485,10 @@ public sealed partial class CueReader : ISourcelessCueReader
         TrackFlags flags = TrackFlags.None;
         Span<Range> ranges = stackalloc Range[8];
         line = line[6..];// FLAGS_
-        line.Trim("\"'")
-            .Split(ranges, ' ', StringSplitOptions.RemoveEmptyEntries);
+        line = line.Trim().Trim("\"' \t").Trim();
+        var lim = line
+            .Split(ranges, ' ', StringSplitOptions.RemoveEmptyEntries|StringSplitOptions.TrimEntries);
+        ranges = ranges[..lim]; // remember to slice the range span down from the maximum size
         foreach (var range in ranges)
         {
             var part = line[range];
@@ -607,9 +583,9 @@ public sealed partial class CueReader : ISourcelessCueReader
         }
         // the whole line is guarentedd to be uppercase
         if (gapType.StartsWith("PRE", StringComparison.Ordinal))
-            LastTrack.PreGap = cueTime;
+            LastTrack.Pregap = cueTime;
         else
-            LastTrack.PostGap = cueTime;
+            LastTrack.Postgap = cueTime;
     }
     [TraceExecutionTime]
     private void ParseREM(ReadOnlySpan<char> line)
@@ -640,12 +616,12 @@ public sealed partial class CueReader : ISourcelessCueReader
         ReadOnlySpan<char> spanny = s[start..].Trim();
         string path;
         string type;
-        if (spanny[0] == Settings.Quotation)
+        if (spanny[0] == '"')
         {
             int end = -1;
             for (int i = spanny.Length - 1; i >= 1; i--)
             {
-                if (spanny[i] == Settings.Quotation)
+                if (spanny[i] == '"')
                 {
                     end = i;
                     break;
@@ -690,13 +666,13 @@ public sealed partial class CueReader : ISourcelessCueReader
             return null;
         }
 
-        if (spanny.Length == 2 && spanny[0] == spanny[1] && spanny[0] == Settings.Quotation)
+        if (spanny.Length == 2 && spanny[0] == spanny[1] && spanny[0] == '"')
         {
             wasQuoted = true;
             return null;
         }
 
-        if (spanny.Length > 2 && spanny[^1] == Settings.Quotation && spanny[0] == Settings.Quotation)
+        if (spanny.Length > 2 && spanny[^1] == '"' && spanny[0] == '"')
         {
             wasQuoted = true;
             return spanny[1..^1].ToString();
@@ -742,7 +718,7 @@ public sealed partial class CueReader : ISourcelessCueReader
         return string.Empty;
     }
 
-    [GeneratedRegex(@"(?<PATH>\w+)\s+(?<TYPE>\w*)", RegexOptions.Compiled, 500)]
+    [GeneratedRegex(@"(?<PATH>\S+)\s+(?<TYPE>\w*)", RegexOptions.Compiled, 500)]
     private static partial Regex NonQuotedFileRegex();
 
 

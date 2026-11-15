@@ -24,16 +24,23 @@ public static class CueExtensions
             List<string> filesToDelete = new(cueSheet.Files.Select(x => x.AbsolutePath).OfType<string>());
             if (withAssociatedFiles)
             {
-                filesToDelete.AddRange(cueSheet.AdditionalFiles.Select(x => x.AbsolutePath).OfType<string>());
+                foreach (var item in cueSheet.AdditionalFiles)
+                {
+                    if (item.AbsolutePath is not null)
+                        filesToDelete.Add(item.AbsolutePath);
+                }
+                //filesToDelete.AddRange(cueSheet.AdditionalFiles.Select(x => x.AbsolutePath).OfType<string>());
             }
             filesToDelete.Add(cueSheet.SourceFile.FullName);
             var dirs = filesToDelete.Select(x => Directory.GetParent(x)).OfType<DirectoryInfo>();
             foreach (var item in filesToDelete)
             {
-                if (File.Exists(item))
-                {
-                    File.Delete(item);
-                }
+                var finfo = new FileInfo(item);
+                finfo.Delete();
+                //if (File.Exists(item))
+                //{
+                //    File.Delete(item);
+                //}
             }
             if (removeEmptyDirs)
             {
@@ -91,14 +98,14 @@ public static class CueExtensions
                     filesToMove.Add((item.AbsolutePath!, Path.Combine(newRoot, item.Path)));
                 }
             }
-            foreach (var item in filesToMove)
+            foreach (var (Source, Target) in filesToMove)
             {
-                var targetParent = Directory.GetParent(item.Target) ?? throw new DirectoryNotFoundException($"Specified target path cannot be the root of drive ({item.Target}).");
+                var targetParent = Directory.GetParent(Target) ?? throw new DirectoryNotFoundException($"Specified target path cannot be the root of drive ({Target}).");
                 if (!targetParent.Exists)
                 {
                     targetParent.Create();
                 }
-                File.Copy(item.Source, item.Target);
+                File.Copy(Source, Target);
             }
             clone.SaveAs(newCueSheetPath);
             clone.RefreshFileInfos();

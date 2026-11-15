@@ -106,6 +106,7 @@ public sealed class CueWriter
             case FieldRemark field:
                 if (field.IsValueEmpty)
                 {
+                    Loggerio.SkippedEmptyFieldRemark(field.Field);
                     return false;
                 }
                 return AppendStringify("REM " + field.Field, Replace(field.Value), depth, quoteAllowed: true);
@@ -215,6 +216,7 @@ public sealed class CueWriter
         AppendStringify("PERFORMER", Replace(sheet.Performer), 0, quoteAllowed: true);
         AppendStringify("CATALOG", sheet.Catalog, 0, quoteAllowed: true);
         AppendStringify("CDTEXTFILE", sheet.CdTextFile?.Path, 0, quoteAllowed: true);
+        AppendStringify("SONGWRITER", sheet.Songwriter, 0, quoteAllowed: true);
         AppendRems(sheet.Remarks, 0);
         CueTrack? lastIteratedTrack = null;
         CueDataFile? lastIteratedFile = null;
@@ -231,6 +233,7 @@ public sealed class CueWriter
                 lastIteratedTrack = link.Track;
                 AppendTrackHeader(link.Track);
                 AppendPregap(link.Track);
+                AppendIsrc(link.Track);
                 AppendOptionalFields(link.Track);
                 AppendFlags(link.Track);
                 AppendRems(link.Track.Remarks, depth: 2);
@@ -269,18 +272,24 @@ public sealed class CueWriter
         AppendIndentation(1);
         Builder.Append("TRACK ");
         Builder.Append(track.Position.ToString("D2", InvCul));
-        Builder.AppendLine(" AUDIO");
+        Builder.Append(' ');
+        Builder.AppendLine(track.Type.Identifier);
     }
 
     private void AppendPostgap(CueTrack? track)
     {
-        if (track != null && track.PostGap > CueTime.Zero)
-            AppendStringify("POSTGAP", track.PostGap, 2, quoteAllowed: false);
+        if (track != null && track.Postgap > CueTime.Zero)
+            AppendStringify("POSTGAP", track.Postgap, 2, quoteAllowed: false);
     }
 
     private void AppendISRC(CueTrack track) =>
         AppendStringify("ISRC", track.Isrc, 2, quoteAllowed: true);
 
+    private void AppendIsrc(CueTrack track)
+    {
+        if (!string.IsNullOrWhiteSpace(track.Isrc))
+            AppendStringify("ISRC", track.Isrc, 2, quoteAllowed: true);
+    }
     private void AppendFlags(CueTrack track)
     {
         if (track.Flags != TrackFlags.None)
@@ -289,8 +298,8 @@ public sealed class CueWriter
 
     private void AppendPregap(CueTrack track)
     {
-        if (track.PreGap > CueTime.Zero)
-            AppendStringify("PREGAP", track.PreGap, 2, quoteAllowed: false);
+        if (track.Pregap > CueTime.Zero)
+            AppendStringify("PREGAP", track.Pregap, 2, quoteAllowed: false);
     }
 
     /// <summary>

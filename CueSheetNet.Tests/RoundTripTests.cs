@@ -24,7 +24,9 @@ public class RoundTripTests
         string written = CueWriter.Create().WriteToString(cue);
         string source = File.ReadAllText(path, cue.SourceEncoding!);
 
-        CollectionAssert.AreEqual(Normalize(source), Normalize(written), written);
+        string[] normalizedSource = Normalize(source);
+        string[] normalizedWritten = Normalize(written);
+        CollectionAssert.AreEqual(normalizedSource, normalizedWritten, written);
     }
 
     [TestMethod]
@@ -33,7 +35,8 @@ public class RoundTripTests
     {
         var cue = CueReader.CreateFromFile(Utils.GetFile(folder, fileName)).Parse();
         string first = CueWriter.Create().WriteToString(cue);
-        string second = CueWriter.Create().WriteToString(CueReader.CreateFromString(first).Parse());
+        var cue2 = CueReader.CreateFromString(first).Parse();
+        string second = CueWriter.Create().WriteToString(cue2);
 
         Assert.AreEqual(first, second);
     }

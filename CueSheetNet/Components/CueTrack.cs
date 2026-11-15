@@ -51,9 +51,6 @@ public record CueTrack : IRemarkable
     [AllowNull]
     public string Title { get => _title ?? GetDefaultTitle(); set => _title = value?.NonEmpty(); }
 
-    // Pregap/Postgap values (optional)
-    public CueTime? Pregap { get; set; }
-    public CueTime? Postgap { get; set; }
 
     public TrackType Type { get; internal set; }
 
@@ -69,8 +66,14 @@ public record CueTrack : IRemarkable
     {
         Type = type;
         _sheet = sheet;
-        _indices = new(_sheet.Data, _sheet._indices, x => x.Index, x => ReferenceEquals(x.Track, this) && ReferenceEquals(x.File, this.File));
+        _indices = new(_sheet.Data, _sheet._indices, x => x.Index, GetIndicesOfTrack);
     }
+
+    private bool GetIndicesOfTrack(Link x)
+    {
+        return ReferenceEquals(x.Track, this) && ReferenceEquals(x.File, this.File);
+    }
+
     /// <summary>
     /// Deep copy constructor
     /// </summary>
@@ -104,6 +107,8 @@ public record CueTrack : IRemarkable
             Isrc = insertParameters?.Isrc,
             Flags = insertParameters?.Flags ?? default,
             Gap = insertParameters?.Gap ?? 0,
+            Postgap = insertParameters?.Postgap,
+            Pregap = insertParameters?.Pregap,
         };
     }
 
@@ -164,14 +169,25 @@ public record CueTrack : IRemarkable
         return chain;
     }
 
-    public bool IsEacStyle => _indices[0].IsSplit;
+    public bool IsEacStyle => _sheet.Data.First(x=>ReferenceEquals(x.Track,this)).Index.IsSplit;
 
+    /// <summary>
+    /// EAC-style tracks with the zeroth index in a previous file DO NOT count.
+    /// </summary>
     public bool HasZerothIndex => _indices[0].Position == 0;
 
-    public CueTime PreGap { get; internal set; }
-    public CueTime PostGap { get; internal set; }
+    public CueTime? Pregap { get; set; }
+    public CueTime? Postgap { get; set; }
 
     private string GetDefaultTitle() => $"{Performer} {_sheet.Title} {Position:D2}".Trim();
+    public override string ToString()
+    {
+        if(AbsolutePosition < 0)
+        {
+            return $"TRACK (detached) {Type} - {Title}";
+        }
+        return $"TRACK {Position:d2} {Type} - {Title}";
+    }
 }
 
 #pragma warning restore MA0008 // Add StructLayoutAttribute

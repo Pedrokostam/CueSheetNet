@@ -1,6 +1,9 @@
 ﻿using System.Collections;
+using System.Diagnostics;
 
 namespace CueSheetNet.Components;
+
+[DebuggerDisplay("Count = {Count}")]
 
 internal class ResettableSlice<TSource, TData> : IReadOnlyList<TSource>
     where TData : notnull
@@ -81,8 +84,8 @@ internal class ResettableSlice<TSource, TData> : IReadOnlyList<TSource>
 
         int start = -1;
 
-        var enumSource = source.GetEnumerator();
-        var enumData = data.GetEnumerator();
+        using var enumSource = source.GetEnumerator();
+        using var enumData = data.GetEnumerator();
 
         do
         {
@@ -116,11 +119,11 @@ internal class ResettableSlice<TSource, TData> : IReadOnlyList<TSource>
         int count = 1;
         while (enumSource.MoveNext())
         {
-            count++;
             if (!lastItem.Equals(enumSource.Current))
             {
                 break;
             }
+            count++;
         }
 
         return (start, count);

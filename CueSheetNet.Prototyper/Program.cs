@@ -18,7 +18,14 @@ void xd()
                 options.TimestampFormat = "HH:mm:ss.fff ";
             });
     });
+    var props = typeof(CueSheet).GetProperties( );
+    foreach (var item in props.Where(x => x.PropertyType == typeof(string))){
+        Console.WriteLine(item.Name);
+    }
+    {
 
+    }
+    var t = 12;
     ILogger clog = loggerFactory.CreateLogger("test");
     CueSheetNet.Loggingq.SetLogger(clog);
     var cue = CueReader.CreateFromFile(@"./TestItems/Jethro Tull - Aqualung.cue").Parse();

@@ -11,4 +11,8 @@ public class CueExtraFile : FilePath
     internal CueExtraFile(string filePath, CueSheet sheet, bool keepQualified) : base(filePath, sheet, keepQualified)
     {
     }
+    public override string ToString()
+    {
+        return $"EXTRA \"{Path}\"";
+    }
 }
