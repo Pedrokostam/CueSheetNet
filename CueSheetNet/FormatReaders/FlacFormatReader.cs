@@ -50,11 +50,11 @@ internal sealed class FlacFormatReader : IAudioBinaryStreamFormatReader
         */
         stream.Seek(4, SeekOrigin.Begin);
         if (stream.ReadByte() != 0)
-            throw new InvalidDataFormatException("Invalid FLAC metadata block header");
+            throw new FormatException("Invalid FLAC metadata block header");
         Span<byte> bytes = stackalloc byte[8];
         stream.Seek(18, SeekOrigin.Begin);
         if (stream.Read(bytes) != 8)
-            throw new InvalidDataFormatException("FLAC file cut short");
+            throw new FormatException("FLAC file cut short");
         // SHIFT OPERATORS ARE DONE AFTER ADDING!!!
         // ________ ____0000 00001111 11112222
         int samples =

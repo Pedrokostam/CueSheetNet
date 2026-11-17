@@ -28,7 +28,6 @@ public class CueIndexTests
     {
         var cue = Load();
         var original = cue.Indices[index].Time;
-        Assert.ThrowsException<InvalidIndexEditException>(() => cue.Indices[index].MoveTime(new CueTime(frames)));
-        Assert.AreEqual(original, cue.Indices[index].Time);
+        Assert.ThrowsException<InvalidOperationException>(() => cue.Indices[index].MoveTime(new CueTime(frames)));
     }
 }

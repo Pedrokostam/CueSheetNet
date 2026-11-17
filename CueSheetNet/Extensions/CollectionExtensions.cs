@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CueSheetNet.Components;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
@@ -32,7 +33,12 @@ internal static class StreamExtensions
 /// Provides extension methods for collections and enumerables.
 /// </summary>
 internal static class CollectionExtensions
-{
+{extension(IList<Link> data)
+    {
+        public int IndexOfRef(CueDataFile file) => data.FindIndex(x => ReferenceEquals(x.File, file));
+        public int IndexOfRef(CueTrack track) => data.FindIndex(x => ReferenceEquals(x.Track, track));
+        public int IndexOfRef(CueIndex index) => data.FindIndex(x => ReferenceEquals(x.Index, index));
+    }
     extension<T>(IReadOnlyList<T> readOnlyList) where T : class
     {
         /// <summary>

@@ -16,7 +16,7 @@ public class EditingTests
     public void CannotAddDuplicateIndex()
     {
         var cue = CueSheet.Parse(Utils.GetFile("Equality", "Base.cue"));
-        Assert.ThrowsException<DuplicateTimeException>(() => cue.InsertIndex(cue.Files[0], CueTime.Zero));
+        Assert.ThrowsException<ArgumentException>(() => cue.InsertIndex(cue.Tracks[0], CueTime.Zero));
     }
 
     [TestMethod]
@@ -24,7 +24,7 @@ public class EditingTests
     {
         var cue = CueSheet.Parse(Utils.GetFile("Equality", "Base.cue"));
         var lastTrackLastIndex = cue.Tracks[^1].Indices[^1];
-        cue.InsertIndex(cue.Files[0], lastTrackLastIndex.Time + 11);
+        cue.InsertIndex(cue.Tracks[1], lastTrackLastIndex.Time + 11);
         Assert.IsTrue(cue.Tracks[1].Indices[^1] != lastTrackLastIndex);
         Assert.IsTrue(cue.Tracks[1].Indices[^1].Time > lastTrackLastIndex.Time);
     }
@@ -36,10 +36,13 @@ public class EditingTests
         var lastTrackFirstIndex = cue.Tracks[^1].Indices[0];
         var lastTrackLastIndex = cue.Tracks[^1].Indices[^1];
         var meanTime = (lastTrackFirstIndex.Time + lastTrackLastIndex.Time) / 2;
-        cue.InsertIndex(cue.Files[0], meanTime);
+        //cue.InsertIndex(cue.Tracks[^1], meanTime);
+        cue.InsertIndex(cue.Tracks[1], meanTime);
         Assert.IsTrue(cue.Tracks[1].Indices[0] == lastTrackFirstIndex);
         Assert.IsTrue(cue.Tracks[1].Indices[^1] == lastTrackLastIndex);
+        Assert.IsTrue(cue.Tracks[1].Indices[^1].Position == 2);
         Assert.IsTrue(cue.Tracks[1].Indices[1].Time == meanTime);
+        Assert.IsTrue(cue.Tracks[1].Indices[1].Position == 1);
     }
 
     private const string ManyIndices = """
@@ -91,35 +94,49 @@ public class EditingTests
     {
         // bug: CueSheet.InsertIndex gives Position 1 when the preceding link belongs to another track
         var cue = CueSheet.Parse(Utils.GetFile("Equality", "Base.cue"));
-        cue.InsertIndex(cue.Files[0], new CueTime(2, 59, 0));
+        cue.InsertIndex(cue.Tracks[^1], new CueTime(2, 59, 0));
+        //cue.InsertIndex(cue.Files[0], new CueTime(2, 59, 0));
         AssertPositionsAscending(cue.Tracks[1]);
     }
 
     [TestMethod]
-    public void InsertBeforeFirstIndexDoesNotRenumberTrackStart()
+    public void InsertBeforeFirstIndexRenumbersItToSecond()
     {
-        // bug: CueSheet.InsertIndex silently turns the existing INDEX 01 into INDEX 02
         var cue = CueSheet.ParseFromString(NoZerothIndices);
-        var start = cue.Tracks[2].Indices[0];
+        var previousStart = cue.Tracks[2].Indices[0];
+        var time = new CueTime(2, 0, 0);
         try
         {
-            cue.InsertIndex(cue.Files[0], new CueTime(2, 0, 0));
+            cue.InsertIndex(cue.Tracks[2], time);
         }
         catch (Exception)
         {
             return;
         }
-        Assert.AreEqual(1, start.Position);
+        Assert.AreEqual(time, cue.Tracks[2].Start);
+        Assert.AreEqual(2, previousStart.Position);
     }
 
     [TestMethod]
-    public void InsertAfterEacSplitIndexKeepsFileInTimeOrder()
+    public void SplitIndexIsConsideredAsLimitOfPreviousTrack()
     {
-        // bug: CueSheet.InsertIndex places the link before the split INDEX 00 of the next track
         var cue = CueSheet.Parse(Utils.GetFile("LoadingTests", "MultiFile.cue"));
-        cue.InsertIndex(cue.Files[0], new CueTime(2, 50, 0));
-        var times = cue.Files[0].GetAllIndices().Select(x => x.Time).ToArray();
-        CollectionAssert.AreEqual(times.Order().ToArray(), times);
+        Assert.ThrowsException<InvalidOperationException>(() => cue.InsertIndex(cue.Tracks[0], new CueTime(2, 50, 0)));
+    }
+
+    [TestMethod]
+    public void SplitIndexIsNotConsideredAsLimitOfNext()
+    {
+        var cue = CueSheet.Parse(Utils.GetFile("LoadingTests", "MultiFile.cue"));
+        cue.Indices[2].ShiftTime(10);
+        cue.InsertIndex(cue.Tracks[1], CueTime.Zero);
+    }
+
+    [TestMethod]
+    public void InsertIndexWithInvalidTrackThrows()
+    {
+        var cue = CueSheet.Parse(Utils.GetFile("Equality", "Base.cue"));
+        Assert.ThrowsException<InvalidOperationException>(() => cue.InsertIndex(cue.Tracks[0], new CueTime(15, 0, 0)));
     }
 
     [TestMethod]
@@ -137,6 +154,17 @@ public class EditingTests
         var cue = CueSheet.Parse(Utils.GetFile("Equality", "Base.cue"));
         cue.InsertTrack(cue.Files[0], new TrackInsertParameters("AUDIO"), new CueTime(5, 0, 0));
         Assert.AreEqual(3, cue.Tracks.Count);
+    }
+
+    [TestMethod]
+    public void CueIndexMoveChecksLimits()
+    {
+        // bug: throws from CueDataFile.NextFile
+        var cue = CueSheet.Parse(Utils.GetFile("Equality", "Base.cue"));
+        cue.Indices[0].ShiftTime(75);
+        cue.Indices[^1].ShiftTime(75);
+        Assert.ThrowsException<InvalidOperationException>(() => cue.Indices[1].MoveTime(cue.Indices[0].Time), "Moved to time of preceding");
+        Assert.ThrowsException<InvalidOperationException>(() => cue.Indices[1].MoveTime(cue.Indices[2].Time), "Moved to time of following");
     }
 
     [TestMethod]
@@ -181,13 +209,48 @@ public class EditingTests
     public void InsertIndexWithNegativeTimeThrows()
     {
         var cue = CueSheet.Parse(Utils.GetFile("Equality", "Base.cue"));
-        Assert.ThrowsException<ArgumentOutOfRangeException>(() => cue.InsertIndex(cue.Files[0], new CueTime(-1)));
+        Assert.ThrowsException<ArgumentOutOfRangeException>(() => cue.InsertIndex(cue.Tracks[0], new CueTime(-1)));
     }
 
     [TestMethod]
-    public void InsertIndexWithTrackFromOtherFileThrows()
+    public void Helion()
     {
-        var cue = CueSheet.Parse(Utils.GetFile("LoadingTests", "MultiFile.cue"));
-        Assert.ThrowsException<ArgumentException>(() => cue.InsertIndex(cue.Files[1], new CueTime(1, 0, 0), cue.Tracks[0]));
+        var cue = CueSheet.Parse(Utils.GetFile("LoadingTests", "Judas Priest - Screaming For Vengeance.cue"));
+        var electricEyeStart = cue.Tracks[1].Start;
+        Assert.AreEqual(10, cue.Tracks.Count);
+        cue.RemoveTrack(1, preserveGap: true);
+        cue.Tracks[0].Title = "The Hellion / Electric Eye";
+        Assert.AreEqual(3, cue.Tracks[1].Position);
+        Assert.AreEqual(9, cue.Tracks.Count);
+        cue.Tracks[0].Title = "The Hellion";
+        cue.InsertTrack(cue.Files[0], new TrackInsertParameters() { Title = "Electric Eye", }, electricEyeStart);
+        Assert.AreEqual(2,cue.Tracks[1].Position);
+        Assert.AreEqual(3,cue.Tracks[2].Position);
+        Assert.AreEqual(10, cue.Tracks.Count);
     }
+
+    [TestMethod]
+    public void Helion10()
+    {
+        var cue = CueSheet.Parse(Utils.GetFile("LoadingTests", "Judas Priest - Screaming For Vengeance.cue"));
+        int pos = 10;
+        foreach (var track in cue.Tracks)
+        {
+            track.SetPosition(pos);
+            pos += 10;
+        }
+        Assert.AreEqual(10, cue.Tracks.Count);
+        CollectionAssert.AreEqual(new int[] { 10, 20, 30, 40, 50, 60, 70, 80, 90, 100 }, cue.Tracks.Select(x => x.Position).ToArray());
+        var electricEyeStart = cue.Tracks[1].Start;
+        cue.RemoveTrack(1, preserveGap: true);
+        Assert.AreEqual(9, cue.Tracks.Count);
+        cue.Tracks[0].Title = "The Hellion / Electric Eye";
+        Assert.AreEqual(30, cue.Tracks[1].Position);
+        cue.Tracks[0].Title = "The Hellion";
+        cue.InsertTrack(cue.Files[0], new TrackInsertParameters() { Title = "Electric Eye",Position=20 }, electricEyeStart);
+        Assert.AreEqual(20,cue.Tracks[1].Position);
+        Assert.AreEqual(30,cue.Tracks[2].Position);
+        Assert.AreEqual(10, cue.Tracks.Count);
+    }
+
 }

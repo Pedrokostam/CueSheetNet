@@ -15,7 +15,7 @@ public readonly record struct TrackInsertParameters
     public string? Songwriter { get; init; }
     public string? Isrc { get; init; }
     public TrackFlags Flags { get; init; }
-    public int Gap { get; init; }
+    public int? Position { get; init; }
     public CueTime? Postgap { get; init; }
     public CueTime? Pregap { get; init; }
 

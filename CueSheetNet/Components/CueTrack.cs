@@ -102,7 +102,7 @@ public class CueTrack : IRemarkable
             Songwriter = insertParameters?.Songwriter,
             Isrc = insertParameters?.Isrc,
             Flags = insertParameters?.Flags ?? default,
-            Gap = insertParameters?.Gap ?? 0,
+            Gap = 0,
             Postgap = insertParameters?.Postgap,
             Pregap = insertParameters?.Pregap,
         };
@@ -177,6 +177,26 @@ public class CueTrack : IRemarkable
 
     public CueTime? Pregap { get; set; }
     public CueTime? Postgap { get; set; }
+
+    /// <summary>
+    /// Changes the value of the track's position.
+    /// <para>
+    /// Does not change its absolute position in the sheet!
+    /// </para>
+    /// <para>
+    /// This is intended to introduce gaps in track numbering only.
+    /// </para>
+    /// </summary>
+    /// <param name="newPosition"></param>
+    public void SetPosition(int newPosition)
+    {
+        if(newPosition < AbsolutePosition+1)
+        {
+            throw new InvalidOperationException("Cannot set track's position below its natural index");
+        }
+        Gap = newPosition - AbsolutePosition - 1;
+        _sheet.NormalizeGaps(0, AbsolutePosition + 1);
+    }
 
     private string GetDefaultTitle() => $"{Performer} {_sheet.Title} {Position:D2}".Trim();
     public override string ToString()

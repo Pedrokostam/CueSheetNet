@@ -59,7 +59,7 @@ public class CueSheet : IRemarkable, IEquatable<CueSheet>
         _additionalFiles = new ResettableCollection<CueExtraFile>(() => AdditionalFileHelper.FindExtraFiles(this));
         SourceFile = sourceFile;
     }
-  
+
 
     internal readonly ResettableDependentCollection<CueTrack, Link> _tracks;
     internal readonly ResettableDependentCollection<CueDataFile, Link> _files;
@@ -142,6 +142,76 @@ public class CueSheet : IRemarkable, IEquatable<CueSheet>
     {
 
     }
+
+    internal (CueTime? lower, CueTime? upper) GetLimitsOfTrack(CueTrack track)
+    {
+        var prevTrackFile = track.PreviousTrackInFile();
+        var nextTrackFile = track.NextTrackInFile();
+        var lowerTimeLimit = prevTrackFile?.Indices[^1].Time;
+        var upperTimeLimit = nextTrackFile?.Indices[^1].Time;
+        if (upperTimeLimit is null)
+        {
+            if (!ReferenceEquals(track.File.GetAllIndices().Last(), track.Indices[^1]))
+            {
+                // If there are no other tracks in the file,
+                // but the last index of the file is not the last index of track (file contains split index)
+                // set that index as the limit
+                upperTimeLimit = track.File.GetAllIndices().Last().Time;
+            }
+            else if (Settings.VerifyAgainstFileDuration && track.File.Meta?.CueDuration is CueTime duration)
+            {
+                upperTimeLimit = duration;
+            }
+        }
+
+        return (lowerTimeLimit, upperTimeLimit);
+    }
+    public void InsertIndex(CueTrack track, CueTime time)
+    {
+        ArgumentNullException.ThrowIfNull(track);
+        ArgumentOutOfRangeException.ThrowIfNegative(time);
+        (var lowerTimeLimit, var upperTimeLimit) = GetLimitsOfTrack(track);
+        if (time > upperTimeLimit || time < lowerTimeLimit)
+        {
+            throw new InvalidOperationException($"Time {time} is outside of tracks {track} range. Limits are {lowerTimeLimit?.ToString() ?? "None"} to {upperTimeLimit?.ToString() ?? "None"}");
+        }
+        var prevFile = track.File.PreviousFile();
+        bool isTrackSplit = prevFile?.GetAllIndices().LastOrDefault()?.IsSplit ?? false;
+        int insertionIndex = 0;
+        int pos = 1;
+        bool trackReached = false;
+        for (insertionIndex = 0; insertionIndex < Data.Count; insertionIndex++)
+        {
+            if (!ReferenceEquals(Data[insertionIndex].Track, track))
+            {
+                if (trackReached)
+                {
+                    break;
+                }
+                continue;
+            }
+            trackReached = true;
+            pos = Data[insertionIndex].Index.Position;
+            if (Data[insertionIndex].Index.Time == time)
+            {
+                throw new ArgumentException($"Cannot insert duplicate index {time}", nameof(time));
+            }
+            if (Data[insertionIndex].Index.Time > time)
+            {
+                break;
+            }
+        }
+        Data.Insert(insertionIndex, new Link(track.File, track, new CueIndex(pos, time, this)));
+        Invalidate();
+        for (int j = insertionIndex + 1; j < Data.Count; j++)
+        {
+            if (!ReferenceEquals(Data[j].Track, track))
+            {
+                break;
+            }
+            Data[j].Index.Position++;
+        }
+    }
     /// <summary>
     /// Inserts a new index at the specified time in the given file and track.
     /// </summary>
@@ -151,7 +221,7 @@ public class CueSheet : IRemarkable, IEquatable<CueSheet>
     /// <exception cref="ArgumentException">Thrown when the specified track does not belong to the given file.</exception>
     /// <exception cref="DuplicateTimeException">Thrown when an index with the specified time already exists in the file.</exception>
     /// <exception cref="IndexOutsideOfTrackException">Thrown when the index is inserted outside the bounds of the specified track.</exception>
-    public void InsertIndex(CueDataFile file, CueTime time, CueTrack? track = null)
+    public void InsertIndexs(CueDataFile file, CueTime time, CueTrack? track = null)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(time);
         ThrowIfOutsideOfFile(time, file);
@@ -159,12 +229,16 @@ public class CueSheet : IRemarkable, IEquatable<CueSheet>
             throw new ArgumentException($"Track {track} does not belong to {file}");
         var allFileIndices = file.GetAllIndices().ToList();
         if (allFileIndices.Exists(x => x.Time == time))
-            throw new DuplicateTimeException(time, file);
+            throw new ArgumentException($"Indices in a file must be unique (file {file.Path} already has an index with time {time})");
         int insertionIndex = allFileIndices.FindIndex(x => x.Time >= time);
         CueTrack expectedTrack;
         int dataInsertionIndex;
         if (insertionIndex < 0) // no time in the given file is greater than the given time
         {
+            if (allFileIndices.Count > 0 && allFileIndices[^1].IsSplit)
+            {
+                throw new InvalidOperationException($"Cannot add an index after the EAC-style index: {allFileIndices[^1]}");
+            }
             expectedTrack = file.Tracks[^1]; // the index is being added to the last track
             dataInsertionIndex = Data.FindIndex(x => ReferenceEquals(x.Index, expectedTrack.Indices[^1])) + 1;
         }
@@ -176,7 +250,7 @@ public class CueSheet : IRemarkable, IEquatable<CueSheet>
         }
         track ??= expectedTrack;
         if (!ReferenceEquals(track, expectedTrack))
-            throw new IndexOutsideOfTrackException(track, time);
+            throw new InvalidOperationException($"Time {time} is outside of tracks {track} range.");
         var precedingCueIndexPosition = dataInsertionIndex switch
         {
             0 => 0,
@@ -202,7 +276,7 @@ public class CueSheet : IRemarkable, IEquatable<CueSheet>
         ThrowIfOutsideOfFile(firstIndex, file);
         var allFileIndices = file.GetAllIndices().ToList();
         if (allFileIndices.Exists(x => x.Time == firstIndex))
-            throw new DuplicateTimeException(firstIndex, file);
+            throw new ArgumentException("Cannot insert a new track at an index that is already specified in the file");
         int insertionIndex = allFileIndices.FindIndex(x => x.Time > firstIndex);
         int dataInsertionIndex;
         if (insertionIndex < 0) // the track is put at the end of the file
@@ -227,10 +301,15 @@ public class CueSheet : IRemarkable, IEquatable<CueSheet>
                     if (!Data[dataInsertionIndex - 1].Index.IsSplit)
                     {
                         // if not split - invalid operation
-                        throw new InvalidTrackPlacementException(firstIndex);
+                        throw new InvalidOperationException("Cannot insert a track in the middle of another track");
                     }
                 }
             }
+        }
+        CueTrack? prevTrack = dataInsertionIndex > 0 ? Data[dataInsertionIndex - 1].Track : null;
+        if (prevTrack is not null && trackParams.Position is int desiredPosition && desiredPosition < prevTrack.AbsolutePosition + 1)
+        {
+            throw new InvalidOperationException("Cannot set track's position below its natural index");
         }
         var link = new Link(file,
                             CueTrack.FromInsertionParams(trackParams, this),
@@ -242,38 +321,116 @@ public class CueSheet : IRemarkable, IEquatable<CueSheet>
             Data[dataInsertionIndex - 1] = Data[dataInsertionIndex - 1] with { Track = link.Track };
         }
         NormalizeGaps(-1, link.Track.AbsolutePosition);
+        if (trackParams.Position is not null)
+        {
+
+            link.Track.SetPosition(trackParams.Position.Value);
+        }
     }
 
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="from">Not inclusive</param>
-    /// <param name="change"></param>
-    private void NormalizeGaps(int change, int inclusiveStartIndex = 0)
+    internal void NormalizeGaps(int change, int startIndex)
     {
-        if (_tracks.Count == 0 || _tracks.Count < inclusiveStartIndex)
+        int prevPosition = startIndex > 0 ? _tracks[startIndex - 1].Position : 0;
+        for (int i = startIndex; i < _tracks.Count; i++)
+        {
+            var track = _tracks[i];
+            int newGap = track.Gap + change;
+            if (i + newGap + 1 <= prevPosition)
+                newGap = prevPosition - i; // same as previous track's gap, so Position = prevPosition + 1
+            track.Gap = newGap;
+            prevPosition = i + newGap + 1;
+        }
+    }
+
+    ///// <summary>
+    ///// 
+    ///// </summary>
+    ///// <param name="from">Not inclusive</param>
+    ///// <param name="change"></param>
+    //private void NormalizeGaps(int change, int inclusiveStartIndex = 0)
+    //{
+    //    if (_tracks.Count == 0 || _tracks.Count < inclusiveStartIndex)
+    //    {
+    //        return;
+    //    }
+    //    int gap = 0;
+    //    for (int i = 0; i < _tracks.Count; i++)
+    //    {
+    //        var track = _tracks[i];
+    //        if (i > inclusiveStartIndex)
+    //        {
+    //            track.Gap += change;
+    //        }
+
+    //    }
+    //}
+
+    public void RemoveIndex(CueTrack track, int position)
+    {
+        var index = track.Indices.FirstOrDefault(x => x.Position == position) ?? throw new ArgumentException($"Index {position} does not exist in track {track}");
+        RemoveIndex(index);
+    }
+    public void RemoveIndex(CueTrack track, CueTime time)
+    {
+        var index = track.Indices.FirstOrDefault(x => x.Time == time) ?? throw new ArgumentException($"Index {time} does not exist in track {track}");
+        RemoveIndex(index);
+    }
+    public void RemoveIndex(CueIndex index)
+    {
+        var track = index.Track;
+        if (track.Indices.Count == 1)
+        {
+            throw new InvalidOperationException("Cannot remove track's only index - remove the track instead");
+        }
+        Data.RemoveAt(index.AbsolutePosition);
+        if (index.Position == 0)
         {
             return;
         }
-        int gap = 0;
-        for (int i = 0; i < _tracks.Count; i++)
+        foreach (var trackIndex in track.Indices)
         {
-            var track = _tracks[i];
-            if (gap == 0)
+            if (trackIndex.Position > index.Position)
             {
-                gap = track.Gap;
-            }
-            if (i < inclusiveStartIndex)
-            {
-                track.Gap = gap;
-            }
-            else
-            {
-                track.Gap = gap + change;
+                trackIndex.Position--;
             }
         }
+        Invalidate();
     }
-
+    public void RemoveTrack(int absolutePosition, bool preserveGap = false)
+    {
+        var track = Tracks.FirstOrDefault(x => x.AbsolutePosition == absolutePosition) ?? throw new ArgumentException($"Could not find track at position {absolutePosition} (note: do not use {nameof(CueTrack.Position)}, use {nameof(CueTrack.AbsolutePosition)}");
+        RemoveTrack(track, preserveGap);
+    }
+    public void RemoveTrack(CueTrack track, bool preserveGap = false)
+    {
+        var file = track.File;
+        int absIndex = track.AbsolutePosition;
+        if (file.Tracks.Count == 1)
+        {
+            throw new InvalidOperationException("Cannot remove file's only track - remove the file instead");
+        }
+        Data.RemoveAll(x => ReferenceEquals(x.Track, track));
+        if (preserveGap)
+        {
+            NormalizeGaps(1, absIndex);
+        }
+        Invalidate();
+    }
+    public void RemoveFile(CueDataFile file, bool preserveGaps = false)
+    {
+        if (Files.Count == 1)
+        {
+            throw new InvalidOperationException("Cannot remove sheet's only file - add another file first");
+        }
+        int trackBefore = file.PreviousFile()?.Tracks[^1].AbsolutePosition ?? 0;
+        int gap = file.Tracks.Count;
+        Data.RemoveAll(x => ReferenceEquals(x.File, file));
+        if (preserveGaps)
+        {
+            NormalizeGaps(gap, trackBefore);
+        }
+        Invalidate();
+    }
     public void Spit()
     {
 
@@ -286,7 +443,7 @@ public class CueSheet : IRemarkable, IEquatable<CueSheet>
         CueTime time = CueTime.Zero; // first index in a file MUST be 00:00:00
         var fileToAdd = new CueDataFile(filepath, this, type);
         ThrowIfOutsideOfFile(time, fileToAdd);
-        NegativeIndexTimeException.ThrowIfNegative(time);
+        ArgumentOutOfRangeException.ThrowIfNegative(time);
         int fileInsertionIndex = index ?? _files.Count;
         ArgumentOutOfRangeException.ThrowIfGreaterThan(fileInsertionIndex, _files.Count, nameof(index));
         ArgumentOutOfRangeException.ThrowIfNegative(fileInsertionIndex, nameof(index));
@@ -320,7 +477,8 @@ public class CueSheet : IRemarkable, IEquatable<CueSheet>
 
     internal void AddIndex(CueIndex index, CueTrack track, CueDataFile file)
     {
-        NegativeIndexTimeException.ThrowIfNegative(index);
+        ArgumentOutOfRangeException.ThrowIfNegative(index.Time);
+        ArgumentOutOfRangeException.ThrowIfNegative(index.Position);
         if (Data.Count == 0)
         {
             AddFirstIndex(index, track!, file!);
@@ -336,14 +494,14 @@ public class CueSheet : IRemarkable, IEquatable<CueSheet>
         if (sameTrack)
         {
             if (lastData.Index.Position != index.Position - 1)
-                throw new InvalidIndexPositionException(lastData.Index, index);
+                throw new InvalidOperationException("Lower position index must not occur after higher higher indices");
 
             if (!ReferenceEquals(lastData.File, file))
             {
                 if (lastData.Index.Position != 0)
                 {
                     // indices of one track split across files (and not in an eac compatible way)
-                    throw new TrackSplitAcrossFileException(track);
+                    throw new InvalidOperationException("Adding a track index to another file is only possible for zeroth indices");
                 }
                 // EAC - new index belongs to the same track, but different file
                 markPrevAsSplit = true;
@@ -351,14 +509,14 @@ public class CueSheet : IRemarkable, IEquatable<CueSheet>
         }
         else
         {
-            if (index.Position is < 0 or > 1)
-                throw new InvalidIndexPositionException(index);
+            if (index.Position > 1)
+                throw new ArgumentException("Track's first index must have position equal to either 0 or 1", nameof(index));
         }
 
         if (ReferenceEquals(lastData.File, file))
         {
             if (lastData.Index.Time >= index.Time)
-                throw new InvalidIndexTimeException(lastData.Index, index);
+                throw new ArgumentException("Added index must be have later time than preceding");
         }
         if (markPrevAsSplit)
             lastData.Index.IsSplit = true;
@@ -367,13 +525,12 @@ public class CueSheet : IRemarkable, IEquatable<CueSheet>
 
     private void AddFirstIndex(CueIndex index, CueTrack track, CueDataFile file)
     {
-        if (track is null || file is null)
-        {
-            throw new UnexpectedIndexException();
-        }
+        ArgumentNullException.ThrowIfNull(track);
+        ArgumentNullException.ThrowIfNull(file);
+        ArgumentNullException.ThrowIfNull(index);
         if (index.Position is < 0 or > 1)
         {
-            throw new InvalidIndexPositionException(index);
+            throw new ArgumentException("First index must be either 0 or 1", nameof(index));
         }
         ThrowIfOutsideOfFile(index, file);
         Data.Add(new(file, track, index));
@@ -390,7 +547,7 @@ public class CueSheet : IRemarkable, IEquatable<CueSheet>
     /// </summary>
     /// <param name="time">The cue time to validate against the file duration.</param>
     /// <param name="file">The cue data file containing metadata for validation.</param>
-    /// <exception cref="IndexOutsideOfFileException">Thrown when the specified time is outside the bounds of the file duration.</exception>
+    /// <exception cref="ArgumentException">Thrown when the specified time is outside the bounds of the file duration.</exception>
     private void ThrowIfOutsideOfFile(CueTime time, CueDataFile? file)
     {
         if (!Settings.VerifyAgainstFileDuration || file?.Meta is null)
@@ -400,7 +557,7 @@ public class CueSheet : IRemarkable, IEquatable<CueSheet>
         if (file.Meta.Value.CueDuration <= time)
         {
 
-            throw new IndexOutsideOfFileException(file.Name, time);
+            throw new ArgumentException($"Time {time} is outside of file {file.Path} range (duration is: {file.Meta.Value.CueDuration})");
         }
     }
 

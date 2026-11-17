@@ -1,4 +1,5 @@
 ﻿using CueSheetNet.Components;
+using CueSheetNet.Exceptions;
 using CueSheetNet.Extensions;
 using CueSheetNet.Reading;
 using CueSheetNet.Syntax;
@@ -210,10 +211,16 @@ public sealed partial class CueReader : ISourcelessCueReader
                 _ => ParseBytes(bytes.ToArray()),
             };
         }
+        catch (CueParsingException c)
+        {
+            error = c;
+            throw;
+        }
         catch (Exception e)
         {
-            error = e;
-            throw;
+
+            error = new CueParsingException("Parsing failed", CurrentLineIndex, "", Source, e);
+            throw error;
         }
         finally
         {
@@ -289,6 +296,7 @@ public sealed partial class CueReader : ISourcelessCueReader
     [TraceExecutionTime("Parsing Cue Sheet", 2)]
     private CueSheet ParseString(ReadOnlySpan<char> txtRead)
     {
+
         Sheet ??= new();
         foreach (var lineRaw in txtRead.EnumerateLines())
         {
@@ -298,51 +306,58 @@ public sealed partial class CueReader : ISourcelessCueReader
             {
                 continue;
             }
-            string value = GetKeyword(line).ToUpperInvariant();
+            string value = GetKeyword(line, out _).ToUpperInvariant();
             if (!Enum.TryParse(value, out Keywords key))
             {
                 // non breaking space ?!
-                throw new FormatException($"Unknown keyword {value} at line {CurrentLineIndex}");
+                ThrowParseError($"Unknown keyword {value}", line);
             }
-            switch (key)
+            try
             {
-                case Keywords.REM:
-                    ParseREM(line);
-                    break;
-                case Keywords.PERFORMER:
-                    ParsePerformer(line);
-                    break;
-                case Keywords.TITLE:
-                    ParseTitle(line);
-                    break;
-                case Keywords.FILE:
-                    ParseFile(line);
-                    break;
-                case Keywords.CDTEXTFILE:
-                    ParseCdTextFile(line);
-                    break;
-                case Keywords.SONGWRITER:
-                    ParseSongwriter(line);
-                    break;
-                case Keywords.TRACK:
-                    ParseTrack(line);
-                    break;
-                case Keywords.FLAGS:
-                    ParseFlags(line);
-                    break;
-                case Keywords.INDEX:
-                    ParseIndex(line);
-                    break;
-                case Keywords.POSTGAP:
-                case Keywords.PREGAP:
-                    ParseGap(line, value);
-                    break;
-                case Keywords.ISRC:
-                    ParseISRC(line);
-                    break;
-                case Keywords.CATALOG:
-                    ParseCatalog(line);
-                    break;
+                switch (key)
+                {
+                    case Keywords.REM:
+                        ParseREM(line);
+                        break;
+                    case Keywords.PERFORMER:
+                        ParsePerformer(line);
+                        break;
+                    case Keywords.TITLE:
+                        ParseTitle(line);
+                        break;
+                    case Keywords.FILE:
+                        ParseFile(line);
+                        break;
+                    case Keywords.CDTEXTFILE:
+                        ParseCdTextFile(line);
+                        break;
+                    case Keywords.SONGWRITER:
+                        ParseSongwriter(line);
+                        break;
+                    case Keywords.TRACK:
+                        ParseTrack(line);
+                        break;
+                    case Keywords.FLAGS:
+                        ParseFlags(line);
+                        break;
+                    case Keywords.INDEX:
+                        ParseIndex(line);
+                        break;
+                    case Keywords.POSTGAP:
+                    case Keywords.PREGAP:
+                        ParseGap(line, value);
+                        break;
+                    case Keywords.ISRC:
+                        ParseISRC(line);
+                        break;
+                    case Keywords.CATALOG:
+                        ParseCatalog(line);
+                        break;
+                }
+            }
+            catch (Exception e) when (e is not CueParsingException)
+            {
+                ThrowParseError($"Error when constructing the sheet: {e.Message}", line, e);
             }
         }
         Sheet.SourceEncoding = UsedEncoding;
@@ -422,7 +437,7 @@ public sealed partial class CueReader : ISourcelessCueReader
     [TraceExecutionTime]
     private void ParseTrack(ReadOnlySpan<char> line)
     {
-        string num = GetKeyword(line, 6); // TRACK_
+        string num = GetKeyword(line, out int end, 6); // TRACK_
         int? desired = null;
         if (!int.TryParse(num, NumberStyles.Integer, InvCul, out int number))
         {
@@ -432,7 +447,11 @@ public sealed partial class CueReader : ISourcelessCueReader
         {
             desired = number;
         }
-        string type = GetKeyword(line, 6 + 1 + num.Length);
+        if (end < 0)
+        {
+            ThrowParseError("Invalid TRACK line - nothing comes after the keyword", line);
+        }
+        string type = GetKeyword(line, out _, end);
         int absPos = CountTracks() + 1;
         int gap = desired switch
         {
@@ -540,30 +559,35 @@ public sealed partial class CueReader : ISourcelessCueReader
                 Loggerio.PrematureIndex(CurrentLineIndex, line.ToString());
                 return;
             }
-            throw new NotImplementedException("index before track");
+            ThrowParseError($"Unexpected INDEX before any TRACK", line);
         }
-        string number = GetKeyword(line, 6); // INDEX_
-        if (!int.TryParse(number, NumberStyles.Integer, InvCul, out int num))
+        string number = GetKeyword(line, out int end, 6); // INDEX_
+        int num = 0;
+        try
         {
-            //Logger.LogError("Incorrect Index number format at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
-            throw new FormatException(
-                $"Incorrect Position number format at line {CurrentLineIndex}: {line}"
-            );
+            num = int.Parse(number, NumberStyles.Integer, InvCul);
         }
-        if(line.Length==6 + number.Length)
+        catch (Exception e)
         {
-            throw new NotImplementedException("trucnated index");
+            ThrowParseError("Invalid value for index position", line, e);
         }
-        if (!CueTime.TryParse(line.Slice(6 + number.Length + 1), InvCul, out CueTime cueTime))
+        if (end < 0)
         {
-            //Logger.LogError("Incorrect Index format at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
-            throw new FormatException($"Incorrect Position format at line {CurrentLineIndex}: {line}");
+            ThrowParseError("Index time position missing", line);
         }
-        var index = new CueIndex(num, cueTime, Sheet);
-        Sheet.AddIndex(index, LastTrack, LastFile);
-        // reset both - until a new track/file comes along we should use the last added stuff in Data
-        _currentFile = null;
-        _currentTrack = null;
+        try
+        {
+            var cueTime = CueTime.Parse(line[end..], InvCul);
+            var index = new CueIndex(num, cueTime, Sheet);
+            Sheet.AddIndex(index, LastTrack, LastFile);
+            // reset both - until a new track/file comes along we should use the last added stuff in Data
+            _currentFile = null;
+            _currentTrack = null;
+        }
+        catch (Exception e)
+        {
+            ThrowParseError("Invalid value for cue time", line, e);
+        }
     }
 
     [TraceExecutionTime]
@@ -576,29 +600,34 @@ public sealed partial class CueReader : ISourcelessCueReader
                 Loggerio.PrematureGap(CurrentLineIndex, line.ToString());
                 return;
             }
-            throw new NotImplementedException("gap before track/file");
+            ThrowParseError($"Unexpected {gapType.ToUpperInvariant()}GAP before any TRACK", line);
         }
 
-        string type = GetKeyword(line, 0);
-        if (!CueTime.TryParse(line.Slice(type.Length + 1), InvCul, out CueTime cueTime))
+        string type = GetKeyword(line, out int end, 0);
+        if (end < 0)
         {
-            //Logger.LogError("Incorrect Gap format at line {Line number}: \"{Line}\"", CurrentLineIndex, CurrentLine);
-            throw new FormatException($"Incorrect Gap format at line {CurrentLineIndex}: {line}");
+            ThrowParseError("Invalid GAP line - nothing comes after the keyword", line);
         }
-        // the whole line is guarentedd to be uppercase
-        if (gapType.StartsWith("PRE", StringComparison.Ordinal))
-            LastTrack.Pregap = cueTime;
-        else
-            LastTrack.Postgap = cueTime;
+        try
+        {
+            var cueTime = CueTime.Parse(line[end..], InvCul);
+            if (gapType.StartsWith("PRE", StringComparison.Ordinal))
+                LastTrack!.Pregap = cueTime;
+            else
+                LastTrack!.Postgap = cueTime;
+        }
+        catch (Exception e)
+        {
+            ThrowParseError("Invalid value for gap time", line, e);
+        }
     }
     [TraceExecutionTime]
     private void ParseREM(ReadOnlySpan<char> line)
     {
-        string firstWord = GetKeyword(line, 4);
+        string firstWord = GetKeyword(line, out int end, 4);
         // Since there may be spaces between REM and Keyword we cannot hardcode value start
-        int valueStart = line.IndexOf(firstWord,StringComparison.Ordinal) + firstWord.Length + 1;
         firstWord = firstWord.ToUpperInvariant();
-        string? rest = GetValue(line, valueStart);
+        string? rest = end < 0 ? null :  GetValue(line, end);
         IRemarkable remmy = LastTrack as IRemarkable ?? Sheet;
         if (rest is null)
         {
@@ -665,7 +694,7 @@ public sealed partial class CueReader : ISourcelessCueReader
     /// <param name="wasQuoted">Whether the return string was surrouned by quotation marks</param>
     private string? GetValue(ReadOnlySpan<char> s, int start, out bool wasQuoted, int end = 0)
     {
-        if(start>= s.Length)
+        if (start >= s.Length)
         {
             wasQuoted = false;
             return null;
@@ -698,19 +727,39 @@ public sealed partial class CueReader : ISourcelessCueReader
     /// <param name="s">String to get value from</param>
     /// <param name="startIndex">Index from which the word will be sought</param>
     /// <param name="maxSearchLength">Maximum search length. If exceeded, empty string is returned</param>
+    /// <param name="end">Denotes the position of the first character after the found word, or -1 if nothing follows</param>
     /// <returns>String of characters from <paramref name="startIndex"/> to first whitespace, or empty string if no whitespace has been detected in the first <paramref name="maxSearchLength"/> characters</returns>
-    internal static string GetKeyword(ReadOnlySpan<char> s, int startIndex = 0, int maxSearchLength = -1)
+    internal static string GetKeyword(ReadOnlySpan<char> s, out int end, int startIndex = 0, int maxSearchLength = -1)
     {
         if (maxSearchLength <= 0)
             maxSearchLength = s.Length;
         maxSearchLength = maxSearchLength.Clamp(0, s.Length - startIndex);
-        ReadOnlySpan<char> spanish = s.Slice(startIndex, maxSearchLength).TrimStart();
-        for (int i = 0; i < spanish.Length; i++)
+        int start = -1;
+        end = -1;
+        for (int i = startIndex; i < startIndex + maxSearchLength; i++)
         {
-            if (char.IsWhiteSpace(spanish[i]))
-                return spanish[..i].ToString();
+            char czarek = s[i];
+            if (start < 0)
+            {
+                if (char.IsWhiteSpace(czarek))
+                    continue;
+                start = i;
+            }
+            else
+            {
+                if (!char.IsWhiteSpace(czarek))
+                    continue;
+                end = i;
+                break;
+            }
+
         }
-        return spanish.ToString();
+        if (end < 0)
+        {
+            return s[start..].ToString();
+        }
+        return s[start..end].ToString();
+
     }
 
     /// <summary>
@@ -728,6 +777,18 @@ public sealed partial class CueReader : ISourcelessCueReader
         }
         return string.Empty;
     }
+
+    [DoesNotReturn]
+    private void ThrowParseError(string message, string line, Exception? innerException = null)
+    {
+        throw new CueParsingException(message, this.CurrentLineIndex, line, Source, innerException);
+    }
+    [DoesNotReturn]
+    private void ThrowParseError(string message, ReadOnlySpan<char> line, Exception? innerException = null)
+    {
+        throw new CueParsingException(message, this.CurrentLineIndex, line.ToString(), Source, innerException);
+    }
+
 
     [GeneratedRegex(@"(?<PATH>\S+)\s+(?<TYPE>\w*)", RegexOptions.Compiled, 500)]
     private static partial Regex NonQuotedFileRegex();

@@ -27,7 +27,7 @@ namespace CueSheetNet.Syntax
 
         public static bool IsFieldRemark(string line, out string firstWord, out string? rest)
         {
-            firstWord = CueReader.GetKeyword(line);
+            firstWord = CueReader.GetKeyword(line,out _);
             rest = line.AsSpan()[firstWord.Length..].Trim().ToString();
             return IsFieldRemark(firstWord, rest);
         }

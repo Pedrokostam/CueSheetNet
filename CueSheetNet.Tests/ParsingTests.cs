@@ -1,5 +1,6 @@
 using CueSheetNet.Exceptions;
 using CueSheetNet.Syntax;
+using System.Text.RegularExpressions;
 
 namespace CueSheetNet.Tests;
 
@@ -8,13 +9,13 @@ public class ParsingTests
 {
     private static void AssertFormatError(string content)
     {
-            CueSheet.ParseFromString(content);
         try
         {
+            CueSheet.ParseFromString(content);
         }
         catch (Exception e)
         {
-            Assert.IsTrue(e is FormatException or CueException, $"Expected a format error, got {e.GetType().Name}: {e.Message}");
+            Assert.IsTrue(e is CueParsingException, $"Expected a format error, got {e.GetType().Name}: {e.Message}");
             return;
         }
         Assert.Fail("Expected a format error, nothing was thrown");
@@ -80,7 +81,56 @@ public class ParsingTests
     [TestMethod]
     public void UnknownKeywordThrowsFormatException()
     {
-        Assert.ThrowsException<FormatException>(() => CueSheet.ParseFromString("FOO bar"));
+        Assert.ThrowsException<CueParsingException>(() => CueSheet.ParseFromString("FOO bar"));
+    }
+
+    [DataTestMethod]
+    [DataRow("   ")]
+    [DataRow("\t")]
+    [DataRow("\t\t\t")]
+    [DataRow("   ")] // nonbreaking space
+    public void ExcessiveWhitespaceNotAProblem(string whitespaceReplacement)
+    {
+        var content = """
+            REM GENRE Rock
+            REM COMMENT "Basesheet"
+            CATALOG 1234567890123
+            PERFORMER "TestArtist"
+            TITLE "TestAlbum"
+            FILE "Disc.flac" WAVE
+              TRACK 01 AUDIO
+                TITLE "First"
+                PERFORMER "TestArtist"
+                REM COMPOSER "ComposerOne"
+                INDEX 01 00:00:00
+              TRACK 02 AUDIO
+                TITLE "Second"
+                PERFORMER "TestArtist"
+                INDEX 00 03:00:00
+                INDEX 01 03:02:00
+            """;
+        var replacedContent = Regex.Replace(content, @"[^\S\r\n]", whitespaceReplacement);
+        var cue = CueSheet.ParseFromString(content);
+        var cue2 = CueSheet.ParseFromString(replacedContent);
+        Assert.AreEqual(cue, cue2);
+    }
+
+    [DataTestMethod]
+    [DataRow("\n\n")]
+    [DataRow("\r\r")]
+    [DataRow("\r \n")]
+    [DataRow("\n \r")]
+    [DataRow("\n")]
+    [DataRow("\r")]
+    [DataRow("\r\n")]
+    [DataRow("\n\r")]
+    public void AnyNewlineWorks(string newline)
+    {
+        var content = File.ReadAllText(Utils.GetFile("Equality", "Base.cue"));
+        var cue = CueSheet.ParseFromString(content);
+        var replacedContent = content.ReplaceLineEndings(newline);
+        var cue2 = CueSheet.ParseFromString(replacedContent);
+        Assert.AreEqual(cue, cue2,message: newline.Replace("\r","\\r").Replace("\n","\\n"));
     }
 
     [TestMethod]

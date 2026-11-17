@@ -113,10 +113,14 @@ public class CueIndex
             ? newTime < _sheet.Data[position + 1].Index.Time
             : file.Meta is not { } meta || newTime < meta.CueDuration;
         if (!aboveLower || !belowUpper)
-            throw new InvalidIndexEditException(nameof(Time), Time, newTime);
+            throw new InvalidOperationException($"Cannot move index before or after its neighbors ({newTime}).");
         Time = newTime;
     }
 
+    public void ShiftTime(int frames)
+    {
+        MoveTime(Time + frames);
+    }
     public void ShiftTime(CueTime timeshift)
     {
         MoveTime(Time + timeshift);
