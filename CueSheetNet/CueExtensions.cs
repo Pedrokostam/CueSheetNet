@@ -1,4 +1,5 @@
 ﻿using CueSheetNet.Components;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -11,6 +12,7 @@ namespace CueSheetNet;
 
 public static class CueExtensions
 {
+    static ILogger LoggerioFile => Loggingq.WritingLogger;
     // FileOps
     extension(CueSheet cueSheet)
     {
@@ -49,6 +51,7 @@ public static class CueExtensions
 
                     if (item.Exists && !item.EnumerateFileSystemInfos().Any())
                     {
+                        LoggerioFile.RemovedFile(item.FullName);
                         item.Delete(recursive: false);
                     }
                 }
@@ -65,51 +68,62 @@ public static class CueExtensions
         /// <exception cref="DirectoryNotFoundException"></exception>
         public CueSheet Copy(string newCueSheetPath, bool withAssociatedFiles, bool makePathsRelative)
         {
-            cueSheet.RefreshFileInfos();
-            if (cueSheet.SourceFile is null || !cueSheet.SourceFile.Exists)
+            List<string> partialFilesToRemove = [];
+            try
             {
-                throw new InvalidOperationException("Cannot copy cue sheet whose source file does not exist. Use SaveAs()");
-            }
-            var newRoot = Path.GetDirectoryName(newCueSheetPath) ?? throw new DirectoryNotFoundException($"Specified target path cannot be the root of drive ({newCueSheetPath}).");
-            if (!Directory.Exists(newRoot))
-            {
-                Directory.CreateDirectory(newRoot);
-            }
-            var clone = cueSheet.Clone();
-            List<(string Source, string Target)> filesToMove = [];
-            if (makePathsRelative)
-            {
-                clone.ChangeFilePathsType(keepPathQualified: true);
-            }
-            IEnumerable<FilePath> cueFiles = clone.Files.Cast<FilePath>();
-            if (withAssociatedFiles)
-            {
-                cueFiles = cueFiles.Concat(clone.AdditionalFiles);
-            }
-            foreach (var item in cueFiles)
-            {
-                item.Info?.Refresh();
-                if (!item.Exists)
+                cueSheet.RefreshFileInfos();
+                if (cueSheet.SourceFile is null || !cueSheet.SourceFile.Exists)
+                    throw new InvalidOperationException("Cannot copy cue sheet whose source file does not exist. Use SaveAs()");
+                var newRoot = Path.GetDirectoryName(newCueSheetPath) ?? throw new DirectoryNotFoundException($"Specified target path cannot be the root of drive ({newCueSheetPath}).");
+                if (!Directory.Exists(newRoot))
+                    Directory.CreateDirectory(newRoot);
+                var clone = cueSheet.Clone();
+                List<(string Source, string Target)> filesToMove = [];
+                if (makePathsRelative)
                 {
-                    continue;
+                    clone.ChangeFilePathsType(keepPathQualified: !makePathsRelative);
                 }
-                if (!item.IsQualified)
+                IEnumerable<FilePath> cueFiles = clone.Files.Cast<FilePath>();
+                if (withAssociatedFiles)
                 {
-                    filesToMove.Add((item.AbsolutePath!, Path.Combine(newRoot, item.Path)));
+                    cueFiles = cueFiles.Concat(clone.AdditionalFiles);
                 }
+                foreach (var item in cueFiles)
+                {
+                    item.Info?.Refresh();
+                    if (!item.Exists)
+                    {
+                        continue;
+                    }
+                    if (!item.IsQualified)
+                    {
+                        filesToMove.Add((item.AbsolutePath!, Path.Combine(newRoot, item.Path)));
+                    }
+                }
+                foreach (var (Source, Target) in filesToMove)
+                {
+                    var targetParent = Directory.GetParent(Target) ?? throw new DirectoryNotFoundException($"Specified target path cannot be the root of drive ({Target}).");
+                    if (!targetParent.Exists)
+                    {
+                        targetParent.Create();
+                    }
+                    File.Copy(Source, Target);
+                    LoggerioFile.CopiedFile(Source, Target);
+                    partialFilesToRemove.Add(Target);
+                }
+                clone.SaveAs(newCueSheetPath);
+                partialFilesToRemove.Clear();
+                clone.RefreshFileInfos();
+                return clone;
             }
-            foreach (var (Source, Target) in filesToMove)
+            finally
             {
-                var targetParent = Directory.GetParent(Target) ?? throw new DirectoryNotFoundException($"Specified target path cannot be the root of drive ({Target}).");
-                if (!targetParent.Exists)
+                foreach (var item in partialFilesToRemove)
                 {
-                    targetParent.Create();
+                    LoggerioFile.RemovedFileRollback(item);
+                    File.Delete(item);
                 }
-                File.Copy(Source, Target);
             }
-            clone.SaveAs(newCueSheetPath);
-            clone.RefreshFileInfos();
-            return clone;
         }
 
         public CueSheet Move(string newCueSheetPath, bool withAssociatedFiles, bool makePathsRelative)
@@ -169,7 +183,6 @@ public static class CueExtensions
                 Catalog = cueSheet.Catalog,
                 CdTextFile = null, // added after cloning, since reference is needed
                 Composer = cueSheet.Composer,
-                Genre = cueSheet.Genre,
                 Performer = cueSheet.Performer,
                 Songwriter = cueSheet.Songwriter,
                 SourceEncoding = cueSheet.SourceEncoding,

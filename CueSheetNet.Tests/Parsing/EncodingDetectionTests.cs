@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 
 namespace CueSheetNet.Tests;
 [TestClass]
-public partial class CueEncodingTests
+public partial class EncodingDetectionTests
 {
     [TestInitialize]
     public void Init()
@@ -37,14 +37,11 @@ public partial class CueEncodingTests
             return Encoding.GetEncoding(int.Parse(name));
         }
     }
-    public static IEnumerable<object[]> EncodingFiles =>
-        Utils.GetFiles("*.cue", "EncodingDetection").Select(f => new object[] { Path.GetFileName(f) });
-
     [TestMethod]
-    [DynamicData(nameof(EncodingFiles))]
-    public void TestEncodingDetection(string fileName)
+    [DynamicData(nameof(Samples.EncodingRows), typeof(Samples))]
+    public void TestEncodingDetection(Sample sample)
     {
-        string filepath = Utils.GetFile("EncodingDetection", fileName);
+        string filepath = sample.Path;
         Encoding target = ParseEncodingFromName(filepath);
         var cue = CueReader.CreateFromFile(filepath).Parse();
         Encoding cueEnc = cue.SourceEncoding!;
@@ -52,16 +49,5 @@ public partial class CueEncodingTests
             && target.EncodingName == cueEnc.EncodingName;
         var a = cueEnc.GetPreamble();
         Assert.IsTrue(match, $"Target: {target.EncodingName}, actual: {cueEnc.EncodingName}, actual preamble: {string.Join(", ", a)}-{Path.GetFileNameWithoutExtension(filepath)}");
-    }
-
-    [TestMethod]
-    public void TestParsingMinimum()
-    {
-        string minimalPath = Utils.GetFile("Parsing", "MinimalFoobarCue.cue");
-        var cue = CueReader.CreateFromFile(minimalPath).Parse();
-        Assert.AreEqual("A",cue.Files[0].Name);
-        Assert.AreEqual("MinimalFoobarCue 01",cue.Tracks[0].Title);
-        Assert.AreEqual(null,cue.Tracks[0].Duration );
-        Assert.AreEqual(new CueTime(99), cue.Tracks[0].Start );
     }
 }

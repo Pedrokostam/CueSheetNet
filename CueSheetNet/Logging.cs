@@ -22,6 +22,8 @@ public static partial class Loggingq
     [AllowNull]
     public static ILogger WritingLogger { get; set => field = value ?? NullLogger.Instance; } = NullLogger.Instance;
     [AllowNull]
+    public static ILogger FileOpsLogger { get; set => field = value ?? NullLogger.Instance; } = NullLogger.Instance;
+    [AllowNull]
     public static ILogger AudioReadingLogger { get; set => field = value ?? NullLogger.Instance; } = NullLogger.Instance;
     #endregion // Loggers
     public static void SetLogger(ILogger? logger)
@@ -31,6 +33,7 @@ public static partial class Loggingq
         EncodingLogger = logger;
         WritingLogger = logger;
         AudioReadingLogger = logger;
+        FileOpsLogger = logger;
     }
     #region Common 0-100
     [LoggerMessage(EventId = 0, Message = "Started {method}")]
@@ -86,6 +89,17 @@ public static partial class Loggingq
     [LoggerMessage(EventId = 0,Level =LogLevel.Debug, Message = "Skipped writing empty field remark {field}")]
     public static partial void SkippedEmptyFieldRemark(this ILogger logger, string field);
     #endregion // Writing 500-600
+
+    #region FileOps 600-700
+
+    [LoggerMessage(EventId = 600, Level = LogLevel.Information, Message = "Copied file from {from} to {to}")]
+    public static partial void CopiedFile(this ILogger logger, string from, string to);
+    [LoggerMessage(EventId = 610, Level = LogLevel.Information, Message = "Removed file {file}")]
+    public static partial void RemovedFile(this ILogger logger, string file);
+    [LoggerMessage(EventId = 611, Level = LogLevel.Information, Message = "Removed file {file} (copy rollback)")]
+    public static partial void RemovedFileRollback(this ILogger logger, string file);
+
+    #endregion // FileOps 600-700
 
     #region AudioReading 10000-...
     [LoggerMessage(EventId = 10000, Level = LogLevel.Information, Message = "Added audio reader for format {format}")]

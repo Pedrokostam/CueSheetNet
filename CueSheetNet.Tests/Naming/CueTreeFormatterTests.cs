@@ -5,7 +5,7 @@ using System.Xml.Linq;
 namespace CueSheetNet.Tests;
 
 [TestClass]
-public class TreeParsingTests
+public class CueTreeFormatterTests
 {
     [TestMethod("Test if all parse token are valid")]
     public void TestAllAvailable()
@@ -35,8 +35,7 @@ public class TreeParsingTests
     [DataRow("970A2F0B\\1971", "%Discid%\\%Year%", DisplayName = "Preserve double slash")]
     public void TestParsing(string expected, string? pattern)
     {
-        string path = Utils.GetFile("SavingTests", "Jethro Tull - Aqualung.cue");
-        CueSheet sheet = CueReader.CreateFromFile(path).Parse();
+        CueSheet sheet = Samples.JethroTullAqualung.Load();
 
         Assert.AreEqual(expected, P(sheet, pattern));
     }

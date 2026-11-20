@@ -360,6 +360,8 @@ public sealed partial class CueReader : ISourcelessCueReader
                 ThrowParseError($"Error when constructing the sheet: {e.Message}", line, e);
             }
         }
+        if (Settings.KeepQualified)
+            Sheet.ChangeFilePathsType(Settings.KeepQualified);
         Sheet.SourceEncoding = UsedEncoding;
         return Sheet;
     }
@@ -627,7 +629,7 @@ public sealed partial class CueReader : ISourcelessCueReader
         string firstWord = GetKeyword(line, out int end, 4);
         // Since there may be spaces between REM and Keyword we cannot hardcode value start
         firstWord = firstWord.ToUpperInvariant();
-        string? rest = end < 0 ? null :  GetValue(line, end);
+        string? rest = end < 0 ? null : GetValue(line, end);
         IRemarkable remmy = LastTrack as IRemarkable ?? Sheet;
         if (rest is null)
         {

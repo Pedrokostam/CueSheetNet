@@ -31,6 +31,7 @@ internal class ResettableCollection<T> : IReadOnlyList<T>
     {
         InvalidationCounter++;
     }
+    public bool IsEmptyOrUninitialized => _data.Count == 0;
     public void Revalidate()
     {
         InvalidationCounter++;

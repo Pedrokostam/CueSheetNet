@@ -1,4 +1,4 @@
-﻿using CueSheetNet.Components;
+using CueSheetNet.Components;
 using CueSheetNet.FileHandling;
 using System.Net.WebSockets;
 using System.Security.Cryptography;
@@ -46,8 +46,8 @@ public class CopyingTests
     [TestMethod("Copies sheet package and compares hashes of non-cue files")]
     public void Copy()
     {
-        string sourceSheetPath = Utils.GetFile("CopyingTests", "Spandau Ballet - True.cue");
-        string targetSheetPath = Path.Combine(CreateTempDirectory("CueCopying"), "CopiedSheet.cue");
+        string sourceSheetPath = Samples.SpandauBalletTrue.Path;
+        string targetSheetPath = Path.Combine(TempDirectory.Create("CueCopying"), "CopiedSheet.cue");
         Coppyy(sourceSheetPath, targetSheetPath);
     }
 
@@ -55,9 +55,9 @@ public class CopyingTests
     public void Move()
     {
         using var md5 = MD5.Create();
-        string sourceSheetPath = Utils.GetFile("CopyingTests", "Spandau Ballet - True.cue");
-        string targetSheetPath = Path.Combine(CreateTempDirectory("CueCopying2"), "CopiedSheet.cue");
-        string moveTargetSheetPath = Path.Combine(CreateTempDirectory("CueMoving"), "MovedSheet.cue");
+        string sourceSheetPath = Samples.SpandauBalletTrue.Path;
+        string targetSheetPath = Path.Combine(TempDirectory.Create("CueCopying2"), "CopiedSheet.cue");
+        string moveTargetSheetPath = Path.Combine(TempDirectory.Create("CueMoving"), "MovedSheet.cue");
         (var hashes, var copied) = Coppyy(sourceSheetPath, targetSheetPath);
         var moved = copied.Move(moveTargetSheetPath, true, false);
         foreach (var deadFile in copied.AdditionalFiles)
@@ -87,8 +87,8 @@ public class CopyingTests
     public void Unlink()
     {
         using var md5 = MD5.Create();
-        string sourceSheetPath = Utils.GetFile("CopyingTests", "Spandau Ballet - True.cue");
-        string targetSheetPath = Path.Combine(CreateTempDirectory("CueCopying3"), "CopiedSheet.cue");
+        string sourceSheetPath = Samples.SpandauBalletTrue.Path;
+        string targetSheetPath = Path.Combine(TempDirectory.Create("CueCopying3"), "CopiedSheet.cue");
         (var hashes, var copied) = Coppyy(sourceSheetPath, targetSheetPath);
         copied.Unlink( true, false);
         foreach (var deadFile in copied.AdditionalFiles)
@@ -103,13 +103,12 @@ public class CopyingTests
         }
     }
 
-    private const string SourceSheetName = "Spandau Ballet - True.cue";
     private const string DataFileName = "Spandau Ballet - True.flac";
 
     private static CueSheet CopyToTemp(string tempName)
     {
-        string sourceSheetPath = Utils.GetFile("CopyingTests", SourceSheetName);
-        string targetSheetPath = Path.Combine(CreateTempDirectory(tempName), "CopiedSheet.cue");
+        string sourceSheetPath = Samples.SpandauBalletTrue.Path;
+        string targetSheetPath = Path.Combine(TempDirectory.Create(tempName), "CopiedSheet.cue");
         return Coppyy(sourceSheetPath, targetSheetPath).Item2;
     }
 
@@ -126,9 +125,21 @@ public class CopyingTests
     {
         // bug: CueExtensions.Copy passes keepPathQualified: true when makePathsRelative is set, then skips qualified files
         var copied = CopyToTemp("CueCopyRelativeSource");
-        string target = Path.Combine(CreateTempDirectory("CueCopyRelativeTarget"), "Relative.cue");
+        string target = Path.Combine(TempDirectory.Create("CueCopyRelativeTarget"), "Relative.cue");
         copied.Copy(target, true, true);
         Assert.IsTrue(File.Exists(Path.Combine(Path.GetDirectoryName(target)!, DataFileName)));
+    }
+
+    [TestMethod]
+    public void CopyWillNotOverwriteFiles()
+    {
+        // bug: CueExtensions.Copy calls File.Copy with Source == Target for every data file
+        var copied = CopyToTemp("CueCopySameDir");
+        string dir = copied.SourceFile!.DirectoryName!;
+        Assert.ThrowsException<IOException>(()=>copied.Copy(Path.Combine(dir, "Renamed.cue"), false, false));
+        Assert.ThrowsException<IOException>(()=>copied.Copy(Path.Combine(dir, "Renamed.cue"), true, false));
+        //Assert.IsTrue(copiedWithFiles.SourceFile!.Exists);
+        //Assert.IsTrue(File.Exists(Path.Combine(dir, DataFileName)));
     }
 
     [TestMethod]
@@ -136,10 +147,10 @@ public class CopyingTests
     {
         // bug: CueExtensions.Copy calls File.Copy with Source == Target for every data file
         var copied = CopyToTemp("CueCopySameDir");
-        string dir = copied.SourceFile!.DirectoryName!;
-        var renamed = copied.Copy(Path.Combine(dir, "Renamed.cue"), true, false);
+        var dir = copied.SourceFile!.Directory!.CreateSubdirectory("inner");
+        var renamed = copied.Copy(Path.Combine(dir.FullName, "Renamed.cue"), true, false);
         Assert.IsTrue(renamed.SourceFile!.Exists);
-        Assert.IsTrue(File.Exists(Path.Combine(dir, DataFileName)));
+        Assert.IsTrue(File.Exists(Path.Combine(dir.FullName, DataFileName)));
     }
 
     [TestMethod]
@@ -147,7 +158,7 @@ public class CopyingTests
     {
         // bug: CueExtensions.Copy has no rollback; data files stay behind when a later File.Copy throws
         var copied = CopyToTemp("CueCopyPartialSource");
-        string targetDir = CreateTempDirectory("CueCopyPartialTarget");
+        string targetDir = TempDirectory.Create("CueCopyPartialTarget");
         File.WriteAllText(Path.Combine(targetDir, "cover.png"), "occupied");
         try
         {
@@ -192,7 +203,7 @@ public class CopyingTests
     [TestMethod]
     public void CopyRecreatesSubdirectories()
     {
-        string sourceDir = CreateTempDirectory("CueSubdirSource");
+        string sourceDir = TempDirectory.Create("CueSubdirSource");
         Directory.CreateDirectory(Path.Combine(sourceDir, "CD1"));
         File.WriteAllText(Path.Combine(sourceDir, "CD1", "a.wav"), "data");
         string sourceSheet = Path.Combine(sourceDir, "Sub.cue");
@@ -201,22 +212,9 @@ public class CopyingTests
               TRACK 01 AUDIO
                 INDEX 01 00:00:00
             """);
-        string targetDir = CreateTempDirectory("CueSubdirTarget");
+        string targetDir = TempDirectory.Create("CueSubdirTarget");
         CueSheet.Parse(sourceSheet).Copy(Path.Combine(targetDir, "Sub.cue"), false, false);
         Assert.IsTrue(File.Exists(Path.Combine(targetDir, "CD1", "a.wav")));
-    }
-
-    private static string CreateTempDirectory(params string[] parts)
-    {
-        List<string> pp = ["TestItems", "TempData", .. parts];
-        string[] p = [.. pp];
-        string output = Path.Combine(p);
-        if (Directory.Exists(output))
-        {
-            Directory.Delete(output, true);
-        }
-        Directory.CreateDirectory(output);
-        return output;
     }
 
     //[TestMethod("Converts package using RecipeConverter and checks converted.txt")]
@@ -224,7 +222,7 @@ public class CopyingTests
     //{
 
     //    CueSheet sheet = CueSheet.Parse(Utils.GetFile("CopyingTests", "Spandau Ballet - True.cue"));
-    //    string output = CreateTempDirectory("ConversionTest");
+    //    string output = TempDirectory.Create("ConversionTest");
     //    CuePackage.Convert(sheet, output, null, ".Wav");
     //    string converted = File.ReadAllText(Utils.GetFile("CopyingTests", "converted.txt"));
     //    string[] parts = converted.Split(';');

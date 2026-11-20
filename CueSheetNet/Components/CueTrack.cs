@@ -8,6 +8,7 @@ using System.Globalization;
 using System.Net.Security;
 using System.Net.WebSockets;
 namespace CueSheetNet.Components;
+
 public class CueTrack : IRemarkable
 {
     public Remarks Remarks { get; } = [];
@@ -77,7 +78,7 @@ public class CueTrack : IRemarkable
     /// </summary>
     /// <param name="track"></param>
     /// <param name="sheet"></param>
-    internal CueTrack (CueTrack track,CueSheet sheet):this(track.Type,sheet)
+    internal CueTrack(CueTrack track, CueSheet sheet) : this(track.Type, sheet)
     {
         this.Songwriter = track._songwriter;
         this.Pregap = track.Pregap;
@@ -95,6 +96,11 @@ public class CueTrack : IRemarkable
     internal CueTrack(string type, CueSheet sheet) : this(TrackType.FromString(type), sheet) { }
     internal static CueTrack FromInsertionParams(TrackInsertParameters? insertParameters, CueSheet sheet)
     {
+        if (insertParameters is not null)
+        {
+            ArgumentNullException.ThrowIfNull(insertParameters.Value.Type, nameof(TrackInsertParameters.Type));
+
+        }
         return new(insertParameters?.Type ?? TrackType.AUDIO, sheet)
         {
             Title = insertParameters?.Title,
@@ -113,32 +119,18 @@ public class CueTrack : IRemarkable
     /// </summary>
     public CueTime Start => Indices[0].StartsContent ? Indices[0].Time : Indices[1].Time;
 
-    public CueTime? Duration
+    public TimeSpan? Duration => CueDuration?.ToTimeSpan();
+    public CueTime? CueDuration
     {
         get
         {
             Debug.Assert(File.IsAudio());
-            var conInd = this.ConsecutivePosition;
-            var lastIndexIndex = Indices[^1].AbsolutePosition;
-
-            if (_sheet.Data.Count > lastIndexIndex + 1)
+            var end = this.NextTrackInFile() switch
             {
-                // there are indices (tracks) after this
-                var nextLink = _sheet.Data[lastIndexIndex + 1];
-                if (ReferenceEquals(nextLink.File, this.File))
-                {
-                    // Next index is in the same file, ergo next track
-                    // may be eac or not, does not matter
-                    return nextLink.Index.Time - Start;
-                }
-                // different file, so need to refer to file
-            }
-
-            if (File.Meta is FileMetadata meta)
-            {
-                return meta.CueDuration - Start;
-            }
-            return null;
+                CueTrack next => next.Indices.Count > 0 ? next.Indices[0].Time : null,
+                _ => this.File.Meta?.CueDuration,
+            };
+            return end - Start;
         }
     }
 
@@ -168,7 +160,7 @@ public class CueTrack : IRemarkable
         return chain;
     }
 
-    public bool IsEacStyle => _sheet.Data.First(x=>ReferenceEquals(x.Track,this)).Index.IsSplit;
+    public bool IsEacStyle => _sheet.Data.First(x => ReferenceEquals(x.Track, this)).Index.IsSplit;
 
     /// <summary>
     /// EAC-style tracks with the zeroth index in a previous file DO NOT count.
@@ -190,7 +182,7 @@ public class CueTrack : IRemarkable
     /// <param name="newPosition"></param>
     public void SetPosition(int newPosition)
     {
-        if(newPosition < AbsolutePosition+1)
+        if (newPosition < AbsolutePosition + 1)
         {
             throw new InvalidOperationException("Cannot set track's position below its natural index");
         }
@@ -201,7 +193,7 @@ public class CueTrack : IRemarkable
     private string GetDefaultTitle() => $"{Performer} {_sheet.Title} {Position:D2}".Trim();
     public override string ToString()
     {
-        if(AbsolutePosition < 0)
+        if (AbsolutePosition < 0)
         {
             return $"TRACK (detached) {Type} - {Title}";
         }

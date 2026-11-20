@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 namespace CueSheetNet.Tests;
 
 [TestClass]
-public class ParsingTests
+public class SheetParsingTests
 {
     private static void AssertFormatError(string content)
     {
@@ -25,7 +25,7 @@ public class ParsingTests
     public void RemBeforeFirstIndexOfFirstTrackBelongsToTrack()
     {
         // bug: CueReader.ParseREM uses SheetHasTracks (Data.Count > 0), which is false before track 1's first INDEX
-        var cue = CueSheet.Parse(Utils.GetFile("Equality", "Base.cue"));
+        var cue = Samples.Base.Load();
         Assert.AreEqual("Composer One", cue.Tracks[0].Remarks.GetField("COMPOSER"));
         Assert.IsNull(cue.Remarks.GetField("COMPOSER"));
     }
@@ -112,7 +112,16 @@ public class ParsingTests
         var replacedContent = Regex.Replace(content, @"[^\S\r\n]", whitespaceReplacement);
         var cue = CueSheet.ParseFromString(content);
         var cue2 = CueSheet.ParseFromString(replacedContent);
-        Assert.AreEqual(cue, cue2);
+        TestSheets.AssertSheetsEqual(cue, cue2);
+    }
+
+    [TestMethod]
+    public void ReaderSettingsForwardedToSheet()
+    {
+        var path = Samples.Base.Path;
+        var cue = CueReader.CreateFromFile(path).WithQualifiedPaths(true).Parse();
+        Assert.IsTrue(cue.Files[0].IsQualified);
+
     }
 
     [DataTestMethod]
@@ -126,11 +135,11 @@ public class ParsingTests
     [DataRow("\n\r")]
     public void AnyNewlineWorks(string newline)
     {
-        var content = File.ReadAllText(Utils.GetFile("Equality", "Base.cue"));
+        var content = Samples.Base.ReadText();
         var cue = CueSheet.ParseFromString(content);
         var replacedContent = content.ReplaceLineEndings(newline);
         var cue2 = CueSheet.ParseFromString(replacedContent);
-        Assert.AreEqual(cue, cue2,message: newline.Replace("\r","\\r").Replace("\n","\\n"));
+        TestSheets.AssertSheetsEqual(cue, cue2, newline.Replace("\r","\\r").Replace("\n","\\n"));
     }
 
     [TestMethod]
@@ -164,5 +173,57 @@ public class ParsingTests
         Assert.AreEqual("1234567890123", cue.Catalog);
         Assert.AreEqual("USABC1234567", cue.Tracks[0].Isrc);
         Assert.AreEqual(TrackFlags.DigitalCopyPermitted | TrackFlags.FourChannel | TrackFlags.PreEmphasis | TrackFlags.SerialCopyManagementSystem, cue.Tracks[0].Flags);
+    }
+
+    CueSheet TestItemJethro { get; set; } = default!;
+    CueSheet TestItemBallet { get; set; } = default!;
+    CueSheet TestItemMulti { get; set; } = default!;
+
+    [TestInitialize]
+    public void Init()
+    {
+        TestItemJethro = Samples.JethroTullAqualung.Load();
+        TestItemBallet = Samples.SpandauBalletTrue.Load();
+        TestItemMulti = Samples.MultiFile.Load();
+    }
+
+    [TestMethod]
+    public void Title()
+    {
+        Assert.AreEqual("Aqualung", TestItemJethro.Title);
+        Assert.AreEqual("True", TestItemBallet.Title);
+        Assert.AreEqual("MultiFile", TestItemMulti.Title);
+    }
+    [TestMethod]
+    public void Performer()
+    {
+        Assert.AreEqual("Jethro Tull", TestItemJethro.Performer);
+        Assert.AreEqual("Spandau Ballet", TestItemBallet.Performer);
+        Assert.AreEqual("The Multis", TestItemMulti.Performer);
+    }
+
+    [TestMethod]
+    public void TrackTitle()
+    {
+        Assert.AreEqual("Aqualung", TestItemJethro.Tracks[0].Title);
+        Assert.AreEqual("Pleasure", TestItemBallet.Tracks[0].Title);
+        Assert.AreEqual("Uno", TestItemMulti.Tracks[0].Title);
+    }
+    [TestMethod]
+    public void TrackPerformer()
+    {
+        Assert.AreEqual("Jethro Tull", TestItemJethro.Tracks[0].Performer);
+        Assert.AreEqual("Spandau Ballet", TestItemBallet.Tracks[0].Performer);
+        Assert.AreEqual("The Multis", TestItemMulti.Tracks[0].Performer);
+    }
+
+    [TestMethod]
+    public void TestParsingMinimum()
+    {
+        var cue = Samples.MinimalFoobarCue.Load();
+        Assert.AreEqual("A",cue.Files[0].Name);
+        Assert.AreEqual("MinimalFoobarCue 01",cue.Tracks[0].Title);
+        Assert.AreEqual(null,cue.Tracks[0].CueDuration );
+        Assert.AreEqual(new CueTime(99), cue.Tracks[0].Start );
     }
 }

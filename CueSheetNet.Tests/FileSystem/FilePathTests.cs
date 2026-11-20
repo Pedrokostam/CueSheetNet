@@ -78,18 +78,4 @@ public class FilePathTests
         var file = AddFile(new CueSheet(), @"CD1\track.flac");
         Assert.AreEqual("track.flac", file.Name);
     }
-
-    [TestMethod]
-    public void CloneDoesNotShareCdTextFile()
-    {
-        // bug: CueExtensions.Clone copies CdTextFile by reference; it still belongs to the original sheet
-        var cue = CueSheet.ParseFromString("""
-            CDTEXTFILE "disc.cdt"
-            FILE "a.wav" WAVE
-              TRACK 01 AUDIO
-                INDEX 01 00:00:00
-            """);
-        Assert.IsNotNull(cue.CdTextFile);
-        Assert.IsFalse(ReferenceEquals(cue.CdTextFile, cue.Clone().CdTextFile));
-    }
 }

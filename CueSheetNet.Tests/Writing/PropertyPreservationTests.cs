@@ -1,28 +1,18 @@
-﻿using CueSheetNet.Components;
+using CueSheetNet.Components;
 using CueSheetNet.Syntax;
 using System.Reflection;
 
 namespace CueSheetNet.Tests;
 
 [TestClass]
-public class StructureTests
+public class PropertyPreservationTests
 {
-    private static CueSheet Load(string folder, string name) => CueReader.CreateFromFile(Utils.GetFile(folder, name)).Parse();
-
-    private static CueSheet NewCue()
-    {
-        var cue = new CueSheet();
-        cue.InsertFile(0, "Tescik.mp3", "WAVE", null);
-        cue.InsertTrack(cue.Files[^1], new Components.TrackInsertParameters("AUDIO"), CueTime.One);
-        return cue;
-    }
-
     private void TestReflectionStrings<T>(Func<CueSheet, T> getter, Func<CueSheet, CueSheet> cloning)
     {
         var props = typeof(T).GetProperties().Where(x => x.PropertyType == typeof(string));
         foreach (var item in props)
         {
-            var cue = NewCue();
+            var cue = TestSheets.NewCue();
             item.SetValue(getter(cue), "TEST TEST");
             var clone = cloning(cue);
             Assert.AreEqual(item.GetValue(getter(cue)), item.GetValue(getter(clone)), $"Reflection property {item.Name} of {typeof(T).Name}");
@@ -58,7 +48,7 @@ public class StructureTests
     [DataTestMethod]
     public void TestTrackPropertiesPreservedCloned(string name, object value)
     {
-        var cue = NewCue();
+        var cue = TestSheets.NewCue();
         var prop = TrackPropertyInfos.First(x => x.Name == name);
         prop.SetValue(cue.Tracks[0], value);
         prop.SetValue(cue.Tracks[1], value);
@@ -70,7 +60,7 @@ public class StructureTests
     [DataTestMethod]
     public void TestTrackPropertiesPreservedWritten(string name, object value)
     {
-        var cue = NewCue();
+        var cue = TestSheets.NewCue();
         var prop = TrackPropertyInfos.First(x => x.Name == name);
         prop.SetValue(cue.Tracks[0], value);
         prop.SetValue(cue.Tracks[1], value);
@@ -83,7 +73,7 @@ public class StructureTests
     [DataTestMethod]
     public void TestSheetPropertiesPreservedCloned(string name, object value)
     {
-        var cue = NewCue();
+        var cue = TestSheets.NewCue();
         var prop = SheetPropertyInfos.First(x => x.Name == name);
         prop.SetValue(cue, value);
         var clone = cue.Clone();
@@ -93,7 +83,7 @@ public class StructureTests
     [DataTestMethod]
     public void TestSheetPropertiesPreservedWritten(string name, object value)
     {
-        var cue = NewCue();
+        var cue = TestSheets.NewCue();
         var prop = SheetPropertyInfos.First(x => x.Name == name);
         prop.SetValue(cue, value);
         var clone = CueSheet.ParseFromString(cue.WriteToString());
@@ -112,41 +102,5 @@ public class StructureTests
     {
         TestReflectionStrings(x => x, x => x.Clone());
         TestReflectionStrings(x => x.Tracks[0], x => x.Clone());
-    }
-
-    [TestMethod]
-    public void NonConsecutiveTrackNumbersArePreserved()
-    {
-        var cue = Load("Structure", "NonConsecutive.cue");
-        CollectionAssert.AreEqual(new[] { 1, 3, 4 }, cue.Tracks.Select(t => t.Position).ToArray());
-
-        var reloaded = cue.Clone();
-        CollectionAssert.AreEqual(new[] { 1, 3, 4 }, reloaded.Tracks.Select(t => t.Position).ToArray());
-    }
-
-    [TestMethod]
-    public void MultiFileEacLayout()
-    {
-        // Track 2 and 3 start with INDEX 00 at the end of the previous file (EAC "gaps appended to previous track").
-        var cue = Load("SavingTests", "MultiFile.cue");
-        var q = cue.Tracks[0].Indices;
-
-        Assert.AreEqual(3, cue.Tracks.Count);
-        Assert.AreEqual(3, cue.Files.Count);
-        Assert.AreEqual(5, cue.Indices.Count);
-        CollectionAssert.AreEqual(new[] { 1, 2, 3 }, cue.Tracks.Select(t => t.Position).ToArray());
-
-        CollectionAssert.AreEqual(new[] { false, true, false, true, false }, cue.Indices.Select(i => i.IsSplit).ToArray());
-        CollectionAssert.AreEqual(new[] { 1, 0, 1, 0, 1 }, cue.Indices.Select(i => i.Position).ToArray());
-
-        CollectionAssert.AreEqual(new[] { false, true, true }, cue.Tracks.Select(t => t.IsEacStyle).ToArray());
-        // Split indices do not belong to any track
-        CollectionAssert.AreEqual(new[] { false, false, false }, cue.Tracks.Select(t => t.HasZerothIndex).ToArray());
-        CollectionAssert.AreEqual(new[] { 1, 1, 1 }, cue.Tracks.Select(t => t.Indices.Count).ToArray());
-
-        // A track belongs to the file holding its first non-split index.
-        CollectionAssert.AreEqual(
-            new[] { "MultiFile - 0 - Uno.wav", "MultiFile - 1 - Dos.wav", "MultiFile - 2 - Tres.wav" },
-            cue.Tracks.Select(t => t.File.Name).ToArray());
     }
 }

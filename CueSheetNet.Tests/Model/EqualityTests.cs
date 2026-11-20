@@ -8,8 +8,8 @@ public class EqualityTests
 {
     private static CueSheet Load(string name)
     {
-        string file = name is "Songwriter" or "TrackSongwriter" ? "Base" : name;
-        var sheet = CueReader.CreateFromFile(Utils.GetFile("Equality", file + ".cue")).Parse();
+        string file = name is "Songwriter" or "TrackSongwriter" or "Same" ? "Base" : name;
+        var sheet = Samples.EqualityVariant(file).Load();
         // CueReader rejects the SONGWRITER keyword, so songwriters are set here instead of in the files.
         sheet.Songwriter = name == "Songwriter" ? "Other Writer" : "Test Writer";
         sheet.Tracks[0].Songwriter = name == "TrackSongwriter" ? "Other Writer" : "Track Writer";
@@ -24,37 +24,37 @@ public class EqualityTests
 
     // Each variant differs from Base.cue in the single aspect its name describes.
     public static IEnumerable<object[]> Variants => [
-        ["Same", All, StringComparison.Ordinal, true],
+        ["Same", Full, StringComparison.Ordinal, true],
         ["Same", Structure, StringComparison.Ordinal, true],
 
-        ["TitleCase", All, StringComparison.Ordinal, false],
-        ["TitleCase", All, StringComparison.OrdinalIgnoreCase, true],
-        ["Title", All, StringComparison.Ordinal, false],
+        ["TitleCase", Full, StringComparison.Ordinal, false],
+        ["TitleCase", Full, StringComparison.OrdinalIgnoreCase, true],
+        ["Title", Full, StringComparison.Ordinal, false],
         ["Title", NoCommon, StringComparison.Ordinal, true],
-        ["Performer", All, StringComparison.Ordinal, false],
+        ["Performer", Full, StringComparison.Ordinal, false],
         ["Performer", NoCommon, StringComparison.Ordinal, true],
 
-        ["Songwriter", All, StringComparison.Ordinal, false],
+        ["Songwriter", Full, StringComparison.Ordinal, false],
         ["Songwriter", NoOptional, StringComparison.Ordinal, true],
-        ["Catalog", All, StringComparison.Ordinal, false],
+        ["Catalog", Full, StringComparison.Ordinal, false],
         ["Catalog", NoOptional, StringComparison.Ordinal, true],
 
-        ["Remark", All, StringComparison.Ordinal, false],
+        ["Remark", Full, StringComparison.Ordinal, false],
         ["Remark", NoRemarks, StringComparison.Ordinal, true],
-        ["RemarkOrder", All, StringComparison.Ordinal, true],
+        ["RemarkOrder", Full, StringComparison.Ordinal, true],
 
-        ["TrackTitle", All, StringComparison.Ordinal, false],
+        ["TrackTitle", Full, StringComparison.Ordinal, false],
         ["TrackTitle", NoCommon, StringComparison.Ordinal, true],
-        ["TrackPerformer", All, StringComparison.Ordinal, false],
+        ["TrackPerformer", Full, StringComparison.Ordinal, false],
         ["TrackPerformer", NoCommon, StringComparison.Ordinal, true],
-        ["TrackSongwriter", All, StringComparison.Ordinal, false],
+        ["TrackSongwriter", Full, StringComparison.Ordinal, false],
         ["TrackSongwriter", NoOptional, StringComparison.Ordinal, true],
-        ["TrackRemark", All, StringComparison.Ordinal, false],
+        ["TrackRemark", Full, StringComparison.Ordinal, false],
         ["TrackRemark", NoRemarks, StringComparison.Ordinal, true],
-        ["Isrc", All, StringComparison.Ordinal, false],
+        ["Isrc", Full, StringComparison.Ordinal, false],
         ["Isrc", NoOptional, StringComparison.Ordinal, true],
 
-        ["IndexTime", All, StringComparison.Ordinal, false],
+        ["IndexTime", Full, StringComparison.Ordinal, false],
         ["IndexTime", Structure, StringComparison.Ordinal, false],
         ["MissingIndex", Structure, StringComparison.Ordinal, false],
         ["ExtraTrack", Structure, StringComparison.Ordinal, false],
@@ -74,8 +74,10 @@ public class EqualityTests
         var a = Load("Base");
         var b = Load(variant);
 
-        Assert.AreEqual(expected, comparer.Equals(a, b), "a == b");
-        Assert.AreEqual(expected, comparer.Equals(b, a), "b == a");
+        var ab = comparer.FindFirstDifference(a, b);
+        var ba = comparer.FindFirstDifference(b, a);
+        Assert.AreEqual(expected, ab is null, $"a == b: {ab}");
+        Assert.AreEqual(expected, ba is null, $"b == a: {ba}");
         if (expected)
             Assert.AreEqual(comparer.GetHashCode(a), comparer.GetHashCode(b), "Equal sheets must have equal hash codes");
     }

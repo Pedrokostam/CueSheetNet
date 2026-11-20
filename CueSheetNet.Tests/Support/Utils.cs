@@ -23,4 +23,5 @@ internal static class Utils
         var p = parts.Prepend("TestItems", Directory.GetCurrentDirectory());
         return Path.Combine(p);
     }
+    public static CueTime Ct(string cuetime) => CueTime.Parse(cuetime);
 }

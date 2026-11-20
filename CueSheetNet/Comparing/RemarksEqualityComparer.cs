@@ -1,4 +1,4 @@
-﻿using CueSheetNet.Components;
+using CueSheetNet.Components;
 using System.Diagnostics.CodeAnalysis;
 
 namespace CueSheetNet.Comparing;
@@ -28,17 +28,24 @@ public class RemarksEqualityComparer : IEqualityComparer<Remarks>, IEqualityComp
     [AllowNull]
     public StringComparer StringComparer { get; init => field = value ?? StringComparer.InvariantCulture; }
 
-    public bool Equals(Remarks? x, Remarks? y)
+    public bool Equals(Remarks? x, Remarks? y) => FindFirstDifference(x, y, "Remarks") is null;
+
+    public CueDifference? FindFirstDifference(Remarks? x, Remarks? y, string path)
     {
         if (ReferenceEquals(x, y))
-            return true;
+            return null;
         if (x is null || y is null)
-            return false;
+            return new(path, x, y);
         if (x.Count != y.Count)
-            return false;
-        var itemA = x.OrderBy(r => r.Line, StringComparer);
-        var itemB = y.OrderBy(r => r.Line, StringComparer);
-        return itemA.SequenceEqual(itemB, this);
+            return new($"{path}.Count", x.Count, y.Count);
+        var itemA = x.OrderBy(r => r.Line, StringComparer).ToList();
+        var itemB = y.OrderBy(r => r.Line, StringComparer).ToList();
+        for (int i = 0; i < itemA.Count; i++)
+        {
+            if (!Equals(itemA[i], itemB[i]))
+                return new($"{path}[{i}]", itemA[i].Line, itemB[i].Line);
+        }
+        return null;
     }
 
     public int GetHashCode([DisallowNull] Remarks obj)

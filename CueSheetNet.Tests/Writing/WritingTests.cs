@@ -9,7 +9,7 @@ public class WritingTests
     public void RoundTripKeepsTrackRemarkUnderTrack()
     {
         // bug: RoundTripTests compares sorted lines, which hides REM COMPOSER moving from track 1 to the sheet (CueReader.ParseREM)
-        var lines = CueSheet.Parse(Utils.GetFile("Equality", "Base.cue")).WriteToString()
+        var lines = Samples.Base.Load().WriteToString()
             .Split(["\r\n", "\n"], StringSplitOptions.RemoveEmptyEntries)
             .Select(x => x.Trim()).ToList();
         int track = lines.FindIndex(x => x.StartsWith("TRACK 01", StringComparison.Ordinal));
@@ -21,7 +21,7 @@ public class WritingTests
     public void NewlineInTitleDoesNotInjectLines()
     {
         // bug: CueWriter does not escape newlines inside values
-        var cue = CueSheet.Parse(Utils.GetFile("Equality", "Base.cue"));
+        var cue = Samples.Base.Load();
         cue.Title = "first\nsecond";
         var written = cue.WriteToString();
         CueSheet.ParseFromString(written);
@@ -50,7 +50,7 @@ public class WritingTests
     public void SaveFallsBackWhenSourceEncodingCannotRepresentText()
     {
         // bug: CueWriter documents a fallback to the default encoding but throws EncoderFallbackException
-        var cue = CueSheet.Parse(Utils.GetFile("EncodingDetection", "1252.cue"));
+        var cue = Samples.Cp1252.Load();
         const string nonAscii = "残酷な天使のテーゼ";
         cue.Title = nonAscii;
         string dir = Path.Combine("TestItems", "TempData", "WritingEncoding");
@@ -68,7 +68,7 @@ public class WritingTests
         try
         {
             CultureInfo.CurrentCulture = new CultureInfo("pl-PL"); // uses comma as separator
-            var cue = CueSheet.Parse(Utils.GetFile("Equality", "Base.cue"));
+            var cue = Samples.Base.Load();
             cue.ReplayGainAlbumGain = 1.5;
             Assert.AreEqual(1.5, cue.ReplayGainAlbumGain);
         }

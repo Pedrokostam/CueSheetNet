@@ -15,6 +15,11 @@
 		<IsTestProject>true</IsTestProject>
 		<Nullable>enable</Nullable>
 	</PropertyGroup>
+	<ItemGroup>
+	  <Compile Remove="TestItems\SavingTests\**" />
+	  <EmbeddedResource Remove="TestItems\SavingTests\**" />
+	  <None Remove="TestItems\SavingTests\**" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
@@ -38,7 +43,6 @@
 
 	<ItemGroup>
 		<Folder Include="TestItems\CopyingTests\" />
-		<Folder Include="TestItems\SavingTests\" />
 		<Folder Include="TestItems\CopyingTests\" />
 	</ItemGroup>
 

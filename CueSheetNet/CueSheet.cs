@@ -128,9 +128,12 @@ public class CueSheet : IRemarkable, IEquatable<CueSheet>
     public void ChangeFilePathsType(bool keepPathQualified)
     {
         UseQualifiedPaths = keepPathQualified;
-        foreach (var item in AdditionalFiles)
+        if (!_additionalFiles.IsEmptyOrUninitialized)
         {
-            item.ChangeFilePathType(keepPathQualified);
+            foreach (var item in AdditionalFiles)
+            {
+                item.ChangeFilePathType(keepPathQualified);
+            }
         }
         foreach (var item in Files)
         {
@@ -405,11 +408,18 @@ public class CueSheet : IRemarkable, IEquatable<CueSheet>
     {
         var file = track.File;
         int absIndex = track.AbsolutePosition;
+        if (track.IsEacStyle)
+        {
+            if (track.NextTrackInFile() is not null)
+            {
+                throw new InvalidOperationException("Cannot remove split track if there are other tracks in the file");
+            }
+        }
         if (file.Tracks.Count == 1)
         {
             throw new InvalidOperationException("Cannot remove file's only track - remove the file instead");
         }
-        Data.RemoveAll(x => ReferenceEquals(x.Track, track));
+        Data.RemoveAll(x => ReferenceEquals(x.Track, track) && ReferenceEquals(x.File, file));
         if (preserveGap)
         {
             NormalizeGaps(1, absIndex);
@@ -424,6 +434,24 @@ public class CueSheet : IRemarkable, IEquatable<CueSheet>
         }
         int trackBefore = file.PreviousFile()?.Tracks[^1].AbsolutePosition ?? 0;
         int gap = file.Tracks.Count;
+        if (file.Tracks[0].IsEacStyle)
+        {
+            if (file.PreviousFile() is null)
+            {
+                throw new UnreachableException("File with first track split must not be the first file of sheet");
+            }
+            if (file.NextFile() is not CueDataFile nexto)
+            {
+                throw new InvalidOperationException("Cannot remove the last file of sheet if that file contained tracks with split index.");
+            }
+            if (nexto.Tracks[0].HasZerothIndex)
+            {
+                throw new InvalidOperationException("Cannot remove a file with a split track if the next file starts with a zero-index track");
+            }
+            var prevFileSplitIndexLinkIndex = Data.IndexOfRef(file) - 1;
+            var nextFileFirstIndex = Data.IndexOfRef(nexto);
+            Data[prevFileSplitIndexLinkIndex] = Data[prevFileSplitIndexLinkIndex] with { Track = Data[nextFileFirstIndex].Track };
+        }
         Data.RemoveAll(x => ReferenceEquals(x.File, file));
         if (preserveGaps)
         {
@@ -520,7 +548,7 @@ public class CueSheet : IRemarkable, IEquatable<CueSheet>
         }
         if (markPrevAsSplit)
             lastData.Index.IsSplit = true;
-        Data.Add(new(file, track, index));
+        AddData(file, track, index);
     }
 
     private void AddFirstIndex(CueIndex index, CueTrack track, CueDataFile file)
@@ -533,7 +561,7 @@ public class CueSheet : IRemarkable, IEquatable<CueSheet>
             throw new ArgumentException("First index must be either 0 or 1", nameof(index));
         }
         ThrowIfOutsideOfFile(index, file);
-        Data.Add(new(file, track, index));
+        AddData(file, track, index);
     }
 
     /// <summary>
@@ -559,6 +587,17 @@ public class CueSheet : IRemarkable, IEquatable<CueSheet>
 
             throw new ArgumentException($"Time {time} is outside of file {file.Path} range (duration is: {file.Meta.Value.CueDuration})");
         }
+    }
+
+    private void AddData(Link link)
+    {
+        link.File.ChangeFilePathType(UseQualifiedPaths);
+        Data.Add(link);
+    }
+    private void AddData(CueDataFile file, CueTrack track, CueIndex index)
+    {
+        file.ChangeFilePathType(UseQualifiedPaths);
+        Data.Add(new(file, track, index));
     }
 
     public bool Equals(CueSheet? other)

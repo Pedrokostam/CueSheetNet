@@ -1,6 +1,7 @@
 ﻿using CueSheetNet.Syntax;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,9 +20,14 @@ public readonly record struct TrackInsertParameters
     public CueTime? Postgap { get; init; }
     public CueTime? Pregap { get; init; }
 
-    public TrackInsertParameters(string type) 
+    public TrackInsertParameters(string type) : this(TrackType.FromString(type))
     {
-        Type = TrackType.FromString(type);
     }
+    public TrackInsertParameters([DisallowNull] TrackType type)
+    {
+        ArgumentNullException.ThrowIfNull(type);
+        Type = type;
+    }
+    public static TrackInsertParameters Audio => new TrackInsertParameters(TrackType.AUDIO);
 
 }

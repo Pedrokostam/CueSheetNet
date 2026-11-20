@@ -11,7 +11,7 @@ internal static class AdditionalFileHelper
     // Static HashSet for constant file names to avoid repeated allocation
     private static readonly System.Collections.Generic.HashSet<string> ConstantTargetNames =
         new(StringComparer.OrdinalIgnoreCase) { "album", "cover", "art" };
-
+    private readonly static EnumerationOptions EnumerationOptions = new EnumerationOptions() { IgnoreInaccessible = true, MatchCasing = MatchCasing.CaseInsensitive, RecurseSubdirectories = false, MatchType = MatchType.Simple };
     public static IEnumerable<CueExtraFile> FindExtraFiles(CueSheet sheet)
     {
         if (sheet.SourceFile is null)
@@ -51,6 +51,14 @@ internal static class AdditionalFileHelper
 
     private static IEnumerable<FileInfo> SeekRelated(DirectoryInfo dir, string baseName, HashSet<FileSystemInfo> skipFiles, bool keepQualified = false)
     {
+        var otherCues = dir
+            .EnumerateFiles("*.cue", EnumerationOptions)
+            .Any(x => !x.Name.Contains(baseName, StringComparison.OrdinalIgnoreCase));
+        if (otherCues)
+        {
+            // at least one cuesheet other than current in the directory, cant determine the owner of generic named files 
+            yield break;
+        }
         IEnumerable<FileInfo> files;
         try
         {

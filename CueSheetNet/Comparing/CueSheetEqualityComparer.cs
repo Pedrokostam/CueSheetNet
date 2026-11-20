@@ -1,4 +1,4 @@
-﻿using CueSheetNet.Components;
+using CueSheetNet.Components;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -9,6 +9,12 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace CueSheetNet.Comparing;
+
+/// <summary>Where two sheets first differ. <see cref="Path"/> locates the field, the values are what was compared.</summary>
+public sealed record CueDifference(string Path, object? Expected, object? Actual)
+{
+    public override string ToString() => $"{Path}: expected <{Expected ?? "null"}> but was <{Actual ?? "null"}>";
+}
 
 public record CueSheetEqualityComparer : IEqualityComparer<CueSheet>
 {
@@ -42,7 +48,29 @@ public record CueSheetEqualityComparer : IEqualityComparer<CueSheet>
         /// <remarks>1 << 3</remarks>
         Remarks = 1 << 3,
 
-        All = Structure | CommonFields | OptionalFields | Remarks,
+        /// <summary>
+        /// When this flag is set, tracks will not be compared using values inherited from the sheet.
+        /// <para>
+        /// For example the following cue sheets will be considere unequal under ExplicitValues, and equal otherwise. The track PERFOMER is not set in one case.
+        /// <code>
+        /// PERFORMER "ARTIST"
+        /// FILE File.wav WAVE
+        ///    TRACK 01 AUDIO
+        ///    PERFORMER "ARTIST"
+        ///    INDEX 01 00:00:00
+        /// </code>
+        /// <code>
+        /// PERFORMER "ARTIST"
+        /// FILE File.wav WAVE
+        ///    TRACK 01 AUDIO
+        ///    INDEX 01 00:00:00
+        /// </code>
+        /// </para>
+        /// </summary>
+        ExplicitValues = 1 << 4,
+
+        Full = Structure | CommonFields | OptionalFields | Remarks,
+        FullStrict = Structure | CommonFields | OptionalFields | Remarks | ExplicitValues,
 
     }
     public static readonly CueSheetEqualityComparer InvariantCulture = new(StringComparer.InvariantCulture);
@@ -88,88 +116,81 @@ public record CueSheetEqualityComparer : IEqualityComparer<CueSheet>
 
     [AllowNull]
     public StringComparer StringComparer { get; init => field = value ?? StringComparer.InvariantCulture; }
-    public ComparisonOptions Options { get; init; } = ComparisonOptions.All;
+    public ComparisonOptions Options { get; init; } = ComparisonOptions.Full;
     public RemarksEqualityComparer RemarksComparer { get; }
 
-    public bool Equals(CueSheet? x, CueSheet? y)
+    public bool Equals(CueSheet? x, CueSheet? y) => FindFirstDifference(x, y) is null;
+
+    /// <summary>Returns the first difference in comparison order, or null when the sheets are equal.</summary>
+    public CueDifference? FindFirstDifference(CueSheet? x, CueSheet? y)
     {
         if (ReferenceEquals(x, y))
-            return true;
+            return null;
         if (x is null || y is null)
-            return false;
+            return new("Sheet", x, y);
         if (x.Data.Count != y.Data.Count)
-            return false;
+            return new("Data.Count", x.Data.Count, y.Data.Count);
         if (Options.HasFlag(ComparisonOptions.CommonFields))
         {
-            var res = StringComparer.Equals(x.Title, y.Title)
-                && StringComparer.Equals(x.Performer, y.Performer);
-            if (!res)
-            {
-                return res;
-            }
+            if (Differs(x.Title, y.Title))
+                return new("Title", x.Title, y.Title);
+            if (Differs(x.Performer, y.Performer))
+                return new("Performer", x.Performer, y.Performer);
         }
         if (Options.HasFlag(ComparisonOptions.OptionalFields))
         {
-            if (!StringComparer.Equals(x.Songwriter, y.Songwriter)
-                || !StringComparer.Equals(x.Catalog, y.Catalog)
-                || !PathsEqual(x.CdTextFile, y.CdTextFile))
-            {
-                return false;
-            }
-        }
-        if (Options.HasFlag(ComparisonOptions.CommonFields))
-        {
-            if (!StringComparer.Equals(x.Title, y.Title))
-            {
-                return false;
-            }
+            if (Differs(x.Songwriter, y.Songwriter))
+                return new("Songwriter", x.Songwriter, y.Songwriter);
+            if (Differs(x.Catalog, y.Catalog))
+                return new("Catalog", x.Catalog, y.Catalog);
+            if (!PathsEqual(x.CdTextFile, y.CdTextFile))
+                return new("CdTextFile", x.CdTextFile, y.CdTextFile);
         }
         for (int i = 0; i < x.Data.Count; i++)
         {
-            if (!LinksEqual(x.Data[i], y.Data[i]))
-                return false;
+            if (FindLinkDifference(x.Data[i], y.Data[i], $"Data[{i}]") is { } diff)
+                return diff;
         }
         if (Options.HasFlag(ComparisonOptions.Remarks))
-        {
-            return RemarksComparer.Equals(x.Remarks, y.Remarks);
-        }
-        return true;
+            return RemarksComparer.FindFirstDifference(x.Remarks, y.Remarks, "Remarks");
+        return null;
     }
-    private bool LinksEqual(Link linkX, Link linkY)
+
+    private bool Differs(string? a, string? b) => !StringComparer.Equals(a, b);
+
+    private CueDifference? FindLinkDifference(Link x, Link y, string at)
     {
-        var res = IndicesEqual(linkX.Index, linkY.Index)
-               && linkX.Track.Position == linkY.Track.Position
-               && linkX.Track.Type == linkY.Track.Type
-               && PathsEqual(linkX.File, linkY.File)
-               && linkX.File.Type == linkY.File.Type
-               && linkX.Track.Pregap == linkY.Track.Pregap
-               && linkX.Track.Postgap == linkY.Track.Postgap;
-        if (!res)
-        {
-            return res;
-        }
+        if (!IndicesEqual(x.Index, y.Index))
+            return new($"{at}.Index", x.Index, y.Index);
+        if (x.Track.Position != y.Track.Position)
+            return new($"{at}.Track.Position", x.Track.Position, y.Track.Position);
+        if (x.Track.Type != y.Track.Type)
+            return new($"{at}.Track.Type", x.Track.Type, y.Track.Type);
+        if (!PathsEqual(x.File, y.File))
+            return new($"{at}.File.Path", x.File.Path, y.File.Path);
+        if (x.File.Type != y.File.Type)
+            return new($"{at}.File.Type", x.File.Type, y.File.Type);
+        if (x.Track.Pregap != y.Track.Pregap)
+            return new($"{at}.Track.Pregap", x.Track.Pregap, y.Track.Pregap);
+        if (x.Track.Postgap != y.Track.Postgap)
+            return new($"{at}.Track.Postgap", x.Track.Postgap, y.Track.Postgap);
         if (Options.HasFlag(ComparisonOptions.CommonFields))
         {
-            res = StringComparer.Equals(linkX.Track.Title, linkY.Track.Title)
-                && StringComparer.Equals(linkX.Track.Performer, linkY.Track.Performer);
-            if (!res)
-            {
-                return res;
-            }
+            if (Differs(x.Track.Title, y.Track.Title))
+                return new($"{at}.Track.Title", x.Track.Title, y.Track.Title);
+            if (Differs(x.Track.Performer, y.Track.Performer))
+                return new($"{at}.Track.Performer", x.Track.Performer, y.Track.Performer);
         }
         if (Options.HasFlag(ComparisonOptions.OptionalFields))
         {
-            if (!StringComparer.Equals(linkX.Track.Songwriter, linkY.Track.Songwriter)
-                || !StringComparer.Equals(linkX.Track.Isrc, linkY.Track.Isrc))
-            {
-                return false;
-            }
+            if (Differs(x.Track.Songwriter, y.Track.Songwriter))
+                return new($"{at}.Track.Songwriter", x.Track.Songwriter, y.Track.Songwriter);
+            if (Differs(x.Track.Isrc, y.Track.Isrc))
+                return new($"{at}.Track.Isrc", x.Track.Isrc, y.Track.Isrc);
         }
         if (Options.HasFlag(ComparisonOptions.Remarks))
-        {
-            return RemarksComparer.Equals(linkX.Track.Remarks, linkY.Track.Remarks);
-        }
-        return true;
+            return RemarksComparer.FindFirstDifference(x.Track.Remarks, y.Track.Remarks, $"{at}.Track.Remarks");
+        return null;
     }
     private static bool IndicesEqual(CueIndex a, CueIndex b) =>
         a.Position == b.Position && a.Time == b.Time && a.IsSplit == b.IsSplit;
