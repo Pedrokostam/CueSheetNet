@@ -1,57 +1,63 @@
 ﻿using CueSheetNet.TextParser;
+using System.ComponentModel;
 
 namespace CueSheetNet;
-
-public sealed record CueWriterSettings
+public record CueWriterSettings
 {
+    public string NewlineString()
+    {
+        return NewLine switch
+        {
+            NewLineType.PlatformDefault => Environment.NewLine,
+            NewLineType.LF => "\n",
+            NewLineType.CRLF => "\r\n",
+            _ => throw new InvalidEnumArgumentException(nameof(NewLine), (int)NewLine, typeof(NewLineType))
+        };
+    }
+    /// <summary>
+    /// The fallback encoding. Most compatible (UTF-8 without preamble).
+    /// </summary>
     public static readonly Encoding DefaultEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false,
                                                                        throwOnInvalidBytes: true);
-    public enum RedundantFieldBehaviors
+    /// <summary>
+    /// If <see langword="true"/>, every suitable field will be enclosed in quotes, even if it does not contain whitespace
+    /// </summary>
+    public bool ForceQuoting { get; init; }
+
+    public InnerQuotation InnerQuotationReplacement
     {
-        KeepAsIs,
-        RemoveRedundant,
-        AlwaysWrite,
+        get;
+        init
+        {
+            if (!value.IsValid)
+                throw new ArgumentException("Cannot use null char for quotation", nameof(value));
+            field = value;
+        }
     }
 
     /// <summary>
-    /// If true, every suitable field will be enclosed in quotes, even if it does not contain whitespace
+    /// Encoding used to save the text representaion of the sheet to a file.
+    /// <para>
+    /// If set to <see langword="null"/> it will first attempt to reuse the encoding used during parsing, then fall back to <see cref="CueWriterSettings.DefaultEncoding"/>.
+    /// </para>
     /// </summary>
-    public bool ForceQuoting { get; set; }
+    /// <remarks>
+    /// Ignored when writing to string.
+    /// </remarks>
+    public Encoding? Encoding { get; init; }
 
-    public InnerQuotation InnerQuotationReplacement { get; set; }
+    public NewLineType NewLine { get; init; }
+    public Indentation Indentation { get; init; }
 
-    public Encoding? Encoding { get; set; }
+    public RedundantFieldBehavior RedundantFields { get; init; }
 
-    public string NewLine { get; set; }
-
-    private int _indentationDepth;
-    public int IndentationDepth
-    {
-        get => _indentationDepth;
-        set => _indentationDepth = Math.Max(value, 0);
-    }
-    public RedundantFieldBehaviors RedundantFieldsBehavior { get; set; }
-
-
-    private char _indentationCharacter;
-    public char IndentationCharacter
-    {
-        get => _indentationCharacter;
-        set
-        {
-            if (!char.IsWhiteSpace(value))
-                throw new ArgumentException($"Indentation character must be whitespace (is: '{value}' - 0x{(int)value:X})", nameof(value));
-            _indentationCharacter = value;
-        }
-    }
     public CueWriterSettings()
     {
         ForceQuoting = true;
-        IndentationDepth = 2;
-        IndentationCharacter = ' ';
-        NewLine = Environment.NewLine;
+        Indentation = Indentation.Standard;
+        NewLine = NewLineType.PlatformDefault;
         Encoding = null;
         InnerQuotationReplacement = InnerQuotation.CurvedDoubleTopQuotation;
-        RedundantFieldsBehavior = RedundantFieldBehaviors.KeepAsIs;
+        RedundantFields = RedundantFieldBehavior.IfExplicitlySet;
     }
 }

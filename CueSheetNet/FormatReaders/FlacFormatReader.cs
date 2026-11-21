@@ -1,7 +1,10 @@
-﻿namespace CueSheetNet.FormatReaders;
+﻿using Microsoft.Extensions.Logging;
+
+namespace CueSheetNet.FormatReaders;
 
 internal sealed class FlacFormatReader : IAudioBinaryStreamFormatReader
 {
+    static ILogger Loggerio => Loggingq.AudioReadingLogger;
     public string FormatName { get; } = "Flac";
     public string[] Extensions { get; } = [".flac"];
     private static readonly byte[] fLaC = "fLaC"u8.ToArray(); // 0x66 0x4c 0x61 0x43
@@ -20,6 +23,7 @@ internal sealed class FlacFormatReader : IAudioBinaryStreamFormatReader
         return four.SequenceEqual(fLaC);
     }
 
+    [TraceExecutionTime("fLaC metadata reading")]
     public bool ReadMetadata(Stream stream, out FileMetadata metadata)
     {
         metadata = default;
@@ -46,11 +50,11 @@ internal sealed class FlacFormatReader : IAudioBinaryStreamFormatReader
         */
         stream.Seek(4, SeekOrigin.Begin);
         if (stream.ReadByte() != 0)
-            throw new InvalidDataFormatException("Invalid FLAC metadata block header");
+            throw new FormatException("Invalid FLAC metadata block header");
         Span<byte> bytes = stackalloc byte[8];
         stream.Seek(18, SeekOrigin.Begin);
         if (stream.Read(bytes) != 8)
-            throw new InvalidDataFormatException("FLAC file cut short");
+            throw new FormatException("FLAC file cut short");
         // SHIFT OPERATORS ARE DONE AFTER ADDING!!!
         // ________ ____0000 00001111 11112222
         int samples =

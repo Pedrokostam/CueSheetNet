@@ -1,4 +1,4 @@
-﻿using CueSheetNet.Logging;
+﻿using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using System.Globalization;
 
@@ -6,6 +6,8 @@ namespace CueSheetNet.FormatReaders;
 
 public sealed class FfprobeFormatReader : IAudioFileFormatReader
 {
+    public static ILogger Loggerio => Loggingq.AudioReadingLogger;
+
     public static bool? FfprobeDetected { get; private set; }
     private static string fFProbePath = "ffprobe";
     public static string FFProbePath
@@ -49,18 +51,17 @@ public sealed class FfprobeFormatReader : IAudioFileFormatReader
         catch (System.ComponentModel.Win32Exception)
         {
             FfprobeDetected = false;
-            Logger.LogWarning($"Could not find ffprobe using path: '{FFProbePath}' - file metadata not read. Specify path to ffprobe using {nameof(FfprobeFormatReader)}.{nameof(FfprobeFormatReader.FFProbePath)}");
+            Loggerio.FfprobeMissingExecutable(FFProbePath, nameof(FfprobeFormatReader), nameof(FFProbePath));
         }
         catch (Exception e)
         {
-            Logger.LogWarning("Error {Error.Message} - file metada not read", e);
+            Loggerio.FfprobeError(e);
         }
         metadata = default;
         return false;
     }
     private static readonly char[] Separators = ['\r', '\n'];
 
-#if NET7_0_OR_GREATER // IParsable introduced in NET7
     private static T GetValue<T>(Dictionary<string, string> dict, string key, T default_val) where T : IParsable<T>
     {
         if (dict.TryGetValue(key, out var value))
@@ -74,25 +75,7 @@ public sealed class FfprobeFormatReader : IAudioFileFormatReader
         }
         return default_val;
     }
-#else
-    private static T GetValue<T>(Dictionary<string, string> dict, string key, T default_val)
-    {
-        if (dict.TryGetValue(key, out var value))
-        {
-            try
-            {
-                return (T)Convert.ChangeType(value, typeof(T), CultureInfo.InvariantCulture);
-            }
-            catch (Exception e) when (e is FormatException || e is InvalidCastException || e is OverflowException || e is ArgumentNullException)
-            {
-                return default_val;
-            }
-        }
-
-        return default_val;
-    }
-#endif
-
+    [TraceExecutionTime("FFProbe metadata reading")]
     public void ParseFfprobeOutput(StreamReader sreader, out FileMetadata data)
     {
         string content = sreader.ReadToEnd();

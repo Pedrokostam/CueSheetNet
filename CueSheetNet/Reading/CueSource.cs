@@ -1,39 +1,33 @@
 ﻿
+using System.Collections;
+using System.Diagnostics.CodeAnalysis;
+
 namespace CueSheetNet.Reading;
 
 public readonly record struct CueSource
 {
-    public SourceType Type { get; private init; }
-    public object? Data { get; private init; }
+    public SourceType Type { get; internal init; }
+    public object? Data { get; internal init; }
+    internal bool Initialized { get; }
     public Type? Datatype => Data?.GetType();
-    public CueSource(object? data)
+    internal CueSource(object? data, SourceType type)
     {
-        Type = data switch
-        {
-            null => SourceType.None,
-            string => SourceType.File,
-            IEnumerable<byte> => SourceType.Bytes,
-            Stream => SourceType.Stream,
-            _ => throw new ArgumentException($"Incorrect type of source data: {data.GetType()}", nameof(data))
-        };
-        Data = Type switch
-        {
-            SourceType.Bytes => ((IEnumerable<byte>)data!).ToArray(),
-            _ => data,
-        };
-    }
-    internal static CueSource FromStringContent(string content)
-    {
-        return new CueSource() { Type = SourceType.String, Data = content };
+        Type = type;
+        Data = data;
+        Initialized = true;
     }
     public override string ToString()
     {
+        if (!Initialized)
+        {
+            return "Unitialized";
+        }
         return Type switch
         {
             SourceType.None => "No source",
             SourceType.File => "File \"" + Data + "\"",
-            SourceType.Stream => $"Stream of length {((Stream)Data!).Length}",
-            SourceType.Bytes => $"Byte array of length {((Stream)Data!).Length}",
+            SourceType.Stream => $"Data of length {((Stream)Data!).Length}",
+            SourceType.Bytes => $"Byte colletion of length {((IList)Data!).Count}",
             SourceType.String => $"String content of length {((string)Data!).Length}",
             _ => Type.ToString(),
         };

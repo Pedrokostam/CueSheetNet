@@ -37,23 +37,23 @@ public record TrackType
         AlternateIdentifiers = alternates;
         SectorSize = sectorSize;
     }
-    internal static TrackType FromString(string s)
+    internal static TrackType FromString(ReadOnlySpan<char> s)
     {
         return s switch
         {
-            "AUDIO" => TrackType.AUDIO,
-            "CDG" => TrackType.CDG,
-            "MODE1_RAW" => TrackType.MODE1_2352,
-            "MODE1/2048" => TrackType.MODE1_2048,
-            "MODE1/2352" => TrackType.MODE1_2352,
-            "MODE2_RAW" => TrackType.MODE2_2352,
-            "MODE2/2048" => TrackType.MODE2_2048,
-            "MODE2/2324" => TrackType.MODE2_2324,
-            "MODE2/2336" => TrackType.MODE2_2336,
-            "MODE2/2352" => TrackType.MODE2_2352,
-            "CDI/2336" => TrackType.CDI_2336,
-            "CDI/2352" => TrackType.CDI_2352,
-            _ => new TrackType(s, -1, Modes.None, audio: false, cdspec: false, "Unknown")
+            "AUDIO" => AUDIO,
+            "CDG" => CDG,
+            "MODE1_RAW" => MODE1_2352,
+            "MODE1/2048" => MODE1_2048,
+            "MODE1/2352" => MODE1_2352,
+            "MODE2_RAW" => MODE2_2352,
+            "MODE2/2048" => MODE2_2048,
+            "MODE2/2324" => MODE2_2324,
+            "MODE2/2336" => MODE2_2336,
+            "MODE2/2352" => MODE2_2352,
+            "CDI/2336" => CDI_2336,
+            "CDI/2352" => CDI_2352,
+            _ => new TrackType(s.ToString(), -1, Modes.None, audio: false, cdspec: false, "Unknown")
         };
     }
     public static readonly TrackType AUDIO =
@@ -70,7 +70,7 @@ public record TrackType
             mode: Modes.CDG,
             audio: false,
             cdspec: true,
-            description: "Karaoke CD+G (sector size: 2448)");
+            description: "Karaoke CD+Commons (sector size: 2448)");
 
 
     public static readonly TrackType MODE1_2048 =
@@ -141,5 +141,6 @@ public record TrackType
             cdspec: true,
             description: "CDI Mode 2 data");
     public override string ToString() => Identifier;
+
 }
 

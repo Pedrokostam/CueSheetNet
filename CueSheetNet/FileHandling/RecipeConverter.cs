@@ -1,5 +1,4 @@
-﻿using CueSheetNet.Logging;
-namespace CueSheetNet.FileHandling;
+﻿namespace CueSheetNet.FileHandling;
 
 public class RecipeConverter : IAudioConverter
 {
@@ -12,8 +11,8 @@ public class RecipeConverter : IAudioConverter
     readonly List<(string input, string output)> Elements;
     public RecipeConverter(string outputFolder, string fileName, bool append, Encoding encoding, string separator)
     {
-        ExceptionHelper.ThrowIfNull(outputFolder);
-        ExceptionHelper.ThrowIfNull(fileName);
+        ArgumentNullException.ThrowIfNull(outputFolder);
+        ArgumentNullException.ThrowIfNull(fileName);
         RecipeOutputFolder = outputFolder;
         OutputName = fileName;
         Elements = [];
@@ -38,7 +37,6 @@ public class RecipeConverter : IAudioConverter
     public void Convert(string input, string output)
     {
         Elements.Add((input, output));
-        Logger.LogInformation("Added record for conversion of {Input} to {Output}", input, output);
     }
     public void PostConvert()
     {
@@ -50,7 +48,6 @@ public class RecipeConverter : IAudioConverter
             stream.Write(Separator);
             stream.WriteLine(output);
         }
-        Logger.LogInformation("Saved all records for converting ({Number})", Elements.Count);
     }
     public string PreConvert(string format)
     {

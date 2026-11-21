@@ -1,10 +1,12 @@
-﻿using CueSheetNet.Logging;
+﻿using Microsoft.Extensions.Logging;
 using static System.Buffers.Binary.BinaryPrimitives;
 
 namespace CueSheetNet.FormatReaders;
 
 public sealed class AiffFormatReader : IAudioFileFormatReader
 {
+    static ILogger Loggerio => Loggingq.AudioReadingLogger;
+
     private static readonly string[] extensions = [".AIFF", ".AIF", ".AIFC."];
     private static readonly string formatName = "Aiff";
     private static readonly byte[] FORM = "FORM"u8.ToArray();
@@ -38,7 +40,7 @@ public sealed class AiffFormatReader : IAudioFileFormatReader
         return four.SequenceEqual(AIFF) || four.SequenceEqual(AIFC);
     }
 
-    //[System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "MA0060:The value returned by Stream.Read/Stream.ReadAsync is not used", Justification = "Length of stream is ensured at the start of method")]
+    [TraceExecutionTime("Aiff metadata reading")]
     public bool ReadMetadata(Stream stream, out FileMetadata metadata)
     {
         /*
@@ -70,7 +72,7 @@ public sealed class AiffFormatReader : IAudioFileFormatReader
         Int32 size = ReadInt32BigEndian(four);
         if (size + 8 != stream.Length)
         {
-            Logger.LogWarning("Mismatched declared file length vs actual");
+            Loggerio.AiffLengthMismatch();
         }
         _ = stream.Seek(20, SeekOrigin.Begin); // at num_channels
         _ = stream.Read(two);

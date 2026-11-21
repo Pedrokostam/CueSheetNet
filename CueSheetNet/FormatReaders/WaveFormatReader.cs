@@ -1,7 +1,10 @@
-﻿namespace CueSheetNet.FormatReaders;
+﻿using Microsoft.Extensions.Logging;
+
+namespace CueSheetNet.FormatReaders;
 
 internal sealed class WaveFormatReader : IAudioFileFormatReader
 {
+    static ILogger Loggerio => Loggingq.AudioReadingLogger;
     private static readonly byte[] RIFF = "RIFF"u8.ToArray(); //  0x52 0x49 0x46 0x46
     private static readonly byte[] WAVE = "WAVE"u8.ToArray(); //  0x57 0x41 0x56 0x45
     public string FormatName { get; } = "Wave";
@@ -45,6 +48,7 @@ internal sealed class WaveFormatReader : IAudioFileFormatReader
        [36..40]	[288..320]  big		str		"data"
        [40..44]	[320..336]  little	int		data_chunk_size
     */
+    [TraceExecutionTime("WAVE metadata reading")]
     public bool ReadMetadata(Stream stream, out FileMetadata metadata)
     {
         metadata = default;
@@ -56,7 +60,7 @@ internal sealed class WaveFormatReader : IAudioFileFormatReader
         uint fileSize = binaryReader.ReadUInt32() + 8;
 
         if (fileSize != stream.Length)
-            throw new InvalidDataFormatException(
+            throw new FormatException(
                 $"Specified file length in WAVE file ({fileSize}) does not equal actual length ({stream.Length})"
             );
 
@@ -65,11 +69,11 @@ internal sealed class WaveFormatReader : IAudioFileFormatReader
         ushort format = binaryReader.ReadUInt16();
 
         if (format != 1)
-            throw new InvalidDataFormatException(
+            throw new FormatException(
                 $"Only PCM WAVE files with are supported (format {format})"
             );
         if (chunkSize != 16)
-            throw new InvalidDataFormatException(
+            throw new FormatException(
                 $"Only PCM WAVE files with format chunk size of 16 are supported (chunk size: {chunkSize})"
             );
 
@@ -87,11 +91,11 @@ internal sealed class WaveFormatReader : IAudioFileFormatReader
         uint calculatedByteRate = sampleRate * calculatedBlockAlign;
 
         if (blockAlign != calculatedBlockAlign)
-            throw new InvalidDataFormatException(
+            throw new FormatException(
                 $"Written BlockAlign rate does not match calculated one ({blockAlign} vs {calculatedBlockAlign})"
             );
         if (byteRate != calculatedByteRate)
-            throw new InvalidDataFormatException(
+            throw new FormatException(
                 $"Written ByteRate does not match calculated one ({byteRate} vs {calculatedByteRate})"
             );
 

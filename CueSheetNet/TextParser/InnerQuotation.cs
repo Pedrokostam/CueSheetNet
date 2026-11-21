@@ -39,38 +39,21 @@ public readonly record struct InnerQuotation
     /// </summary>
     public static readonly InnerQuotation Guillemets = DoubleAngleQuotation;
 
-    private readonly char openingQuote;
-    private readonly char closingQuote;
-
-    public readonly bool Symmetrical => closingQuote == openingQuote;
+    public readonly bool Symmetrical => ClosingQuote == OpeningQuote;
     /// <summary>
     /// Return whether this quotation replacement is redundant, i.e. replaces '"' with '"'
     /// </summary>
-    private readonly bool Redundant => closingQuote == DoubleQuote && openingQuote == DoubleQuote;
+    private readonly bool Redundant => ClosingQuote == DoubleQuote && OpeningQuote == DoubleQuote;
 
-    public char OpeningQuote
-    {
-        get => openingQuote;
-        init
-        {
-            openingQuote = value;
-        }
-    }
-    public char ClosingQuote
-    {
-        get => closingQuote;
-        init
-        {
-            closingQuote = value;
-        }
-    }
+    public char OpeningQuote { get; init; }
+    public char ClosingQuote { get; init; }
     /// <summary>
     /// Initialize a new instance of InnerQuotation with default opening and closing
     /// </summary>
     public InnerQuotation()
     {
-        openingQuote = DefaultOpening;
-        closingQuote = DefaultClosing;
+        OpeningQuote = DefaultOpening;
+        ClosingQuote = DefaultClosing;
     }
     /// <summary>
     /// Initialize a new instance of InnerQuotation with specified opening and closing
@@ -104,6 +87,8 @@ public readonly record struct InnerQuotation
     }
 
     public static implicit operator InnerQuotation(char symmetricalQuotation) => new(symmetricalQuotation);
+
+    public bool IsValid => OpeningQuote != default && ClosingQuote != default;
 
     private string ReplaceNonsymmetricalQuotes(string input)
     {

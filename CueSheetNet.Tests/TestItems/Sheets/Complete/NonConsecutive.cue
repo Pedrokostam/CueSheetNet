@@ -1,0 +1,12 @@
+TITLE "Gaps"
+PERFORMER "Gap Artist"
+FILE "Gaps.wav" WAVE
+  TRACK 01 AUDIO
+    TITLE "One"
+    INDEX 01 00:00:00
+  TRACK 03 AUDIO
+    TITLE "Three"
+    INDEX 01 01:00:00
+  TRACK 04 AUDIO
+    TITLE "Four"
+    INDEX 01 02:00:00

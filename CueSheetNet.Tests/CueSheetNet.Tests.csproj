@@ -2,11 +2,11 @@
 
 	<PropertyGroup Condition="'$(OS)' != 'Windows_NT'">
 		<DefineConstants>NON_WINDOWS</DefineConstants>
-		<TargetFrameworks>net8.0;net6.0</TargetFrameworks>
+		<TargetFrameworks>net8.0</TargetFrameworks>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
 		<DefineConstants>WINDOWS</DefineConstants>
-		<TargetFrameworks>net8.0;net462;net6.0</TargetFrameworks>
+		<TargetFrameworks>net8.0</TargetFrameworks>
 	</PropertyGroup>
 	<PropertyGroup>
 		<ImplicitUsings>enable</ImplicitUsings>
@@ -15,13 +15,18 @@
 		<IsTestProject>true</IsTestProject>
 		<Nullable>enable</Nullable>
 	</PropertyGroup>
+	<ItemGroup>
+	  <Compile Remove="TestItems\SavingTests\**" />
+	  <EmbeddedResource Remove="TestItems\SavingTests\**" />
+	  <None Remove="TestItems\SavingTests\**" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
 		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
 		<PackageReference Include="Moq" Version="4.20.70" />
-		<PackageReference Include="MSTest.TestAdapter" Version="2.2.10" />
-		<PackageReference Include="MSTest.TestFramework" Version="3.3.1" />
+		<PackageReference Include="MSTest.TestAdapter" Version="3.4.3" />
+		<PackageReference Include="MSTest.TestFramework" Version="3.4.3" />
 		<PackageReference Include="System.Memory" Version="4.5.5" Condition="'$(TargetFramework)' == 'net462'" />
 		<PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" Condition="'$(TargetFramework)' == 'net462'" />
 	</ItemGroup>
@@ -38,8 +43,14 @@
 
 	<ItemGroup>
 		<Folder Include="TestItems\CopyingTests\" />
-		<Folder Include="TestItems\SavingTests\" />
 		<Folder Include="TestItems\CopyingTests\" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <EmbeddedResource Update="Properties\Resources.resx">
+	    <Generator>ResXFileCodeGenerator</Generator>
+	    <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+	  </EmbeddedResource>
 	</ItemGroup>
 
 </Project>

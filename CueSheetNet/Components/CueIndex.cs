@@ -1,102 +1,136 @@
-﻿using CueSheetNet.Internal;
+﻿using CueSheetNet.Components;
+using CueSheetNet.Exceptions;
+using CueSheetNet.Extensions;
 
 namespace CueSheetNet;
 
 /// <summary>
 /// Provides information about a CUE index, including its position, place in the sheet, parent file and parent sheet.
 /// </summary>
-public readonly record struct CueIndex
+public class CueIndex
 {
+
+    private readonly CueSheet _sheet;
+
+    public bool IsSplit { get; internal set; } = false;
+
+    internal bool StartsContent => Position == 1;
+
+    internal CueIndex(int position, CueTime time, CueSheet sheet)
+    {
+        _sheet = sheet;
+        Time = time;
+        Position = position;
+    }
     /// <summary>
     /// Maximum number of indices in a file.
     /// </summary>
     public const int MaxNumber = 99;
 
-    private readonly int _Number;
-
     /// <summary>
-    /// Number of index in its file.
+    /// Index's position in the track.
     /// </summary>
-    public int Number
+    public int Position
     {
-        get => _Number;
-        init
+        get;
+        internal set
         {
-            if (value < 0)
-                throw new ArgumentOutOfRangeException(nameof(value), $"Index must not be negative");
-            if (value > MaxNumber)
-                throw new ArgumentOutOfRangeException(nameof(value), "Index must be less than 100");
-            _Number = value;
+            ArgumentOutOfRangeException.ThrowIfNegative(value, nameof(Position));
+            field = value;
         }
     }
 
     /// <summary>
-    /// Number of index in the whole sheet.
+    /// Position of the index in the whole sheet.
     /// </summary>
-    public int AbsoluteIndex { get; init; }
+    public int AbsolutePosition => _sheet.Data.FindIndex(x => ReferenceEquals(x.Index, this));
+    public int AbsolutePositionInFile
+    {
+        get
+        {
+            if (_sheet.Files.Count == 1)
+            {
+                return AbsolutePosition;
+            }
+            return File.Tracks.SelectMany(x => x.Indices).IndexOfRef(this);
+        }
+    }
 
     /// <summary>
-    /// Position of the index in its file.
+    /// Time placement of the index in its file.
     /// </summary>
-    public CueTime Time { get; init; }
+    public CueTime Time { get; private set; }
 
     /// <summary>
     /// The file which contains this index.
     /// </summary>
-    public CueDataFile File { get; init; }
+    public CueDataFile File => _sheet.Data[AbsolutePosition].File;
 
     /// <summary>
     /// The track which contains this index.
     /// </summary>
-    public CueTrack Track { get; init; }
+    public CueTrack Track => _sheet.Data[AbsolutePosition].Track;
 
-    internal CueIndex(CueIndexImpl iimpl)
-        : this(iimpl.Number, iimpl.Index, iimpl.File, iimpl.Track, iimpl.Time) { }
-
-    public CueIndex(
-        int number,
-        int absoluteIndex,
-        CueDataFile file,
-        CueTrack track,
-        int minutes,
-        int seconds,
-        int frames
-    )
-        : this(number, absoluteIndex, file, track, new CueTime(minutes, seconds, frames)) { }
-
-    public CueIndex(
-        int number,
-        int absoluteIndex,
-        CueDataFile file,
-        CueTrack track,
-        CueTime cueTime
-    )
-        : this(number, absoluteIndex, file, track, cueTime.TotalFrames) { }
-
-    public CueIndex(
-        int number,
-        int absoluteIndex,
-        CueDataFile file,
-        CueTrack track,
-        TimeSpan timeSpan
-    )
-        : this(number, absoluteIndex, file, track, CueTime.FromTimeSpan(timeSpan)) { }
-
-    public CueIndex(
-        int number,
-        int absoluteIndex,
-        CueDataFile file,
-        CueTrack track,
-        int totalFrames
-    )
+    public CueIndex? PrevioustIndexInTrack()
     {
-        AbsoluteIndex = absoluteIndex;
-        File = file ?? throw new ArgumentNullException(nameof(file));
-        Track = track ?? throw new ArgumentNullException(nameof(track));
-        _Number = number;
-        Time = new(totalFrames);
+        var prevIndex = AbsolutePosition - 1;
+        if (prevIndex < 0)
+        {
+            return null;
+        }
+        var prev = _sheet.Data[prevIndex];
+        if (ReferenceEquals(prev.Track, this.Track) && ReferenceEquals(prev.File, this.Track.File))
+        {
+            return prev.Index;
+        }
+        return null;
     }
 
-    public override string ToString() =>
-        $"INDEX {Number:d2} {Time} ({AbsoluteIndex:d2}, {Track.Title}, {File.SourceFile.Name})";
+    public CueIndex? NextIndexInTrack()
+    {
+        var nextIndex = AbsolutePosition + 1;
+        if (nextIndex >= _sheet.Data.Count)
+        {
+            return null;
+        }
+        var next = _sheet.Data[nextIndex];
+        if (ReferenceEquals(next.Track, this.Track) && ReferenceEquals(next.File, this.Track.File))
+        {
+            return next.Index;
+        }
+        return null;
+    }
+
+    public void MoveTime(CueTime newTime)
+    {
+        // Index times are relative to their file, so any index in the same file (regardless of track) bounds the move.
+        int position = AbsolutePosition;
+        var file = _sheet.Data[position].File;
+        bool aboveLower = position > 0 && ReferenceEquals(_sheet.Data[position - 1].File, file)
+            ? newTime > _sheet.Data[position - 1].Index.Time
+            : newTime >= CueTime.Zero;
+        bool belowUpper = position + 1 < _sheet.Data.Count && ReferenceEquals(_sheet.Data[position + 1].File, file)
+            ? newTime < _sheet.Data[position + 1].Index.Time
+            : file.Meta is not { } meta || newTime < meta.CueDuration;
+        if (!aboveLower || !belowUpper)
+            throw new InvalidOperationException($"Cannot move index before or after its neighbors ({newTime}).");
+        Time = newTime;
+    }
+
+    public void ShiftTime(int frames)
+    {
+        MoveTime(Time + frames);
+    }
+    public void ShiftTime(CueTime timeshift)
+    {
+        MoveTime(Time + timeshift);
+    }
+    public override string ToString()
+    {
+        int position = AbsolutePosition;
+        if (position < 0)
+            return $"INDEX {Position:d2} {Time} (detached)";
+        var link = _sheet.Data[position];
+        return $"INDEX {Position:d2} {Time} ({position:d2}, {link.Track.Title}, {link.File.Name})";
+    }
 }

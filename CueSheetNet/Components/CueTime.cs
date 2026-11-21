@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Metalama.Framework.Code;
+using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
@@ -7,30 +8,18 @@ namespace CueSheetNet;
 
 /// <include file='CueTime.xml' path='Elements/Members/Member[@name="CueTimeClass"]'/>
 public readonly record struct CueTime
-    : IComparable<CueTime>
+    : INumberBase<CueTime>
+    , IComparable<CueTime>
     , IComparable
-    , IFormattable
-#if NET7_0_OR_GREATER // static interface members introduces in NET7
-    , IParsable<CueTime>
-    , ISpanParsable<CueTime>
-    , IDecrementOperators<CueTime>
-    , IIncrementOperators<CueTime>
-    , IAdditionOperators<CueTime, CueTime, CueTime>
+    , IComparisonOperators<CueTime, CueTime, bool>
+    , IModulusOperators<CueTime, CueTime, CueTime>
     , IAdditionOperators<CueTime, int, CueTime>
-    , IAdditiveIdentity<CueTime, CueTime>
-    , ISubtractionOperators<CueTime, CueTime, CueTime>
     , ISubtractionOperators<CueTime, int, CueTime>
     , IMultiplyOperators<CueTime, int, CueTime>
     , IMultiplyOperators<CueTime, double, CueTime>
     , IDivisionOperators<CueTime, int, CueTime>
     , IDivisionOperators<CueTime, double, CueTime>
     , IDivisionOperators<CueTime, CueTime, double>
-    , IUnaryNegationOperators<CueTime, CueTime>
-    , IUnaryPlusOperators<CueTime, CueTime>
-    , IModulusOperators<CueTime, CueTime, CueTime>
-    , IEqualityOperators<CueTime, CueTime, bool>
-    , IComparisonOperators<CueTime, CueTime, bool>
-#endif
 {
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="TotalFrames"]'/>
     public int TotalFrames { get; }  // Int is sufficient - it can describe up to 331 days of continuous playback (or about 4.5 TB of WAVE)
@@ -80,20 +69,26 @@ public readonly record struct CueTime
     /// <summary>How many milliseconds are in a frame: 13.(3).</summary>
     public const double MillisecondsPerFrame = (double)MillisecondsPerSecond / FramesPerSecond; // 13.333333333333334
 
-    /// <summary> CueTime corresponding to <see cref="TotalFrames">TotalFrames</see> of 0.</summary>
-    public static readonly CueTime Zero = new(0);
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="Zero"]'/>
+    public static CueTime Zero { get; } = new(0);
+
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="One"]'/>
+    public static CueTime One { get; } = new(1);
+
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="Radix"]'/>
+    public static int Radix => 10;
 
     /// <summary>CueTime corresponding to <see cref="TotalFrames">TotalFrames</see> of <see cref="int.MaxValue">MaxValue</see> of <see cref="int"/>.</summary>
     public static readonly CueTime MaxValue = new(int.MaxValue);
 
     /// <summary>CueTime corresponding to 99:59:74, which is the maximum the ordinary CueSheet syntax can represent.</summary>
-    public static readonly CueTime StandardSheetMaxValue = new(99, 59, 74);
+    public static readonly CueTime StandardCueSheetMaxValue = new(99, 59, 74);
 
     /// <summary>CueTime corresponding to <see cref="TotalFrames">TotalFrames</see> of <see cref="int.MinValue">MinValue</see> of <see cref="int"/>.</summary>
     public static readonly CueTime MinValue = new(int.MinValue);
 
     /// <summary>CueTime corresponding to -99:59:74, which is the maximum the ordinary CueSheet syntax can represent.</summary>
-    public static readonly CueTime StandardSheetMinValue = new(-99, -59, -74);
+    public static readonly CueTime StandardCueSheetMinValue = new(-99, -59, -74);
 
     #endregion // Constants
 
@@ -206,7 +201,7 @@ public readonly record struct CueTime
     public static int TicksToFrames(long ticks)
     {
         double frames = ticks / TicksPerFrame;
-        double round = Math.Round(frames,MidpointRounding.AwayFromZero);
+        double round = Math.Round(frames, MidpointRounding.AwayFromZero);
         return checked((int)round);
     }
 
@@ -224,6 +219,227 @@ public readonly record struct CueTime
     }
 
     #endregion // Statics
+
+    #region Generic Math
+
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="Abs"]'/>
+    public static CueTime Abs(CueTime value)
+        => new(Math.Abs(value.TotalFrames));
+
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="MaxMagnitude"]'/>
+    public static CueTime MaxMagnitude(CueTime x, CueTime y)
+    {
+        long xMagnitude = Math.Abs((long)x.TotalFrames);
+        long yMagnitude = Math.Abs((long)y.TotalFrames);
+        if (xMagnitude != yMagnitude)
+            return xMagnitude > yMagnitude ? x : y;
+        return x.TotalFrames >= y.TotalFrames ? x : y;
+    }
+
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="MaxMagnitudeNumber"]'/>
+    public static CueTime MaxMagnitudeNumber(CueTime x, CueTime y)
+        => MaxMagnitude(x, y);
+
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="MinMagnitude"]'/>
+    public static CueTime MinMagnitude(CueTime x, CueTime y)
+    {
+        long xMagnitude = Math.Abs((long)x.TotalFrames);
+        long yMagnitude = Math.Abs((long)y.TotalFrames);
+        if (xMagnitude != yMagnitude)
+            return xMagnitude < yMagnitude ? x : y;
+        return x.TotalFrames <= y.TotalFrames ? x : y;
+    }
+
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="MinMagnitudeNumber"]'/>
+    public static CueTime MinMagnitudeNumber(CueTime x, CueTime y)
+        => MinMagnitude(x, y);
+
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="IsCanonical"]'/>
+    public static bool IsCanonical(CueTime value) => true;
+
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="IsComplexNumber"]'/>
+    public static bool IsComplexNumber(CueTime value) => false;
+
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="IsEvenInteger"]'/>
+    public static bool IsEvenInteger(CueTime value) => value.TotalFrames % 2 == 0;
+
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="IsFinite"]'/>
+    public static bool IsFinite(CueTime value) => true;
+
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="IsImaginaryNumber"]'/>
+    public static bool IsImaginaryNumber(CueTime value) => false;
+
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="IsInfinity"]'/>
+    public static bool IsInfinity(CueTime value) => false;
+
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="IsInteger"]'/>
+    public static bool IsInteger(CueTime value) => true;
+
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="IsNaN"]'/>
+    public static bool IsNaN(CueTime value) => false;
+
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="IsNegative"]'/>
+    public static bool IsNegative(CueTime value) => value.TotalFrames < 0;
+
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="IsNegativeInfinity"]'/>
+    public static bool IsNegativeInfinity(CueTime value) => false;
+
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="IsNormal"]'/>
+    public static bool IsNormal(CueTime value) => true;
+
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="IsOddInteger"]'/>
+    public static bool IsOddInteger(CueTime value) => value.TotalFrames % 2 != 0;
+
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="IsPositive"]'/>
+    public static bool IsPositive(CueTime value) => value.TotalFrames >= 0;
+
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="IsPositiveInfinity"]'/>
+    public static bool IsPositiveInfinity(CueTime value) => false;
+
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="IsRealNumber"]'/>
+    public static bool IsRealNumber(CueTime value) => true;
+
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="IsSubnormal"]'/>
+    public static bool IsSubnormal(CueTime value) => false;
+
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="IsZero"]'/>
+    public static bool IsZero(CueTime value) => value.TotalFrames == 0;
+
+    // INumberBase requires same-type multiplication and division. Keep these
+    // operators explicit so they do not become part of CueTime's public API.
+    static CueTime IMultiplicativeIdentity<CueTime, CueTime>.MultiplicativeIdentity => One;
+    static CueTime IAdditiveIdentity<CueTime, CueTime>.AdditiveIdentity => Zero;
+
+    static CueTime IMultiplyOperators<CueTime, CueTime, CueTime>.operator *(CueTime left, CueTime right)
+        => new(checked(left.TotalFrames * right.TotalFrames));
+
+    static CueTime IDivisionOperators<CueTime, CueTime, CueTime>.operator /(CueTime left, CueTime right)
+    {
+        if (right.TotalFrames == 0)
+            throw new DivideByZeroException();
+        return new(left.TotalFrames / right.TotalFrames);
+    }
+
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="ParseNumberStylesString"]'/>
+    public static CueTime Parse(string s, NumberStyles style, IFormatProvider? provider)
+        => Parse(s, provider);
+
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="ParseNumberStylesSpan"]'/>
+    public static CueTime Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider)
+        => Parse(s, provider);
+
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="TryParseNumberStylesString"]'/>
+    public static bool TryParse(
+        [NotNullWhen(true)] string? s,
+        NumberStyles style,
+        IFormatProvider? provider,
+        [MaybeNullWhen(false)] out CueTime result)
+        => TryParse(s, provider, out result);
+
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="TryParseNumberStylesSpan"]'/>
+    public static bool TryParse(
+        ReadOnlySpan<char> s,
+        NumberStyles style,
+        IFormatProvider? provider,
+        [MaybeNullWhen(false)] out CueTime result)
+        => TryParse(s, provider, out result);
+
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="ParseUtf8"]'/>
+    public static CueTime Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider)
+        => Parse(System.Text.Encoding.UTF8.GetString(utf8Text), provider);
+
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="TryParseUtf8"]'/>
+    public static bool TryParse(
+        ReadOnlySpan<byte> utf8Text,
+        IFormatProvider? provider,
+        [MaybeNullWhen(false)] out CueTime result)
+        => TryParse(System.Text.Encoding.UTF8.GetString(utf8Text), provider, out result);
+
+    static bool INumberBase<CueTime>.TryConvertFromChecked<TOther>(TOther value, out CueTime result)
+    {
+        try
+        {
+            result = new(int.CreateChecked(value));
+            return true;
+        }
+        catch (NotSupportedException)
+        {
+            result = Zero;
+            return false;
+        }
+    }
+
+    static bool INumberBase<CueTime>.TryConvertFromSaturating<TOther>(TOther value, out CueTime result)
+    {
+        try
+        {
+            result = new(int.CreateSaturating(value));
+            return true;
+        }
+        catch (NotSupportedException)
+        {
+            result = Zero;
+            return false;
+        }
+    }
+
+    static bool INumberBase<CueTime>.TryConvertFromTruncating<TOther>(TOther value, out CueTime result)
+    {
+        try
+        {
+            result = new(int.CreateTruncating(value));
+            return true;
+        }
+        catch (NotSupportedException)
+        {
+            result = Zero;
+            return false;
+        }
+    }
+
+    static bool INumberBase<CueTime>.TryConvertToChecked<TOther>(CueTime value, out TOther result)
+    {
+        try
+        {
+            result = TOther.CreateChecked(value.TotalFrames);
+            return true;
+        }
+        catch (NotSupportedException)
+        {
+            result = TOther.Zero;
+            return false;
+        }
+    }
+
+    static bool INumberBase<CueTime>.TryConvertToSaturating<TOther>(CueTime value, out TOther result)
+    {
+        try
+        {
+            result = TOther.CreateSaturating(value.TotalFrames);
+            return true;
+        }
+        catch (NotSupportedException)
+        {
+            result = TOther.Zero;
+            return false;
+        }
+    }
+
+    static bool INumberBase<CueTime>.TryConvertToTruncating<TOther>(CueTime value, out TOther result)
+    {
+        try
+        {
+            result = TOther.CreateTruncating(value.TotalFrames);
+            return true;
+        }
+        catch (NotSupportedException)
+        {
+            result = TOther.Zero;
+            return false;
+        }
+    }
+
+    #endregion // Generic Math
 
     #region Conversions
 
@@ -268,21 +484,36 @@ public readonly record struct CueTime
         if (spanTrimmed.Length == 0)
             throw new ArgumentException("Empty CueTime string", nameof(input));
         List<int> inds = SeekSeparator(spanTrimmed);
-        if (inds.Count < 4)
+        if (inds.Count <= 1)
             throw new ArgumentException(
-                $"CueTime string has less than 3 parts ({input.ToString()})",
+                $"CueTime string must have at least one part ({input})",
                 nameof(input)
             );
-        Span<int> nums = stackalloc int[3];
+        if (inds.Count > 4)
+            throw new ArgumentException(
+                $"CueTime string must not have more than 3 parts ({input})",
+                nameof(input)
+            );
+        Span<int> nums = stackalloc int[Math.Min(3, inds.Count - 1)];
         int numCount = 0;
+        int multiplier = 0;
         for (int i = 1; i < inds.Count; i++)
         {
             int rangeStart = inds[i - 1] + 1; //plus one, because it was included in previous range
             //That's why the SeekSeparator adds -1 as the first element
             //so that the first rangeStart will be equal to 0
             int rangeEnd = inds[i];
+            var parsee = spanTrimmed[rangeStart..rangeEnd].Trim();
+            if (multiplier == 0)
+            {
+                multiplier = parsee[0] == '-' ? -1 : 1;
+            }
+            else if (parsee[0] == '-' || parsee[0] == '+')
+            {
+                throw new ArgumentException("Sign character encountered in the middle of the string");
+            }
             int x = int.Parse(
-                Slice(spanTrimmed, rangeStart, rangeEnd),
+                parsee,
                 NumberStyles.Integer,
                 CultureInfo.InvariantCulture
             );
@@ -290,10 +521,10 @@ public readonly record struct CueTime
             if (++numCount > 2)
                 break;
         }
-        int multiplier = nums[0] >= 0 ? 1 : -1;
-        int _minutes = Math.Abs(nums[0]);
-        int _seconds = Math.Abs(nums[1]);
-        int _frames = Math.Abs(nums[2]);
+
+        int _minutes = nums.Length == 3 ? Math.Abs(nums[^3]) : 0; // If there are 3 elements, take the third from the end (i.e the zeroth)
+        int _seconds = nums.Length >= 2 ? Math.Abs(nums[^2]) : 0; // If there are 2 or 3 elements, take the second from the end (i.e the zeroth or the first)
+        int _frames = Math.Abs(nums[^1]); // take last element
         int totalFrames = CalculateTotalFrames(_minutes, _seconds, _frames) * multiplier;
         return new CueTime(totalFrames);
     }
@@ -307,7 +538,7 @@ public readonly record struct CueTime
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="ParseString"]'/>
     public static CueTime Parse([NotNull] string? input, IFormatProvider? formatProvider)
     {
-        ExceptionHelper.ThrowIfNull(input);
+        ArgumentException.ThrowIfNullOrWhiteSpace(input);
         return Parse(input.AsSpan(), formatProvider);
     }
 
@@ -322,20 +553,36 @@ public readonly record struct CueTime
     {
         cueTime = default;
         ReadOnlySpan<char> spanTrimmed = input.Trim();
+        if (spanTrimmed.Length == 0)
+        {
+            return false;
+        }
         List<int> inds = SeekSeparator(spanTrimmed);
         if (inds.Count <= 1)
             return false;
+        if (inds.Count > 4)
+            return false;
         Span<int> nums = stackalloc int[Math.Min(3, inds.Count - 1)];
         int numCount = 0;
+        int multiplier = 0;
         for (int i = 1; i < inds.Count; i++)
         {
             int rangeStart = inds[i - 1] + 1; //plus one, because it was included in previous range
             //That'input why the SeekSeparator adds -1 as the first element
             //so that the first rangeStart will be equal to 0
             int rangeEnd = inds[i];
+            var parsee = spanTrimmed[rangeStart..rangeEnd].Trim();
+            if (multiplier == 0)
+            {
+                multiplier = parsee[0] == '-' ? -1 : 1;
+            }
+            else if (parsee[0] == '-' || parsee[0] == '+')
+            {
+                return false;
+            }
             if (
                 !int.TryParse(
-                    Slice(spanTrimmed, rangeStart, rangeEnd),
+                    parsee,
                     NumberStyles.Integer,
                     formatProvider,
                     out int x
@@ -346,7 +593,6 @@ public readonly record struct CueTime
             if (++numCount > 2)
                 break;
         }
-        int multiplier = nums[0] >= 0 ? 1 : -1;
         int _minutes = nums.Length == 3 ? Math.Abs(nums[^3]) : 0; // If there are 3 elements, take the third from the end (i.e the zeroth)
         int _seconds = nums.Length >= 2 ? Math.Abs(nums[^2]) : 0; // If there are 2 or 3 elements, take the second from the end (i.e the zeroth or the first)
         int _frames = Math.Abs(nums[^1]); // take last element
@@ -429,11 +675,8 @@ public readonly record struct CueTime
     }
     public int CompareTo(TimeSpan other)
     {
-        // TotalTicks require only a multiplication and TimeSpan.Ticks are not computed
-        // Using double variant since fraction ticks can affect the result (?)
-        // Also, between int.MinValue and int.MaxValue the precision of double is below one,
-        // so there is no way the floating point error can affect the result.
-        return TotalTicks.CompareTo(other.Ticks);
+        // Rounds to frames like the TimeSpan -> CueTime cast, so ct.CompareTo((TimeSpan)ct) is always 0.
+        return TotalFrames.CompareTo(TicksToFrames(other.Ticks));
     }
 
     public static bool Equals(CueTime ct1, CueTime ct2)
@@ -481,10 +724,10 @@ public readonly record struct CueTime
     public CueTime Divide(double divisor)
     {
         if (double.IsNaN(divisor))
-            throw new ArgumentException("Divisor must be a finite number", nameof(divisor));
+            throw new NotFiniteNumberException(divisor);
         if (divisor == 0)
             throw new DivideByZeroException();
-        return new((int)(TotalFrames / divisor));
+        return new(checked((int)(TotalFrames / divisor)));
     }
 
     /// <include file='CueTime.xml' path='Elements/Members/Member[@name="DivideCueTime"]'/>
@@ -503,7 +746,7 @@ public readonly record struct CueTime
     public CueTime Multiply(double factor)
     {
         if (double.IsNaN(factor))
-            throw new ArgumentException("Factor must be a number", nameof(factor));
+            throw new NotFiniteNumberException(factor);
         return new(checked((int)(TotalFrames * factor)));
     }
 
@@ -617,7 +860,7 @@ public readonly record struct CueTime
     {
         switch (format)
         {
-            case null or "" or "G" or "g":
+            case null or "" or "g":
                 return ToString();
             default:
                 break;
@@ -658,43 +901,40 @@ public readonly record struct CueTime
         return strb.ToString();
     }
 
-    #endregion 
+    #endregion // Strings
 
-    #region Explicit Interfaces
+    #region Formatting Interfaces
 
-#if NET7_0_OR_GREATER // static interface members introduced in NET7
-
-    static CueTime IParsable<CueTime>.Parse(string s, IFormatProvider? provider)
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="TryFormat"]'/>
+    public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
     {
-        return Parse(s, formatProvider: null);
+        string formatted = ToString(format.IsEmpty ? null : format.ToString(), provider);
+        if (!formatted.AsSpan().TryCopyTo(destination))
+        {
+            charsWritten = 0;
+            return false;
+        }
+
+        charsWritten = formatted.Length;
+        return true;
     }
 
-    static bool IParsable<CueTime>.TryParse(
-        [NotNullWhen(true)] string? s,
-        IFormatProvider? provider,
-        [MaybeNullWhen(false)] out CueTime result)
+    /// <include file='CueTime.xml' path='Elements/Members/Member[@name="TryFormatUtf8"]'/>
+    public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
     {
-        return TryParse(s, formatProvider: null, out result);
+        string formatted = ToString(format.IsEmpty ? null : format.ToString(), provider);
+        int requiredLength = System.Text.Encoding.UTF8.GetByteCount(formatted);
+        if (requiredLength > utf8Destination.Length)
+        {
+            bytesWritten = 0;
+            return false;
+        }
+
+        bytesWritten = System.Text.Encoding.UTF8.GetBytes(formatted, utf8Destination);
+        return true;
     }
 
-    static CueTime ISpanParsable<CueTime>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
-    {
-        return Parse(s, formatProvider: null);
-    }
-
-    static bool ISpanParsable<CueTime>.TryParse(
-        ReadOnlySpan<char> s,
-        IFormatProvider? provider,
-        [MaybeNullWhen(false)] out CueTime result)
-    {
-        return TryParse(s, formatProvider: null, out result);
-    }
-
-    static CueTime IAdditiveIdentity<CueTime, CueTime>.AdditiveIdentity => CueTime.Zero;
-
-#endif
-
-    #endregion
+    #endregion // Formatting Interfaces
 
     #region Private Helper methods
 
@@ -715,7 +955,7 @@ public readonly record struct CueTime
     )
     {
         int charLength = StringHelper.CountSubsequence(format, index);
-        int num = GetTimeValueByChar(cueTime,format[index]);
+        int num = GetTimeValueByChar(cueTime, format[index]);
         AppendPaddedInteger(stringBuilder, num, charLength);
         return charLength;
     }
@@ -740,8 +980,9 @@ public readonly record struct CueTime
     /// <inheritdoc cref="AppendOther(StringBuilder, ReadOnlySpan{char}, int)"/>
     private static int AppendEscaped(StringBuilder strb, ReadOnlySpan<char> format, int index)
     {
-        if (index < format.Length - 1)
+        if (index == format.Length - 1)
         {
+            strb.Append(format[index]);
             return 1;
         }
         strb.Append(format[index + 1]);
@@ -749,7 +990,7 @@ public readonly record struct CueTime
     }
     private static StringBuilder AppendPaddedInteger(StringBuilder sb, int number, int minWidth)
     {
-        return sb.Append(number.ToString(CultureInfo.InvariantCulture).PadRight(minWidth, '0'));
+        return sb.Append(number.ToString(CultureInfo.InvariantCulture).PadLeft(minWidth, '0'));
     }
 
     /// <summary>
@@ -786,25 +1027,11 @@ public readonly record struct CueTime
         };
     }
 
-    /// <summary>
-    /// Helper function that return either string or input sliced to given range, depending on target framework.
-    /// </summary>
-    /// <param name="span">Span to slice.</param>
-    /// <param name="start">Inclusive start of slice.</param>
-    /// <param name="end">Exclusive end of slice.</param>
-    /// <returns>String for NetStandard2.0, ReadOnlySpan elsewhere</returns>
-#if !NETSTANDARD2_0 // int.Parse cannot use Spans only in NETSTANDARD2.0
-    public static ReadOnlySpan<char> Slice(ReadOnlySpan<char> span, int start, int end)
-    {
-        return span[start..end];
-    }
 
-#else
     // While System.Memory adds range slices, we still need to a return string, because int.TryParse requires it.
     private static string Slice(ReadOnlySpan<char> span, int start, int end)
     {
         return span[start..end].ToString();
     }
-#endif
     #endregion // Helper Methods
 }

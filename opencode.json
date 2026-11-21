@@ -1,0 +1,19 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "lmstudio": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "LM Studio",
+      "options": {
+        "baseURL": "http://localhost:1235/v1",
+        "apiKey": "lm-studio"
+      },
+      "models": {
+        "local-coder": {
+          "name": "Gemma"
+        }
+      }
+    }
+  },
+  "model": "lmstudio/local-coder"
+}

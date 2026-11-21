@@ -3,26 +3,21 @@
 /// <summary>
 /// Provides properties and instance methods for an extra file that was mentioned in a CUE sheet.
 /// </summary>
-public class CueExtraFile(FileInfo source, CueSheet parent) : ICueFile
+public class CueExtraFile : FilePath
 {
-    /// <inheritdoc cref="Internal.CueItemBase.ParentSheet"/>
-    public CueSheet ParentSheet { get; } = parent;
-
-    /// <inheritdoc cref="CueDataFile.SourceFile"/>
-    public FileInfo SourceFile { get; set; } = source;
-
-    public CueExtraFile(string path, CueSheet sheet)
-        : this(new FileInfo(path), sheet) { }
-
-    public static implicit operator FileInfo(CueExtraFile file) => file.SourceFile;
-
-    /// <inheritdoc cref="CueDataFile.FileSize"/>
-    public long FileSize => SourceFile.Length;
-
-    /// <inheritdoc cref="CueDataFile.Exists"/>
-    public bool Exists => SourceFile.Exists;
-
-    /// <inheritdoc cref="CueDataFile.GetRelativePath"/>
-    public string GetRelativePath() =>
-        PathHelper.GetRelativePath(SourceFile, ParentSheet.SourceFile);
+    public CueExtraFile(string filePath, CueSheet sheet) : this(filePath, sheet,sheet.UseQualifiedPaths)
+    {
+    }
+    internal CueExtraFile(string filePath, CueSheet sheet, bool keepQualified) : base(filePath, sheet, keepQualified)
+    {
+    }
+    internal CueExtraFile(CueExtraFile cueExtraFile, CueSheet sheet):this(cueExtraFile.Path,sheet, sheet.UseQualifiedPaths)
+    {
+        
+    }
+    public CueExtraFile Clone(CueSheet sheet)=>new CueExtraFile(this,sheet);
+    public override string ToString()
+    {
+        return $"EXTRA \"{Path}\"";
+    }
 }

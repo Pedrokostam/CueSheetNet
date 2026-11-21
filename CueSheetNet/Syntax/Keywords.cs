@@ -8,6 +8,7 @@
         TITLE,
         FILE,
         CDTEXTFILE,
+        SONGWRITER,
         TRACK,
         FLAGS,
         INDEX,

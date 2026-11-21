@@ -14,3 +14,12 @@ dotnet_diagnostic.MA0076.severity=silent
 
 # MA0038: Make method static
 dotnet_diagnostic.MA0038.severity=silent
+
+# MA0011: IFormatProvider is missing
+dotnet_diagnostic.MA0011.severity = none
+
+# CS8509: The switch expression does not handle all possible values of its input type (it is not exhaustive). For example, the pattern '...' is not covered.
+dotnet_diagnostic.CS8509.severity = error
+
+# CS8524: The switch expression does not handle some values of its input type (it is not exhaustive) involving an unnamed enum value.
+dotnet_diagnostic.CS8524.severity = suggestion

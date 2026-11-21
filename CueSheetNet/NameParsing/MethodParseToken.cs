@@ -10,7 +10,7 @@ internal record MethodParseToken : ParseToken
     {
         Method = method;
     }
-    public override string GetValue(CueSheet sheet)
+    public override string? GetValue(CueSheet sheet)
     {
         return Method.Invoke(sheet);
     }
