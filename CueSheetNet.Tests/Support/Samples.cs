@@ -7,6 +7,7 @@ public readonly record struct Sample(string Folder, string File)
     public CueSheet Load() => CueReader.CreateFromFile(Path).Parse();
 
     public string ReadText() => System.IO.File.ReadAllText(Path);
+    public string[] ReadLines() => System.IO.File.ReadAllLines(Path);
 
     public override string ToString() => $"{Folder}/{File}";
 }

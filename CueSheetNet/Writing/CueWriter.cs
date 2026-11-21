@@ -22,14 +22,14 @@ public sealed class CueWriter
         this.Settings = settings;
         return this;
     }
-    public CueWriter WithNewline(CueWriterSettings.NewLineType type)
+    public CueWriter WithNewline(NewLineType type)
     {
         this.Settings = this.Settings with { NewLine = type };
         return this;
     }
-    public CueWriter WithIndentation(int depth, char indentChar)
+    public CueWriter WithIndentation(Indentation indentation)
     {
-        this.Settings = this.Settings with { IndentationDepth = depth, IndentationCharacter = indentChar };
+        this.Settings = this.Settings with { Indentation = indentation };
         return this;
     }
     public CueWriter WithInnerQuotes(InnerQuotation innerQuotation)
@@ -37,9 +37,9 @@ public sealed class CueWriter
         this.Settings = this.Settings with { InnerQuotationReplacement = innerQuotation };
         return this;
     }
-    public CueWriter WithRedundantFields(bool keepRedundant)
+    public CueWriter WithRedundantFields(RedundantFieldBehavior behavior)
     {
-        this.Settings = this.Settings with { KeepRedundantFields = keepRedundant };
+        this.Settings = this.Settings with { RedundantFields = behavior };
         return this;
     }
     public CueWriter WithForcedQuotes(bool forceQuotes)
@@ -144,12 +144,26 @@ public sealed class CueWriter
     }
 
 
-    private void AppendRems(IEnumerable<Remark> rems, int depth = 0)
+    private HashSet<string> AppendSheetRems(ICollection<Remark> rems)
     {
+        var res = new HashSet<string>(rems.Count, StringComparer.Ordinal);
         foreach (var item in rems)
-            AppendRemark(item, depth);
+        {
+            AppendRemark(item, 0);
+            res.Add(item.Line);
+        }
+        return res;
     }
 
+    private void AppendTrackRems(CueTrack track, HashSet<string> sheetLines)
+    {
+        foreach (var item in track.Remarks)
+        {
+            bool write = Settings.RedundantFields > RedundantFieldBehavior.Never || sheetLines.Contains(item.Line);
+            if (write)
+                AppendRemark(item, 2);
+        }
+    }
 
     private void AppendComments(IEnumerable<string> comms, int depth = 0)
     {
@@ -160,33 +174,36 @@ public sealed class CueWriter
     private void AppendIndentation(int level)
     {
         if (level > 0)
-            Builder.Append(' ', level * Settings.IndentationDepth);
+            Settings.Indentation.AppendIndentation(level, Builder);
     }
 
-    private void AppendOptional(CueTrack track, FieldInfo fieldInfo)
-    {
-        var s = fieldInfo.GetValue(track) as string;
-        if (!string.IsNullOrWhiteSpace(s))
-        {
-            var name = fieldInfo.Name.TrimStart('_').ToUpperInvariant();
-            AppendStringify(name, Replace(s), 2, quoteAllowed: true);
-        }
-    }
-
-    private void AppendOptionalFields(CueTrack track)
+    private void AppendOptionalFields(CueTrack track, CueSheet sheet)
     {
         var fieldsSet = track.ExplicitFields;
         if (fieldsSet.HasFlag(FieldsSet.Title))
         {
+            // one exception, since auto-titles are ugly
             AppendStringify("TITLE", Replace(track.Title), 2, quoteAllowed: true);
         }
-        if (fieldsSet.HasFlag(FieldsSet.Performer))
+        var songwriterWrite = Settings.RedundantFields switch
         {
-            AppendStringify("PERFORMER", Replace(track.Performer), 2, quoteAllowed: true);
-        }
-        if (fieldsSet.HasFlag(FieldsSet.Songwriter))
+            RedundantFieldBehavior.Never => !StringComparer.Ordinal.Equals(track.Songwriter, sheet.Songwriter),
+            RedundantFieldBehavior.IfExplicitlySet => fieldsSet.HasFlag(FieldsSet.Songwriter),
+            RedundantFieldBehavior.Always => true,
+        };
+        var performerWrite = Settings.RedundantFields switch
+        {
+            RedundantFieldBehavior.Never => !StringComparer.Ordinal.Equals(track.Performer, sheet.Performer),
+            RedundantFieldBehavior.IfExplicitlySet => fieldsSet.HasFlag(FieldsSet.Performer),
+            RedundantFieldBehavior.Always => true,
+        };
+        if (songwriterWrite)
         {
             AppendStringify("SONGWRITER", Replace(track.Songwriter), 2, quoteAllowed: true);
+        }
+        if (performerWrite)
+        {
+            AppendStringify("PERFORMER", Replace(track.Performer), 2, quoteAllowed: true);
         }
     }
 
@@ -218,10 +235,9 @@ public sealed class CueWriter
         AppendStringify("CATALOG", sheet.Catalog, 0, quoteAllowed: true);
         AppendStringify("CDTEXTFILE", sheet.CdTextFile?.Path, 0, quoteAllowed: true);
         AppendStringify("SONGWRITER", sheet.Songwriter, 0, quoteAllowed: true);
-        AppendRems(sheet.Remarks, 0);
+        var sheetRemarkLines = AppendSheetRems(sheet.Remarks);
         CueTrack? lastIteratedTrack = null;
         CueDataFile? lastIteratedFile = null;
-
         foreach (var link in sheet.Data)
         {
             if (!ReferenceEquals(link.File, lastIteratedFile))
@@ -235,9 +251,9 @@ public sealed class CueWriter
                 AppendTrackHeader(link.Track);
                 AppendPregap(link.Track);
                 AppendIsrc(link.Track);
-                AppendOptionalFields(link.Track);
+                AppendOptionalFields(link.Track, sheet);
                 AppendFlags(link.Track);
-                AppendRems(link.Track.Remarks, depth: 2);
+                AppendTrackRems(link.Track, sheetRemarkLines);
             }
             AppendIndex(link.Index);
             if (ReferenceEquals(link.Index, lastIteratedTrack.Indices[^1]))
@@ -245,7 +261,6 @@ public sealed class CueWriter
                 // last index in track, so append postgap if any
                 AppendPostgap(link.Track);
             }
-
         }
         if (!string.Equals(Settings.NewlineString(), Environment.NewLine, StringComparison.Ordinal))
         {

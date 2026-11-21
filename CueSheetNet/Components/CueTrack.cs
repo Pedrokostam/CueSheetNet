@@ -2,6 +2,8 @@
 using CueSheetNet.FormatReaders;
 using CueSheetNet.Syntax;
 using CueSheetNet.Writing;
+using Metalama.Framework.Aspects;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -32,6 +34,31 @@ public class CueTrack : IRemarkable
                 fields |= FieldsSet.Songwriter;
             return fields;
         }
+    }
+    internal static bool ExplicitFieldsCompare(FieldsSet field, CueTrack? a, CueTrack? b, StringComparer comparer)
+    {
+        if (field == FieldsSet.None)
+            throw new ArgumentException("Field to compare cannot be none", nameof(field));
+        if ((field & (field) - 1) != FieldsSet.None)
+            throw new ArgumentException("Only one field can be compared at a time", nameof(field));
+        if (b is null || a is null)
+            return false;
+        var af = a.ExplicitFields.HasFlag(field);
+        var bf = b.ExplicitFields.HasFlag(field);
+        if (af!=bf)
+        {
+            // different explicit fields
+            return false;
+        }
+        if (!Enum.IsDefined(field))
+            throw new ArgumentOutOfRangeException(nameof(field));
+        return field switch
+        {
+            FieldsSet.None => throw new InvalidEnumArgumentException(),
+            FieldsSet.Title => comparer.Equals(a.Title, b.Title),
+            FieldsSet.Performer => comparer.Equals(a.Performer, b.Performer),
+            FieldsSet.Songwriter => comparer.Equals(a.Songwriter, b.Songwriter),
+        };
     }
     internal int AbsolutePosition => _sheet.Tracks.IndexOfRef(this);
     /// <summary>

@@ -6,4 +6,9 @@ public sealed record TextRemark : Remark
     public override string Line => Text;
 
     internal TextRemark(string text) => Text = text;
+
+    public override string ToString()
+    {
+        return $"Text remark: REM {Text}";
+    }
 }

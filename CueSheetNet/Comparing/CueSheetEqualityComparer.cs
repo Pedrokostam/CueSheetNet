@@ -51,7 +51,7 @@ public record CueSheetEqualityComparer : IEqualityComparer<CueSheet>
         /// <summary>
         /// When this flag is set, tracks will not be compared using values inherited from the sheet.
         /// <para>
-        /// For example the following cue sheets will be considere unequal under ExplicitValues, and equal otherwise. The track PERFOMER is not set in one case.
+        /// For example the following cue sheets will be considere unequal under this flag, and equal otherwise. The track PERFOMER is not set in one case.
         /// <code>
         /// PERFORMER "ARTIST"
         /// FILE File.wav WAVE
@@ -68,6 +68,8 @@ public record CueSheetEqualityComparer : IEqualityComparer<CueSheet>
         /// </para>
         /// </summary>
         ExplicitValues = 1 << 4,
+        /// <inheritdoc cref="ExplicitValues"/>
+        Strict = ExplicitValues,
 
         Full = Structure | CommonFields | OptionalFields | Remarks,
         FullStrict = Structure | CommonFields | OptionalFields | Remarks | ExplicitValues,
@@ -158,6 +160,7 @@ public record CueSheetEqualityComparer : IEqualityComparer<CueSheet>
 
     private bool Differs(string? a, string? b) => !StringComparer.Equals(a, b);
 
+
     private CueDifference? FindLinkDifference(Link x, Link y, string at)
     {
         if (!IndicesEqual(x.Index, y.Index))
@@ -176,15 +179,33 @@ public record CueSheetEqualityComparer : IEqualityComparer<CueSheet>
             return new($"{at}.Track.Postgap", x.Track.Postgap, y.Track.Postgap);
         if (Options.HasFlag(ComparisonOptions.CommonFields))
         {
-            if (Differs(x.Track.Title, y.Track.Title))
-                return new($"{at}.Track.Title", x.Track.Title, y.Track.Title);
-            if (Differs(x.Track.Performer, y.Track.Performer))
-                return new($"{at}.Track.Performer", x.Track.Performer, y.Track.Performer);
+            if (Options.HasFlag(ComparisonOptions.ExplicitValues))
+            {
+                if (!CueTrack.ExplicitFieldsCompare(FieldsSet.Title, x.Track, y.Track, StringComparer))
+                    return new($"{at}.Track.Title (explicit)", x.Track.Title, y.Track.Title);
+                if (!CueTrack.ExplicitFieldsCompare(FieldsSet.Performer, x.Track, y.Track, StringComparer))
+                    return new($"{at}.Track.Performer (explicit)", x.Track.Performer, y.Track.Performer);
+            }
+            else
+            {
+                if (Differs(x.Track.Title, y.Track.Title))
+                    return new($"{at}.Track.Title", x.Track.Title, y.Track.Title);
+                if (Differs(x.Track.Performer, y.Track.Performer))
+                    return new($"{at}.Track.Performer", x.Track.Performer, y.Track.Performer);
+            }
         }
         if (Options.HasFlag(ComparisonOptions.OptionalFields))
         {
-            if (Differs(x.Track.Songwriter, y.Track.Songwriter))
-                return new($"{at}.Track.Songwriter", x.Track.Songwriter, y.Track.Songwriter);
+            if (Options.HasFlag(ComparisonOptions.ExplicitValues))
+            {
+                if (!CueTrack.ExplicitFieldsCompare(FieldsSet.Songwriter, x.Track, y.Track, StringComparer))
+                    return new($"{at}.Track.Performer (explicit)", x.Track.Performer, y.Track.Performer);
+            }
+            else
+            {
+                if (Differs(x.Track.Songwriter, y.Track.Songwriter))
+                    return new($"{at}.Track.Songwriter", x.Track.Songwriter, y.Track.Songwriter);
+            }
             if (Differs(x.Track.Isrc, y.Track.Isrc))
                 return new($"{at}.Track.Isrc", x.Track.Isrc, y.Track.Isrc);
         }

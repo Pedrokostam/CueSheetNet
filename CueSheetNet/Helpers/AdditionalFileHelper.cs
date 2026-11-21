@@ -80,8 +80,12 @@ internal static class AdditionalFileHelper
                 continue;
             }
             var noExtName = Path.ChangeExtension(file.Name, null);
+            if(MatchesBaseName(noExtName, baseName))
+            {
+                yield return file;
+            }
             // Check if filename matches baseName or one of the constant target names
-            if (ConstantTargetNames.Contains(noExtName) || MatchesBaseName(noExtName, baseName))
+            else if (!otherCues && ConstantTargetNames.Contains(noExtName))
             {
                 yield return file;
             }

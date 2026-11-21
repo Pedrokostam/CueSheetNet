@@ -2,29 +2,31 @@
 using System.ComponentModel;
 
 namespace CueSheetNet;
-
 public record CueWriterSettings
 {
     public string NewlineString()
     {
         return NewLine switch
         {
+            NewLineType.PlatformDefault => Environment.NewLine,
             NewLineType.LF => "\n",
             NewLineType.CRLF => "\r\n",
             _ => throw new InvalidEnumArgumentException(nameof(NewLine), (int)NewLine, typeof(NewLineType))
         };
     }
-    public enum NewLineType { LF,  CRLF}
+    /// <summary>
+    /// The fallback encoding. Most compatible (UTF-8 without preamble).
+    /// </summary>
     public static readonly Encoding DefaultEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false,
                                                                        throwOnInvalidBytes: true);
     /// <summary>
-    /// If true, every suitable field will be enclosed in quotes, even if it does not contain whitespace
+    /// If <see langword="true"/>, every suitable field will be enclosed in quotes, even if it does not contain whitespace
     /// </summary>
     public bool ForceQuoting { get; init; }
 
     public InnerQuotation InnerQuotationReplacement
     {
-        get; 
+        get;
         init
         {
             if (!value.IsValid)
@@ -33,34 +35,29 @@ public record CueWriterSettings
         }
     }
 
+    /// <summary>
+    /// Encoding used to save the text representaion of the sheet to a file.
+    /// <para>
+    /// If set to <see langword="null"/> it will first attempt to reuse the encoding used during parsing, then fall back to <see cref="CueWriterSettings.DefaultEncoding"/>.
+    /// </para>
+    /// </summary>
+    /// <remarks>
+    /// Ignored when writing to string.
+    /// </remarks>
     public Encoding? Encoding { get; init; }
 
     public NewLineType NewLine { get; init; }
-    public int IndentationDepth
-    {
-        get;
-        init => field = Math.Max(value, 0);
-    }
-    public bool KeepRedundantFields { get; init; }
+    public Indentation Indentation { get; init; }
 
-    public char IndentationCharacter
-    {
-        get;
-        init
-        {
-            if (!char.IsWhiteSpace(value))
-                throw new ArgumentException($"Indentation character must be whitespace (is: '{value}' - 0x{(int)value:X})", nameof(value));
-            field = value;
-        }
-    }
+    public RedundantFieldBehavior RedundantFields { get; init; }
+
     public CueWriterSettings()
     {
-        ForceQuoting = false;
-        IndentationDepth = 2;
-        IndentationCharacter = ' ';
-        NewLine = OperatingSystem.IsWindows() ? NewLineType.CRLF : NewLineType.LF;
+        ForceQuoting = true;
+        Indentation = Indentation.Standard;
+        NewLine = NewLineType.PlatformDefault;
         Encoding = null;
         InnerQuotationReplacement = InnerQuotation.CurvedDoubleTopQuotation;
-        KeepRedundantFields = false;
+        RedundantFields = RedundantFieldBehavior.IfExplicitlySet;
     }
 }

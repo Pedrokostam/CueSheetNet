@@ -8,7 +8,7 @@ namespace CueSheetNet.Tests;
 [TestClass]
 public class CopyingTests
 {
-    private static (Dictionary<string,byte[]>,CueSheet) Coppyy(string sourceSheetPath, string targetSheetPath)
+    private static (Dictionary<string, byte[]>, CueSheet) Coppyy(string sourceSheetPath, string targetSheetPath)
     {
         var cue = CueReader.CreateFromFile(sourceSheetPath).Parse();
         using var md5 = MD5.Create();
@@ -34,8 +34,8 @@ public class CopyingTests
         var newFiles = targetDir.EnumerateFiles().ToArray();
         foreach (var item in hashes)
         {
-            Assert.IsTrue(newFiles.Any(x => x.Name == item.Key),$"Missing copied item: {item.Key}");
-            var match = newFiles.First(x=>x.Name == item.Key);
+            Assert.IsTrue(newFiles.Any(x => x.Name == item.Key), $"Missing copied item: {item.Key}");
+            var match = newFiles.First(x => x.Name == item.Key);
             using FileStream fs = match.OpenRead();
             var hash = md5.ComputeHash(fs);
             Assert.IsTrue(item.Value.SequenceEqual(hash), $"Different file hash: {item.Key}");
@@ -90,7 +90,7 @@ public class CopyingTests
         string sourceSheetPath = Samples.SpandauBalletTrue.Path;
         string targetSheetPath = Path.Combine(TempDirectory.Create("CueCopying3"), "CopiedSheet.cue");
         (var hashes, var copied) = Coppyy(sourceSheetPath, targetSheetPath);
-        copied.Unlink( true, false);
+        copied.Unlink(true, false);
         foreach (var deadFile in copied.AdditionalFiles)
         {
             deadFile.Info?.Refresh();
@@ -109,6 +109,7 @@ public class CopyingTests
     {
         string sourceSheetPath = Samples.SpandauBalletTrue.Path;
         string targetSheetPath = Path.Combine(TempDirectory.Create(tempName), "CopiedSheet.cue");
+        var targetDir = Directory.GetParent(targetSheetPath)!;
         return Coppyy(sourceSheetPath, targetSheetPath).Item2;
     }
 
@@ -136,8 +137,8 @@ public class CopyingTests
         // bug: CueExtensions.Copy calls File.Copy with Source == Target for every data file
         var copied = CopyToTemp("CueCopySameDir");
         string dir = copied.SourceFile!.DirectoryName!;
-        Assert.ThrowsException<IOException>(()=>copied.Copy(Path.Combine(dir, "Renamed.cue"), false, false));
-        Assert.ThrowsException<IOException>(()=>copied.Copy(Path.Combine(dir, "Renamed.cue"), true, false));
+        Assert.ThrowsException<IOException>(() => copied.Copy(Path.Combine(dir, "Renamed.cue"), false, false));
+        Assert.ThrowsException<IOException>(() => copied.Copy(Path.Combine(dir, "Renamed.cue"), true, false));
         //Assert.IsTrue(copiedWithFiles.SourceFile!.Exists);
         //Assert.IsTrue(File.Exists(Path.Combine(dir, DataFileName)));
     }

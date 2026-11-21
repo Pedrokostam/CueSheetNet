@@ -24,7 +24,7 @@ public class RoundTripTests
     public void WrittenLinesMatchSource(Sample sample)
     {
         var cue = sample.Load();
-        string written = CueWriter.Create().WriteToString(cue);
+        string written = CueWriter.Create().WithRedundantFields(RedundantFieldBehavior.IfExplicitlySet).WriteToString(cue);
         string source = File.ReadAllText(sample.Path, cue.SourceEncoding!);
 
         string[] normalizedSource = Normalize(source);
@@ -52,7 +52,7 @@ public class RoundTripTests
         cue.Title = cue.Title; // If the sheet has not title set, it will come from the filename, which changes after saving
         var clone = cue.Clone();
         var temp = Path.GetTempFileName();
-        CueWriter.Create().SaveAs(cue, temp);
+        CueWriter.Create().WithRedundantFields(RedundantFieldBehavior.IfExplicitlySet).SaveAs(cue, temp);
         var reloaded = CueReader.CreateFromFile(temp).Parse();
         File.Delete(temp);
         AssertSame(clone, reloaded, sample);

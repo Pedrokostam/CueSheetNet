@@ -41,18 +41,18 @@ public record TrackType
     {
         return s switch
         {
-            "AUDIO" => TrackType.AUDIO,
-            "CDG" => TrackType.CDG,
-            "MODE1_RAW" => TrackType.MODE1_2352,
-            "MODE1/2048" => TrackType.MODE1_2048,
-            "MODE1/2352" => TrackType.MODE1_2352,
-            "MODE2_RAW" => TrackType.MODE2_2352,
-            "MODE2/2048" => TrackType.MODE2_2048,
-            "MODE2/2324" => TrackType.MODE2_2324,
-            "MODE2/2336" => TrackType.MODE2_2336,
-            "MODE2/2352" => TrackType.MODE2_2352,
-            "CDI/2336" => TrackType.CDI_2336,
-            "CDI/2352" => TrackType.CDI_2352,
+            "AUDIO" => AUDIO,
+            "CDG" => CDG,
+            "MODE1_RAW" => MODE1_2352,
+            "MODE1/2048" => MODE1_2048,
+            "MODE1/2352" => MODE1_2352,
+            "MODE2_RAW" => MODE2_2352,
+            "MODE2/2048" => MODE2_2048,
+            "MODE2/2324" => MODE2_2324,
+            "MODE2/2336" => MODE2_2336,
+            "MODE2/2352" => MODE2_2352,
+            "CDI/2336" => CDI_2336,
+            "CDI/2352" => CDI_2352,
             _ => new TrackType(s.ToString(), -1, Modes.None, audio: false, cdspec: false, "Unknown")
         };
     }

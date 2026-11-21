@@ -1,4 +1,5 @@
 using CueSheetNet.Comparing;
+using Microsoft.VisualBasic;
 using static CueSheetNet.Comparing.CueSheetEqualityComparer.ComparisonOptions;
 
 namespace CueSheetNet.Tests;
@@ -120,5 +121,48 @@ public class EqualityTests
         y.Add("A");
         y.Add("a");
         Assert.IsTrue(RemarksEqualityComparer.Ordinal.Equals(x, y));
+    }
+
+    [DataTestMethod]
+    [DataRow()]
+    public void ExplicitComparisonWorks()
+    {
+        var comparerFull = new CueSheetEqualityComparer(Full);
+        var comparerFullExplicit = new CueSheetEqualityComparer(FullStrict);
+        var cue = TestSheets.NewCue();
+        cue.Performer = "A A";
+        cue.Songwriter = "B B";
+
+        var cue2 = cue.Clone();
+
+        cue2.Tracks[0].Performer = cue.Performer;
+        Assert.AreEqual(cue, cue2,comparerFull,    "Performer: equal under non-strict");
+        Assert.AreNotEqual(cue, cue2,comparerFullExplicit,"Perfomer: unequal under strict");
+        cue2.Tracks[0].Performer = null;
+        Sanity(cue, cue2, "Perfomer", comparerFull);
+        Sanity(cue, cue2, "Perfomer", comparerFullExplicit);
+        Assert.IsNull(comparerFull.FindFirstDifference(cue, cue2), "Performer: sanity non-strict");
+        Assert.IsNull(comparerFullExplicit.FindFirstDifference(cue, cue2), "Performer: sanity strict");
+
+        cue2.Tracks[0].Songwriter = cue.Songwriter;
+        Assert.AreEqual(cue, cue2, comparerFull, "Songwriter: equal under non-strict");
+        Assert.AreNotEqual(cue, cue2, comparerFullExplicit, "Songwriter: unequal under strict");
+        cue2.Tracks[0].Songwriter = null;
+        Sanity(cue, cue2, "Songwriter", comparerFull);
+        Sanity(cue, cue2, "Songwriter", comparerFullExplicit);
+
+        cue2.Tracks[0].Title = cue.Tracks[0].Title;
+        Assert.AreEqual(cue, cue2, comparerFull, "Track title: equal under non-strict");
+        Assert.AreNotEqual(cue, cue2, comparerFullExplicit, "Track title: equal under non-strict");
+        cue2.Tracks[0].Title = null;
+        Sanity(cue, cue2, "Tract title", comparerFull);
+        Sanity(cue, cue2, "Tract title", comparerFullExplicit);
+    }
+
+    private void Sanity(CueSheet a, CueSheet b, string field, CueSheetEqualityComparer comparer)
+    {
+        var res = comparer.FindFirstDifference(a, b);
+        var strict = comparer.Options.HasFlag(ExplicitValues) ? "strict" : "non-strict";
+        Assert.IsNull(res, $"{field}: sanity {strict} - {res}");
     }
 }

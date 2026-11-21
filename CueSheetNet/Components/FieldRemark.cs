@@ -35,6 +35,9 @@ public record FieldRemark : Remark
     {
         return T.TryParse(Value, CultureInfo.InvariantCulture, out var result) ? result : null;
     }
+    public override string ToString()
+    {
+        return $"Field remark: REM {Field} {Value}";
+    }
 }
 
-#pragma warning restore MA0008 // Add StructLayoutAttribute
