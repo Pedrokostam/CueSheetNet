@@ -7,7 +7,7 @@ using System.Diagnostics;
 namespace CueSheetNet.Components;
 
 [DebuggerDisplay("Count = {Count}")]
-internal class ResettableCollection<T> : IReadOnlyList<T>
+internal sealed class ResettableCollection<T> : IReadOnlyList<T>
 {
     static ILogger Loggerio => Loggingq.EditingLogger;
     private Func<IEnumerable<T>> Populator { get; }

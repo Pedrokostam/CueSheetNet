@@ -5,7 +5,7 @@ namespace CueSheetNet.Components;
 
 [DebuggerDisplay("Count = {Count}")]
 
-internal class ResettableSlice<TSource, TData> : IReadOnlyList<TSource>
+internal sealed class ResettableSlice<TSource, TData> : IReadOnlyList<TSource>
     where TData : notnull
     where TSource : notnull
 {

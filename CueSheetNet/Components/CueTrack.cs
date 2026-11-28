@@ -11,7 +11,7 @@ using System.Net.Security;
 using System.Net.WebSockets;
 namespace CueSheetNet.Components;
 
-public class CueTrack : IRemarkable
+public sealed class CueTrack : IRemarkable
 {
     public Remarks Remarks { get; } = [];
 

@@ -9,7 +9,7 @@ namespace CueSheetNet;
 /// Provides properties and instance methods for a data file (including audio) that is specified in a cuesheet.
 /// The class monitors the file to detect any changes to it.
 /// </summary>
-public class CueDataFile : FilePath
+public sealed class CueDataFile : FilePath
 {
 
     private readonly ResettableSlice<CueTrack, Link> _tracks;

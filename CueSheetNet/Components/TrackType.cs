@@ -1,6 +1,6 @@
 ﻿namespace CueSheetNet;
 
-public record TrackType
+public sealed record TrackType
 {
     public enum Modes
     {

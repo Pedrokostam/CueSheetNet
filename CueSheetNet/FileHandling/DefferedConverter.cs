@@ -1,6 +1,6 @@
 ﻿namespace CueSheetNet.FileHandling;
 
-public class RecipeConverter : IAudioConverter
+public class DefferedConverter : IAudioConverter
 {
     public string RecipeOutputFolder { get; set; }
     public string OutputName { get; set; }
@@ -9,7 +9,7 @@ public class RecipeConverter : IAudioConverter
     public string Separator { get; set; }
 
     readonly List<(string input, string output)> Elements;
-    public RecipeConverter(string outputFolder, string fileName, bool append, Encoding encoding, string separator)
+    public DefferedConverter(string outputFolder, string fileName, bool append, Encoding encoding, string separator)
     {
         ArgumentNullException.ThrowIfNull(outputFolder);
         ArgumentNullException.ThrowIfNull(fileName);
@@ -21,7 +21,7 @@ public class RecipeConverter : IAudioConverter
         Separator = separator;
     }
 
-    public RecipeConverter(string recipePath) : this(Path.GetDirectoryName(recipePath)!, Path.GetFileName(recipePath)!, append: false, Encoding.UTF8, ";")
+    public DefferedConverter(string recipePath) : this(Path.GetDirectoryName(recipePath)!, Path.GetFileName(recipePath)!, append: false, Encoding.UTF8, ";")
     {
 
     }
@@ -30,7 +30,7 @@ public class RecipeConverter : IAudioConverter
     /// </summary>
     /// <param name="outputFolder">Folder in which the text file with list of converted files will placed</param>
     /// <param name="fileName">Filename of the text file with list of converted files</param>
-    public RecipeConverter(string outputFolder, string fileName) : this(outputFolder, fileName, append: false, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), ";")
+    public DefferedConverter(string outputFolder, string fileName) : this(outputFolder, fileName, append: false, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), ";")
     {
 
     }

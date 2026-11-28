@@ -7,7 +7,7 @@ namespace CueSheetNet;
 /// <summary>
 /// Provides information about a CUE index, including its position, place in the sheet, parent file and parent sheet.
 /// </summary>
-public class CueIndex
+public sealed class CueIndex
 {
 
     private readonly CueSheet _sheet;

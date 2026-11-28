@@ -3,7 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace CueSheetNet.Comparing;
 
-public class RemarksEqualityComparer : IEqualityComparer<Remarks>, IEqualityComparer<Remark>
+public sealed class RemarksEqualityComparer : IEqualityComparer<Remarks>, IEqualityComparer<Remark>
 {
     public static readonly RemarksEqualityComparer InvariantCulture = new(StringComparer.InvariantCulture);
     public static readonly RemarksEqualityComparer InvariantCultureIgnoreCase = new(StringComparer.InvariantCultureIgnoreCase);
